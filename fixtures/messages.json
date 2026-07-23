@@ -1,0 +1,93 @@
+{
+  "account_email": "dirigeant@menuiserie-dupont.fr",
+  "messages": [
+    {
+      "external_id": "fx-001", "thread_id": "th-chantier-mairie",
+      "subject": "Chantier mairie — pose des fenêtres",
+      "sender": "dirigeant@menuiserie-dupont.fr", "sender_name": "Marc Dupont",
+      "recipients": ["services-techniques@mairie-valbonne.fr"],
+      "sent_at": "-20d",
+      "body": "Bonjour, suite à notre visite, je vous confirme que nous poserons les 12 fenêtres de l'école avant la fin du mois. Je vous enverrai le planning détaillé d'ici vendredi. Cordialement, Marc Dupont"
+    },
+    {
+      "external_id": "fx-002", "thread_id": "th-chantier-mairie",
+      "subject": "RE: Chantier mairie — pose des fenêtres",
+      "sender": "services-techniques@mairie-valbonne.fr", "sender_name": "Mairie de Valbonne",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-19d",
+      "body": "Bonjour M. Dupont, c'est noté, nous attendons votre planning. L'école doit impérativement être prête pour la rentrée. Bien à vous."
+    },
+    {
+      "external_id": "fx-003", "thread_id": "th-fournisseur-vitrage",
+      "subject": "Commande vitrage double — délai",
+      "sender": "commandes@vitrages-pro.fr", "sender_name": "Vitrages Pro",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-15d",
+      "body": "Bonjour, nous accusons réception de votre commande de 12 vitrages doubles. Nous vous livrerons l'atelier au plus tard le 18 de ce mois. Cordialement, le service commandes."
+    },
+    {
+      "external_id": "fx-004", "thread_id": "th-devis-piscine",
+      "subject": "Devis pergola — M. Rossi",
+      "sender": "paul.rossi@gmail.com", "sender_name": "Paul Rossi",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-12d",
+      "body": "Bonjour, merci pour votre passage hier. Pouvez-vous m'envoyer le devis pour la pergola bioclimatique ? Nous aimerions démarrer les travaux le mois prochain."
+    },
+    {
+      "external_id": "fx-005", "thread_id": "th-devis-piscine",
+      "subject": "RE: Devis pergola — M. Rossi",
+      "sender": "dirigeant@menuiserie-dupont.fr", "sender_name": "Marc Dupont",
+      "recipients": ["paul.rossi@gmail.com"],
+      "sent_at": "-11d",
+      "body": "Bonjour M. Rossi, bien reçu. Je vous envoie le devis complet d'ici mercredi prochain au plus tard. Bien cordialement, Marc"
+    },
+    {
+      "external_id": "fx-006", "thread_id": "th-sav-menard",
+      "subject": "Porte d'entrée qui frotte",
+      "sender": "famille.menard@orange.fr", "sender_name": "Famille Ménard",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-9d",
+      "body": "Bonjour, la porte que vous avez posée en mai frotte au sol depuis quelques jours. Pourriez-vous passer la régler ? Merci d'avance."
+    },
+    {
+      "external_id": "fx-007", "thread_id": "th-sav-menard",
+      "subject": "RE: Porte d'entrée qui frotte",
+      "sender": "dirigeant@menuiserie-dupont.fr", "sender_name": "Marc Dupont",
+      "recipients": ["famille.menard@orange.fr"],
+      "sent_at": "-8d",
+      "body": "Bonjour, pas d'inquiétude, c'est sous garantie. Je passe régler la porte la semaine prochaine, je vous appelle avant. Cordialement, Marc"
+    },
+    {
+      "external_id": "fx-008", "thread_id": "th-newsletter",
+      "subject": "Nouveautés quincaillerie — promotions de l'été",
+      "sender": "no-reply@quincaillerie-plus.fr", "sender_name": "Quincaillerie Plus",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-7d", "list_unsubscribe": true,
+      "body": "Découvrez nos promotions de l'été sur toute la gamme de charnières et poignées !"
+    },
+    {
+      "external_id": "fx-009", "thread_id": "th-chantier-mairie",
+      "subject": "RE: Chantier mairie — pose des fenêtres",
+      "sender": "services-techniques@mairie-valbonne.fr", "sender_name": "Mairie de Valbonne",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-6d",
+      "body": "Bonjour M. Dupont, nous n'avons toujours pas reçu le planning promis. Pouvez-vous nous le transmettre rapidement ? La commission de sécurité passe bientôt."
+    },
+    {
+      "external_id": "fx-010", "thread_id": "th-recrutement",
+      "subject": "Candidature apprenti menuisier",
+      "sender": "lucas.bernard23@gmail.com", "sender_name": "Lucas Bernard",
+      "recipients": ["dirigeant@menuiserie-dupont.fr"],
+      "sent_at": "-5d",
+      "body": "Bonjour, je suis en CAP menuiserie et je cherche une entreprise pour mon apprentissage à la rentrée. Vous trouverez mon CV ci-joint. Je reste disponible pour un entretien."
+    },
+    {
+      "external_id": "fx-011", "thread_id": "th-recrutement",
+      "subject": "RE: Candidature apprenti menuisier",
+      "sender": "dirigeant@menuiserie-dupont.fr", "sender_name": "Marc Dupont",
+      "recipients": ["lucas.bernard23@gmail.com"],
+      "sent_at": "-4d",
+      "body": "Bonjour Lucas, merci pour votre candidature. Je vous propose un entretien à l'atelier jeudi prochain à 14h. Je vous confirme le créneau d'ici demain. Cordialement, Marc Dupont"
+    }
+  ]
+}

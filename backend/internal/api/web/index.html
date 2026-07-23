@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentOps — Agent Ops &amp; Delivery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="login" class="login hidden">
+  <div class="login-box">
+    <h1>AgentOps</h1>
+    <p>Entrez votre jeton d'accès administrateur.</p>
+    <input type="password" id="token-input" placeholder="Jeton d'accès">
+    <button onclick="saveToken()">Se connecter</button>
+    <p id="login-error" class="error"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>AgentOps <span class="muted">· Agent Ops &amp; Delivery</span></h1>
+    <div id="status-pill" class="pill">…</div>
+  </header>
+
+  <nav>
+    <button data-tab="apercu" class="active">Aperçu</button>
+    <button data-tab="miroir">Miroir</button>
+    <button data-tab="engagements">Engagements</button>
+    <button data-tab="detections">Détections</button>
+    <button data-tab="brouillons">Brouillons</button>
+    <button data-tab="liens">Liens</button>
+    <button data-tab="capsule">Capsule</button>
+    <button data-tab="regles">Règles</button>
+    <button data-tab="audit">Audit</button>
+    <button data-tab="reglages">Réglages</button>
+  </nav>
+
+  <main>
+    <section id="tab-apercu">
+      <div id="alertes"></div>
+      <div class="cards" id="compteurs"></div>
+      <h2>Dernier digest</h2>
+      <div id="digest"></div>
+      <div class="actions">
+        <button onclick="runCycle()">Lancer un cycle maintenant</button>
+        <button onclick="genDigest()">Générer le digest</button>
+      </div>
+    </section>
+
+    <section id="tab-miroir" class="hidden">
+      <h2>Miroir d'activité <span class="muted">— vos 30 derniers jours</span></h2>
+      <div id="miroir"></div>
+      <div class="actions"><button onclick="genMiroir()">Régénérer le miroir</button></div>
+    </section>
+
+    <section id="tab-engagements" class="hidden">
+      <h2>Engagements</h2>
+      <div class="filters">
+        <select id="filtre-statut" onchange="loadEngagements()">
+          <option value="ouvert,confirme,en_retard">Actifs</option>
+          <option value="en_retard">En retard</option>
+          <option value="livre">Livrés</option>
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <div id="engagements"></div>
+    </section>
+
+    <section id="tab-detections" class="hidden">
+      <h2>Détections</h2>
+      <div id="detections"></div>
+    </section>
+
+    <section id="tab-brouillons" class="hidden">
+      <h2>Brouillons d'action <span class="muted">— rien ne part sans votre validation</span></h2>
+      <div id="brouillons"></div>
+    </section>
+
+    <section id="tab-liens" class="hidden">
+      <h2>Liens de dépendance <span class="muted">— confirmez pour activer le détecteur de contradiction</span></h2>
+      <div id="liens"></div>
+    </section>
+
+    <section id="tab-capsule" class="hidden">
+      <h2>Capsule de contexte</h2>
+      <p class="muted">Voici ce que je comprends de votre activité. Corrigez-moi : chaque correction améliore l'extraction et la priorisation.</p>
+      <h3>Faits (inférés, corrigeables)</h3>
+      <textarea id="capsule-facts" rows="12"></textarea>
+      <h3>Vos intentions</h3>
+      <label>Quelles sont vos 2-3 priorités ou inquiétudes du moment ?</label>
+      <textarea id="int-priorites" rows="2"></textarea>
+      <label>Y a-t-il des clients, dossiers ou personnes à surveiller particulièrement ?</label>
+      <textarea id="int-surveillance" rows="2"></textarea>
+      <label>Qu'est-ce qui vous coûte le plus de temps ou d'énergie aujourd'hui ?</label>
+      <textarea id="int-energie" rows="2"></textarea>
+      <div class="actions">
+        <button onclick="saveCapsule()">Enregistrer</button>
+        <button onclick="inferCapsule()">Ré-inférer les faits</button>
+      </div>
+    </section>
+
+    <section id="tab-regles" class="hidden">
+      <h2>Règles apprises <span class="muted">— lisibles, jamais de boîte noire</span></h2>
+      <div id="regles"></div>
+    </section>
+
+    <section id="tab-audit" class="hidden">
+      <h2>Journal d'audit</h2>
+      <div id="audit"></div>
+    </section>
+
+    <section id="tab-reglages" class="hidden">
+      <h2>Réglages</h2>
+      <div class="setting">
+        <label>Connexion Gmail</label>
+        <div id="oauth-status" class="muted"></div>
+        <button onclick="connectGmail()">Connecter Gmail</button>
+      </div>
+      <div class="setting">
+        <label>Seuil de publication (0–1) — sous ce score, rien n'est présenté proactivement</label>
+        <input type="number" id="set-seuil" step="0.05" min="0" max="1">
+      </div>
+      <div class="setting">
+        <label>Rythme du digest</label>
+        <select id="set-digest"><option value="quotidien">Quotidien</option><option value="hebdo">Hebdomadaire</option></select>
+      </div>
+      <div class="actions"><button onclick="saveSettings()">Enregistrer</button></div>
+      <div class="setting">
+        <label>Onboarding (relire 30 jours + miroir + capsule)</label>
+        <button onclick="runOnboarding()">Relancer l'onboarding</button>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast hidden"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

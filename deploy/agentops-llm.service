@@ -1,0 +1,14 @@
+[Unit]
+Description=AgentOps LLM service (Python, 127.0.0.1:8092)
+After=network.target
+
+[Service]
+User=akharn
+WorkingDirectory=/home/akharn/agnet-ia/llm-service
+EnvironmentFile=/home/akharn/agnet-ia/.env
+ExecStart=/home/akharn/app/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8092
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

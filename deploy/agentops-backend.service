@@ -1,0 +1,15 @@
+[Unit]
+Description=AgentOps backend (Go, port 9999)
+After=network.target docker.service
+Wants=agentops-llm.service
+
+[Service]
+User=akharn
+WorkingDirectory=/home/akharn/agnet-ia
+EnvironmentFile=/home/akharn/agnet-ia/.env
+ExecStart=/home/akharn/agnet-ia/backend/bin/agentops
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
