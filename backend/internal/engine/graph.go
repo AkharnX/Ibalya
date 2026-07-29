@@ -27,6 +27,10 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 		        a.thread_id = b.thread_id
 		     OR (a.emetteur_id IS NOT NULL AND (a.emetteur_id = b.destinataire_id OR a.emetteur_id = b.emetteur_id)
 		         AND a.thread_id <> b.thread_id)
+		     -- chaîne type PME : le fournisseur promet AU dirigeant (amont), le
+		     -- dirigeant promet à son client (aval)
+		     OR (a.destinataire_id IS NOT NULL AND a.destinataire_id = b.emetteur_id
+		         AND a.thread_id <> b.thread_id)
 		  )
 		  AND NOT EXISTS (SELECT 1 FROM dependency_links l WHERE l.amont_id=a.id AND l.aval_id=b.id)`)
 	if err != nil {

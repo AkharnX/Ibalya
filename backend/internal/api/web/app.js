@@ -291,6 +291,29 @@ async function delRule(id) {
   catch (e) { toast(e.message, true); }
 }
 
+// --- KPI (CDC section 14) ---
+async function loadKpis() {
+  try {
+    const k = await api('/kpis');
+    const pct = (v) => (v * 100).toFixed(0) + ' %';
+    const rows = [
+      ['Précision estimée des extractions', pct(k.precision_estimee), 'cible > 85 %', k.precision_estimee > 0.85],
+      ['Taux de faux positifs (digests)', pct(k.taux_faux_positifs), 'cible < 10 %', k.taux_faux_positifs < 0.10],
+      ['Actions validées / suggérées', pct(k.taux_validation_actions), 'cible > 40 %', k.taux_validation_actions > 0.40],
+      ['Corrections sur 7 jours', k.corrections_7_jours, 'cible < 3 après S3', k.corrections_7_jours < 3],
+      ['Taux d\'exclusion pré-filtre', pct(k.taux_exclusion_prefiltre), 'santé économique EF-11', true],
+      ['Engagements extraits', k.engagements_extraits, '', true],
+      ['Messages analysés', k.messages_analyses, '', true],
+      ['Digests générés', k.digests_generes, '', true],
+      ['Règles apprises actives', k.regles_apprises_actives, '', true],
+      ['Incidents critiques (action agent)', k.incidents_critiques, 'cible : 0', k.incidents_critiques === 0],
+    ];
+    $('kpis').innerHTML = rows.map(([l, v, cible, ok]) =>
+      `<div class="card" style="border-left:3px solid ${ok ? 'var(--ok)' : 'var(--warn)'}">
+        <div class="num">${v}</div><div class="lbl">${l}${cible ? ' · ' + cible : ''}</div></div>`).join('');
+  } catch (e) { toast(e.message, true); }
+}
+
 // --- Audit ---
 async function loadAudit() {
   try {
@@ -306,6 +329,7 @@ async function loadReglages() {
     const s = await api('/settings');
     $('set-seuil').value = s.seuil_publication;
     $('set-digest').value = s.digest_type;
+    $('set-digest-email').value = s.digest_email || '0';
     const st = await api('/status');
     $('oauth-status').textContent = st.canal_connecte ? 'Connecté' + (st.compte ? ' : ' + st.compte : '') : 'Non connecté';
   } catch (e) { toast(e.message, true); }
@@ -313,7 +337,7 @@ async function loadReglages() {
 
 async function saveSettings() {
   try {
-    await api('/settings', { method: 'PUT', body: JSON.stringify({ seuil_publication: $('set-seuil').value, digest_type: $('set-digest').value }) });
+    await api('/settings', { method: 'PUT', body: JSON.stringify({ seuil_publication: $('set-seuil').value, digest_type: $('set-digest').value, digest_email: $('set-digest-email').value }) });
     localStorage.setItem('digest_type', $('set-digest').value);
     toast('Réglages enregistrés');
   } catch (e) { toast(e.message, true); }
@@ -332,7 +356,7 @@ async function runOnboarding() {
 const loaders = {
   apercu: loadApercu, miroir: loadMiroir, engagements: loadEngagements,
   detections: loadDetections, brouillons: loadBrouillons, liens: loadLiens,
-  capsule: loadCapsule, regles: loadRegles, audit: loadAudit, reglages: loadReglages,
+  capsule: loadCapsule, regles: loadRegles, kpis: loadKpis, audit: loadAudit, reglages: loadReglages,
 };
 
 async function boot() {

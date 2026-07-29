@@ -5,6 +5,7 @@ fournisseur = ajouter une classe, sans refonte.
 """
 import json
 import os
+import re
 from abc import ABC, abstractmethod
 
 import httpx
@@ -48,36 +49,72 @@ class MistralProvider(LLMProvider):
 class MockProvider(LLMProvider):
     """Fournisseur factice pour tester la chaîne sans clé d'API.
 
-    Extraction naïve par mots-clés — uniquement pour la validation technique,
-    jamais en production.
+    Extraction par règles simples (mots-clés + dates JJ/MM/AAAA) — uniquement
+    pour la validation technique et la démo, jamais en production.
     """
+
+    DATE_RE = re.compile(r"\b(\d{2})/(\d{2})/(\d{4})\b")
+    KEYWORDS = ("livr", "enverr", "envoie", "poser", "je passe", "promis", "d'ici",
+                "avant le", "je vous confirme", "sera prêt", "vous transmets",
+                "je m'en occupe", "au plus tard")
+
+    def _extract_message(self, m: dict) -> list[dict]:
+        body = m.get("body") or ""
+        low = body.lower()
+        if not any(k in low for k in self.KEYWORDS):
+            return []
+        echeance, inferee = "", False
+        if (match := self.DATE_RE.search(body)):
+            d, mo, y = match.groups()
+            echeance = f"{y}-{mo}-{d}"
+        elif "?" in body:
+            return []  # question sans date = demande, pas une promesse
+        elif "demain" in low or "semaine prochaine" in low or "vendredi" in low:
+            inferee = True  # date relative : le vrai LLM la résoudrait, le mock la signale
+        first_line = next((l.strip() for l in body.splitlines() if len(l.strip()) > 20), "")
+        objet = (m.get("subject") or "").removeprefix("RE: ").strip() or first_line[:120]
+        return [{
+            "emetteur_email": m.get("sender", ""),
+            "destinataire_email": (m.get("to") or "").split(",")[0].strip(),
+            "objet": objet,
+            "echeance": echeance,
+            "echeance_inferee": inferee if not echeance else False,
+            "confiance": 0.85 if echeance else 0.7,
+        }]
 
     async def complete_json(self, system: str, user: str) -> dict:
         if "extraction d'engagements" in system:
             try:
                 payload = json.loads(user)
-                results = []
-                keywords = ("livr", "envoi", "enverr", "promis", "d'ici", "avant le",
-                            "je vous", "je te", "on vous", "sera prêt", "deadline")
-                for m in payload.get("messages", []):
-                    body = (m.get("body") or "").lower()
-                    engs = []
-                    if any(k in body for k in keywords):
-                        engs.append({
-                            "emetteur_email": m.get("sender", ""),
-                            "destinataire_email": (m.get("to") or "").split(",")[0].strip(),
-                            "objet": (m.get("subject") or "Engagement détecté")[:150],
-                            "echeance": "",
-                            "echeance_inferee": False,
-                            "confiance": 0.65,
-                        })
-                    results.append({"message_id": m.get("id"), "engagements": engs, "updates": []})
-                return {"results": results}
+                return {"results": [
+                    {"message_id": m.get("id"), "engagements": self._extract_message(m), "updates": []}
+                    for m in payload.get("messages", [])
+                ]}
             except Exception:
                 return {"results": []}
         if "capsule" in system:
-            return {"facts": {"secteur": "inconnu (mock)", "horizon_jours": 7}}
-        return {"subject": "Suivi", "body": "Bonjour,\n\nOù en sommes-nous ?\n\nCordialement"}
+            return {"facts": {
+                "secteur": "artisanat / second œuvre (hypothèse à confirmer)",
+                "description": "Ce que je comprends : une entreprise artisanale qui gère des chantiers, des devis et du SAV par email avec clients, fournisseurs et collectivités.",
+                "clients_recurrents": ["services-techniques@mairie-valbonne.fr"],
+                "fournisseurs_critiques": ["commandes@vitrages-pro.fr"],
+                "interlocuteurs_cles": ["paul.rossi@gmail.com"],
+                "cycle_type": "chantiers de 2 à 6 semaines",
+                "horizon_jours": 7,
+                "silence_defaut_heures": 96,
+            }}
+        # brouillon
+        try:
+            req = json.loads(user)
+        except Exception:
+            req = {}
+        objet = req.get("engagement_objet") or "notre dossier en cours"
+        return {
+            "subject": f"Suivi — {objet[:60]}",
+            "body": (f"Bonjour,\n\nSauf erreur de ma part, je suis sans nouvelles concernant "
+                     f"« {objet} ». Pouvez-vous me faire un point rapide sur l'avancement "
+                     f"et me confirmer le délai ?\n\nMerci d'avance,\nBien cordialement"),
+        }
 
 
 def get_provider() -> LLMProvider:

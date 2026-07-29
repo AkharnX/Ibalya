@@ -149,13 +149,19 @@ func (s *Store) ThreadMessages(ctx context.Context, threadID int64) ([]Message, 
 
 // --- Engagements ---
 
+// CreateEngagement date l'engagement du message source (CreeLe) : un
+// engagement pris il y a 12 jours dans l'historique doit être vu comme tel
+// par les détecteurs (orphelin notamment), pas comme créé aujourd'hui.
 func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, error) {
+	if e.CreeLe.IsZero() {
+		e.CreeLe = time.Now()
+	}
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO engagements
-		(emetteur_id, destinataire_id, objet, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+		(emetteur_id, destinataire_id, objet, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id, cree_le, maj_le)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12) RETURNING id`,
 		e.EmetteurID, e.DestinataireID, e.Objet, e.Echeance, e.EcheanceInferee, e.EcheanceConfirmee,
-		e.Statut, e.Confiance, e.Priorite, e.SourceMessageID, e.ThreadID).Scan(&id)
+		e.Statut, e.Confiance, e.Priorite, e.SourceMessageID, e.ThreadID, e.CreeLe).Scan(&id)
 	return id, err
 }
 

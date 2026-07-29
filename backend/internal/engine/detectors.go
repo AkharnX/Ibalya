@@ -286,6 +286,10 @@ func (e *Engine) detectOrphelin(ctx context.Context, p capsuleParams, today stri
 		if eng.CreeLe.After(limite) {
 			continue
 		}
+		// une échéance future déjà suivie par le détecteur 1 n'est pas un oubli
+		if eng.Echeance != nil && eng.EcheanceConfirmee && eng.Echeance.After(time.Now()) {
+			continue
+		}
 		n, err := e.Store.CountEventsAfterCreation(ctx, eng.ID)
 		if err != nil || n > 0 {
 			continue

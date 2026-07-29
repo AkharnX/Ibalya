@@ -32,6 +32,7 @@
     <button data-tab="liens">Liens</button>
     <button data-tab="capsule">Capsule</button>
     <button data-tab="regles">Règles</button>
+    <button data-tab="kpis">KPI</button>
     <button data-tab="audit">Audit</button>
     <button data-tab="reglages">Réglages</button>
   </nav>
@@ -105,6 +106,11 @@
       <div id="regles"></div>
     </section>
 
+    <section id="tab-kpis" class="hidden">
+      <h2>Critères de réussite <span class="muted">— CDC section 14</span></h2>
+      <div class="cards" id="kpis"></div>
+    </section>
+
     <section id="tab-audit" class="hidden">
       <h2>Journal d'audit</h2>
       <div id="audit"></div>
@@ -124,6 +130,10 @@
       <div class="setting">
         <label>Rythme du digest</label>
         <select id="set-digest"><option value="quotidien">Quotidien</option><option value="hebdo">Hebdomadaire</option></select>
+      </div>
+      <div class="setting">
+        <label>Recevoir le digest par email</label>
+        <select id="set-digest-email"><option value="0">Non — tableau de bord uniquement</option><option value="1">Oui — envoyer sur ma boîte</option></select>
       </div>
       <div class="actions"><button onclick="saveSettings()">Enregistrer</button></div>
       <div class="setting">

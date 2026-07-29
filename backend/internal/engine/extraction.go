@@ -123,6 +123,7 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 		Priorite:        "normale",
 		SourceMessageID: &m.ID,
 		ThreadID:        &m.ThreadID,
+		CreeLe:          m.SentAt, // l'engagement date du message, pas de l'analyse
 	}
 	if eng.Objet == "" {
 		return false

@@ -170,7 +170,53 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	}
 	e.Store.Audit(ctx, "agent", "digest_genere", map[string]any{
 		"type": dtype, "detections": len(dc.Detections), "brouillons": len(dc.Brouillons)})
+
+	// envoi du digest par email au dirigeant si activé (Réglages)
+	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
+		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
+			subject := "Votre digest AgentOps — " + time.Now().Format("02/01/2006")
+			if err := e.Channel.Send(ctx, to, subject, renderDigestText(dc)); err != nil {
+				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
+			} else {
+				e.Store.Audit(ctx, "agent", "digest_email_envoye", map[string]string{"to": to})
+			}
+		}
+	}
 	return dc, nil
+}
+
+// renderDigestText met en forme le digest pour l'email (texte simple, lisible partout).
+func renderDigestText(dc *DigestContent) string {
+	var b strings.Builder
+	b.WriteString("Bonjour,\n\nVoici votre point du jour.\n")
+	if len(dc.Detections) > 0 {
+		b.WriteString("\n— ALERTES —\n")
+		for _, d := range dc.Detections {
+			marque := ""
+			if d.Critique {
+				marque = " [CRITIQUE]"
+			}
+			fmt.Fprintf(&b, "•%s %s\n  %s\n", marque, d.Titre, d.Detail)
+		}
+	}
+	if len(dc.Engagements) > 0 {
+		b.WriteString("\n— ENGAGEMENTS À RISQUE —\n")
+		for _, e := range dc.Engagements {
+			ech := "sans échéance"
+			if e.Echeance != nil {
+				ech = "échéance " + e.Echeance.Format("02/01/2006")
+			}
+			fmt.Fprintf(&b, "• %s (%s, %s)\n", e.Objet, ech, e.Statut)
+		}
+	}
+	if len(dc.Brouillons) > 0 {
+		fmt.Fprintf(&b, "\n— SUGGESTIONS —\n%d message(s) pré-rédigé(s) vous attendent : ouvrez le tableau de bord pour valider d'un clic.\n", len(dc.Brouillons))
+	}
+	if len(dc.Detections) == 0 && len(dc.Engagements) == 0 {
+		b.WriteString("\nRien à signaler au-dessus du seuil aujourd'hui.\n")
+	}
+	b.WriteString("\n— AgentOps\n")
+	return b.String()
 }
 
 // maybeDraft pré-rédige un brouillon d'action pour une détection actionnable.
@@ -186,7 +232,21 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	}
 	toEmail, toName, engObjet := "", "", ""
 	var engID *int64
-	if d.EngagementID != nil {
+	// contradiction : la recommandation croisée (CDC 9.6) relance l'interlocuteur
+	// AMONT (celui qui bloque), pas le client aval
+	if d.Type == "contradiction" {
+		var payload struct {
+			AmontID int64 `json:"amont_id"`
+		}
+		if json.Unmarshal(d.Payload, &payload) == nil && payload.AmontID != 0 {
+			if amont, err := e.Store.GetEngagement(ctx, payload.AmontID); err == nil && amont != nil {
+				toEmail = amont.EmetteurEmail
+				engObjet = amont.Objet
+				engID = &amont.ID
+			}
+		}
+	}
+	if toEmail == "" && d.EngagementID != nil {
 		if eng, err := e.Store.GetEngagement(ctx, *d.EngagementID); err == nil && eng != nil {
 			engObjet = eng.Objet
 			engID = &eng.ID
@@ -197,6 +257,11 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 		_ = e.Store.Pool.QueryRow(ctx,
 			`SELECT sender FROM messages WHERE thread_id=$1 AND NOT outbound ORDER BY sent_at DESC LIMIT 1`,
 			*d.ThreadID).Scan(&toEmail)
+	}
+	if engObjet == "" && d.ThreadID != nil {
+		if t, err := e.Store.GetThread(ctx, *d.ThreadID); err == nil {
+			engObjet = strings.TrimPrefix(t.Subject, "RE: ")
+		}
 	}
 	accountEmail, _ := e.Channel.AccountEmail(ctx)
 	if toEmail == "" || strings.EqualFold(toEmail, accountEmail) {
