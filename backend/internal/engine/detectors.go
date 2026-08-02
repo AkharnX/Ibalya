@@ -121,8 +121,13 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 		if err != nil {
 			continue
 		}
+		if last == nil {
+			// la promesse elle-même est le premier signal : une promesse
+			// fraîche n'est pas « à risque » (anti-faux-positif CDC 11)
+			last = &eng.CreeLe
+		}
 		fenetre := now.AddDate(0, 0, -p.HorizonJours/2-1)
-		if last != nil && last.After(fenetre) {
+		if last.After(fenetre) {
 			continue // signal récent → pas de risque
 		}
 		score := 0.7
@@ -153,7 +158,8 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, today string) (int, error) {
 	rows, err := e.Store.Pool.Query(ctx, `
 		SELECT DISTINCT t.id, t.subject, t.last_message_at, t.response_rhythm_hours,
-		       (SELECT m.sender FROM messages m WHERE m.thread_id=t.id AND NOT m.outbound ORDER BY m.sent_at DESC LIMIT 1)
+		       (SELECT m.sender FROM messages m WHERE m.thread_id=t.id AND NOT m.outbound ORDER BY m.sent_at DESC LIMIT 1),
+		       coalesce((SELECT m.outbound FROM messages m WHERE m.thread_id=t.id ORDER BY m.sent_at DESC LIMIT 1), false)
 		FROM threads t
 		JOIN engagements e ON e.thread_id = t.id AND e.statut IN ('ouvert','confirme','en_retard')
 		WHERE NOT t.excluded AND t.last_message_at IS NOT NULL`)
@@ -162,16 +168,17 @@ func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, toda
 	}
 	defer rows.Close()
 	type row struct {
-		id         int64
-		subject    string
-		lastMsg    time.Time
-		rhythm     *float64
-		lastSender *string
+		id           int64
+		subject      string
+		lastMsg      time.Time
+		rhythm       *float64
+		lastSender   *string
+		lastOutbound bool
 	}
 	var list []row
 	for rows.Next() {
 		var r row
-		if err := rows.Scan(&r.id, &r.subject, &r.lastMsg, &r.rhythm, &r.lastSender); err != nil {
+		if err := rows.Scan(&r.id, &r.subject, &r.lastMsg, &r.rhythm, &r.lastSender, &r.lastOutbound); err != nil {
 			return 0, err
 		}
 		list = append(list, r)
@@ -207,7 +214,8 @@ func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, toda
 			Titre: fmt.Sprintf("Silence anormal depuis %d jour(s)", jours),
 			Detail: fmt.Sprintf("Fil « %s » (%s) : sans réponse depuis %d jour(s), au-delà du rythme habituel.",
 				r.subject, interlocuteur, jours),
-			Payload: mustJSON(map[string]any{"interlocuteur": interlocuteur, "jours_silence": jours}),
+			Payload: mustJSON(map[string]any{"interlocuteur": interlocuteur, "jours_silence": jours,
+				"dernier_sortant": r.lastOutbound}),
 		}
 		key := fmt.Sprintf("silence_anormal:%d:%s", r.id, today)
 		if id, _ := e.Store.CreateDetection(ctx, d, key); id != 0 {

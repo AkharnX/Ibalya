@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -98,7 +99,11 @@ func (e *Engine) RunExtraction(ctx context.Context, batchSize int) (ExtractStats
 					st.EvenementsAjoutes++
 				}
 			}
-			_ = e.Store.MarkMessage(ctx, m.ID, "analyzed", nil)
+			// si le marquage échoue, on sort : sinon le même lot serait
+			// refetché indéfiniment (boucle infinie sous cycleMu)
+			if err := e.Store.MarkMessage(ctx, m.ID, "analyzed", nil); err != nil {
+				return st, fmt.Errorf("marquage message %d: %w", m.ID, err)
+			}
 			st.MessagesAnalyses++
 		}
 	}
@@ -158,6 +163,9 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	if err != nil {
 		log.Printf("extraction: création engagement: %v", err)
 		return false
+	}
+	if id == 0 {
+		return false // doublon : déjà extrait de ce message
 	}
 	_ = e.Store.AddEvent(ctx, id, "cree", &m.ID, map[string]any{"confiance": eng.Confiance})
 	return true

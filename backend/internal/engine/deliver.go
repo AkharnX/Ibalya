@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"agentops/backend/internal/llm"
 	"agentops/backend/internal/store"
 )
@@ -145,7 +147,6 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 		if draft := e.maybeDraft(ctx, d); draft != nil {
 			dc.Brouillons = append(dc.Brouillons, *draft)
 		}
-		_ = e.Store.SetDetectionStatus(ctx, d.ID, "au_digest")
 	}
 
 	engs, err := e.Store.ListEngagements(ctx, []string{"en_retard", "ouvert", "confirme"})
@@ -167,6 +168,11 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 
 	if _, err := e.Store.SaveReport(ctx, "digest_"+dtype, dc); err != nil {
 		return nil, err
+	}
+	// les détections ne sont consommées qu'une fois le rapport sauvegardé :
+	// en cas d'échec, elles restent « nouvelle » et reviendront au prochain digest
+	for _, d := range dets {
+		_ = e.Store.SetDetectionStatus(ctx, d.ID, "au_digest")
 	}
 	e.Store.Audit(ctx, "agent", "digest_genere", map[string]any{
 		"type": dtype, "detections": len(dc.Detections), "brouillons": len(dc.Brouillons)})
@@ -226,6 +232,17 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	case "silence_anormal", "echeance_a_risque", "contradiction", "orphelin":
 	default:
 		return nil
+	}
+	// silence : ne relancer l'interlocuteur que si c'est bien lui qu'on attend
+	// (dernier message sortant). Sinon c'est au dirigeant de répondre — un
+	// « je suis sans nouvelles » serait une inversion factuelle.
+	if d.Type == "silence_anormal" {
+		var p struct {
+			DernierSortant bool `json:"dernier_sortant"`
+		}
+		if json.Unmarshal(d.Payload, &p) != nil || !p.DernierSortant {
+			return nil
+		}
 	}
 	if has, _ := e.Store.HasActiveDraftForDetection(ctx, d.ID); has {
 		return nil
@@ -292,18 +309,25 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 }
 
 // SendDraft envoie un brouillon validé par le dirigeant (marche 3) et trace tout.
+// La réclamation du brouillon est atomique : deux validations simultanées
+// (double-clic) ne peuvent pas envoyer deux fois.
 func (e *Engine) SendDraft(ctx context.Context, draftID int64) error {
-	d, err := e.Store.GetDraft(ctx, draftID)
+	var d store.Draft
+	err := e.Store.Pool.QueryRow(ctx, `UPDATE drafts SET statut='envoye', sent_at=now()
+		WHERE id=$1 AND statut IN ('propose','valide')
+		RETURNING id, detection_id, engagement_id, to_email, subject, body`, draftID).
+		Scan(&d.ID, &d.DetectionID, &d.EngagementID, &d.ToEmail, &d.Subject, &d.Body)
+	if err == pgx.ErrNoRows {
+		return fmt.Errorf("brouillon %d déjà traité ou introuvable", draftID)
+	}
 	if err != nil {
 		return err
 	}
-	if d.Statut != "propose" && d.Statut != "valide" {
-		return fmt.Errorf("brouillon %d au statut « %s » : envoi impossible", draftID, d.Statut)
-	}
 	if err := e.Channel.Send(ctx, d.ToEmail, d.Subject, d.Body); err != nil {
+		// échec d'envoi : on rend le brouillon validable à nouveau
+		_ = e.Store.SetDraftStatus(ctx, draftID, "propose", false)
 		return fmt.Errorf("envoi: %w", err)
 	}
-	_ = e.Store.SetDraftStatus(ctx, draftID, "envoye", true)
 	if d.EngagementID != nil {
 		_ = e.Store.AddEvent(ctx, *d.EngagementID, "relance", nil, map[string]any{"draft_id": draftID})
 	}

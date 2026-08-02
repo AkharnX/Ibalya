@@ -70,6 +70,9 @@ CREATE TABLE IF NOT EXISTS engagements (
   maj_le TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_engagements_statut ON engagements(statut);
+-- dédoublonnage : un message retraité ne recrée pas les mêmes engagements
+CREATE UNIQUE INDEX IF NOT EXISTS uq_engagements_source
+  ON engagements(source_message_id, objet) WHERE source_message_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS engagement_events (
   id BIGSERIAL PRIMARY KEY,

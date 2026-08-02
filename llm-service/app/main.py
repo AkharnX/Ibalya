@@ -37,7 +37,8 @@ class OpenEngagement(BaseModel):
 class ExtractRequest(BaseModel):
     messages: list[MessageIn]
     open_engagements: list[OpenEngagement] | None = None
-    capsule: dict | None = None
+    # Any : une capsule difforme ne doit JAMAIS faire échouer l'extraction
+    capsule: object = None
     account_email: str = ""
 
     @property
@@ -79,7 +80,7 @@ async def extract(req: ExtractRequest):
     payload = {
         "date_du_jour": date.today().isoformat(),
         "compte_du_dirigeant": req.account_email,
-        "capsule_client": req.capsule or {},
+        "capsule_client": req.capsule if isinstance(req.capsule, dict) else {},
         "engagements_ouverts": [e.model_dump() for e in req.engagements_ouverts],
         "messages": [m.model_dump() for m in req.messages],
     }
@@ -126,7 +127,10 @@ async def capsule(req: CapsuleRequest):
     except Exception as exc:  # noqa: BLE001
         log.error("capsule: %s", exc)
         raise HTTPException(status_code=502, detail=f"fournisseur LLM: {exc}") from exc
-    return {"facts": raw.get("facts", raw)}
+    facts = raw.get("facts", raw)
+    if not isinstance(facts, dict):
+        raise HTTPException(status_code=502, detail="capsule non conforme (facts doit être un objet)")
+    return {"facts": facts}
 
 
 class DraftRequest(BaseModel):

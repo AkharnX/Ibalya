@@ -78,6 +78,9 @@ func (s *Store) SetThreadRhythm(ctx context.Context, id int64, hours float64) er
 
 // InsertMessage retourne (id, inséré). inséré=false si déjà connu (dédoublonnage EF-11).
 func (s *Store) InsertMessage(ctx context.Context, m Message) (int64, bool, error) {
+	if m.Recipients == nil {
+		m.Recipients = []string{} // NOT NULL en base : un message sans To/Cc reste ingérable
+	}
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO messages
 		(thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, status)
@@ -159,9 +162,14 @@ func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, erro
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO engagements
 		(emetteur_id, destinataire_id, objet, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id, cree_le, maj_le)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12) RETURNING id`,
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
+		ON CONFLICT (source_message_id, objet) WHERE source_message_id IS NOT NULL DO NOTHING
+		RETURNING id`,
 		e.EmetteurID, e.DestinataireID, e.Objet, e.Echeance, e.EcheanceInferee, e.EcheanceConfirmee,
 		e.Statut, e.Confiance, e.Priorite, e.SourceMessageID, e.ThreadID, e.CreeLe).Scan(&id)
+	if err == pgx.ErrNoRows {
+		return 0, nil // doublon : engagement déjà extrait de ce message
+	}
 	return id, err
 }
 

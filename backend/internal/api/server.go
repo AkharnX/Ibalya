@@ -271,6 +271,17 @@ func (s *Server) putCapsule(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, err.Error())
 		return
 	}
+	// la capsule conditionne l'extraction : n'accepter que des objets JSON
+	for name, raw := range map[string]json.RawMessage{"facts": body.Facts, "intentions": body.Intentions} {
+		if raw == nil {
+			continue
+		}
+		var obj map[string]any
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			httpError(w, 400, name+" doit être un objet JSON")
+			return
+		}
+	}
 	if err := s.Store.UpdateCapsule(r.Context(), body.Facts, body.Intentions); err != nil {
 		httpError(w, 500, err.Error())
 		return
@@ -615,7 +626,24 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	for k, v := range body {
 		switch k {
-		case "seuil_publication", "digest_type", "digest_email":
+		case "seuil_publication":
+			f, err := strconv.ParseFloat(strings.TrimSpace(strings.ReplaceAll(v, ",", ".")), 64)
+			if err != nil || f < 0 || f > 1 {
+				httpError(w, 400, "le seuil de publication doit être un nombre entre 0 et 1")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, strconv.FormatFloat(f, 'f', 2, 64))
+		case "digest_type":
+			if v != "quotidien" && v != "hebdo" {
+				httpError(w, 400, "digest_type: quotidien ou hebdo")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, v)
+		case "digest_email":
+			if v != "0" && v != "1" {
+				httpError(w, 400, "digest_email: 0 ou 1")
+				return
+			}
 			s.Store.SetSetting(r.Context(), k, v)
 		}
 	}

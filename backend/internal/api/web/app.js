@@ -211,10 +211,14 @@ async function loadBrouillons() {
   } catch (e) { toast(e.message, true); }
 }
 
+const draftsInFlight = new Set();
 async function validateDraft(id) {
+  if (draftsInFlight.has(id)) return;
   if (!confirm('Envoyer ce message maintenant ?')) return;
+  draftsInFlight.add(id);
   try { await api('/drafts/' + id + '/validate', { method: 'POST' }); toast('Message envoyé ✓'); loadBrouillons(); }
   catch (e) { toast(e.message, true); }
+  finally { draftsInFlight.delete(id); }
 }
 
 async function rejectDraft(id) {
