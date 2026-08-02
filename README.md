@@ -16,7 +16,8 @@ d'activité, des digests et des brouillons d'action validables d'un clic.
 | 3. Graphe + horloge | `backend/internal/engine` | Liens de dépendance par heuristique + confirmation, 5 détecteurs |
 | 4. Livrables | `backend/internal/engine` + `api` | Miroir J+1, capsule hybride, digest, alertes, brouillons (marche 3) |
 
-- **Backend Go** : ingestion, persistance (PostgreSQL), orchestration, détecteurs, API + tableau de bord sur le port **9999**.
+- **Backend Go** : ingestion, persistance (PostgreSQL), orchestration, détecteurs, API sur le port **9999**.
+- **Frontend React** (`frontend/`, Vite + react-router) : SPA 6 pages (Pilotage, Engagements, Alertes, Miroir, Agent, Réglages), buildée dans `frontend/dist` et servie par le backend. `make front` pour builder, `make front-dev` pour le hot-reload.
 - **Service LLM Python** (127.0.0.1:8092, jamais exposé) : extraction, capsule, brouillons. Fournisseur derrière une abstraction (`LLM_PROVIDER=mistral|mock`).
 - MVP **mono-client** : un déploiement = une PME.
 
@@ -25,6 +26,7 @@ d'activité, des digests et des brouillons d'action validables d'un clic.
 ```bash
 cp .env.example .env        # renseigner ADMIN_TOKEN, MISTRAL_API_KEY, GOOGLE_CLIENT_ID/SECRET
 make db                     # PostgreSQL (Docker, 127.0.0.1:5435)
+make front                  # build du frontend React → frontend/dist
 make run-llm                # service LLM (127.0.0.1:8092)
 make run-backend            # API + tableau de bord (:9999)
 ```

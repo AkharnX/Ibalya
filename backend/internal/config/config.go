@@ -15,6 +15,7 @@ type Config struct {
 	GoogleClientSecret string
 	Channel            string // gmail | fixture
 	FixturePath        string
+	FrontendDir        string
 	IngestInterval     int // minutes
 	DetectInterval     int // minutes
 	DigestHour         int
@@ -47,6 +48,7 @@ func Load() Config {
 		GoogleClientSecret: env("GOOGLE_CLIENT_SECRET", ""),
 		Channel:            env("CHANNEL", "gmail"),
 		FixturePath:        env("FIXTURE_PATH", ""),
+		FrontendDir:        env("FRONTEND_DIR", "frontend/dist"),
 		IngestInterval:     envInt("INGEST_INTERVAL_MINUTES", 15),
 		DetectInterval:     envInt("DETECT_INTERVAL_MINUTES", 30),
 		DigestHour:         envInt("DIGEST_HOUR", 7),

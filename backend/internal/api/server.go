@@ -5,12 +5,12 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
-	"embed"
 	"encoding/hex"
 	"encoding/json"
-	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -24,9 +24,6 @@ import (
 	"agentops/backend/internal/store"
 )
 
-//go:embed web
-var webFS embed.FS
-
 type Server struct {
 	Cfg      config.Config
 	Store    *store.Store
@@ -38,9 +35,9 @@ type Server struct {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
-	// tableau de bord statique
-	sub, _ := fs.Sub(webFS, "web")
-	mux.Handle("GET /", http.FileServer(http.FS(sub)))
+	// tableau de bord (SPA React buildée dans frontend/dist) : les routes
+	// client (/engagements, /alertes…) retombent sur index.html
+	mux.Handle("GET /", spaHandler(s.Cfg.FrontendDir))
 
 	// santé (sans auth)
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -786,6 +783,20 @@ func (s *Server) kpis(w http.ResponseWriter, r *http.Request) {
 		"digests_generes":            q(`SELECT count(*) FROM reports WHERE type LIKE 'digest_%'`),
 		"regles_apprises_actives":    q(`SELECT count(*) FROM learned_rules WHERE active`),
 		"incidents_critiques":        0, // cible : 0 — toute action passe par validation explicite
+	})
+}
+
+// spaHandler sert les fichiers statiques du build et renvoie index.html pour
+// toute route inconnue (routage côté client).
+func spaHandler(dir string) http.Handler {
+	fs := http.FileServer(http.Dir(dir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(dir, filepath.Clean("/"+r.URL.Path))
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(dir, "index.html"))
 	})
 }
 
