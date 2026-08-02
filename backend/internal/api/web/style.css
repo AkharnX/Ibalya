@@ -66,3 +66,18 @@ th { color: var(--muted); }
 
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ok); color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 10; }
 .toast.error-toast { background: var(--danger); }
+
+.help { color: var(--muted); font-size: 14px; margin: 4px 0 16px; max-width: 720px; line-height: 1.6; }
+.legend { margin-bottom: 16px; }
+.legend summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+.legend ul { margin: 10px 0 0 20px; color: var(--muted); font-size: 14px; }
+.legend li { margin-bottom: 6px; }
+.legend b { color: var(--text); }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip { background: var(--panel); border: 1px solid var(--border); border-radius: 99px; padding: 6px 14px; font-size: 14px; }
+.chip b { color: var(--accent); margin-left: 4px; }
+
+.tag.type { color: var(--accent); border-color: var(--accent); text-transform: none; }
+.context { background: var(--bg); border-left: 3px solid var(--accent); border-radius: 4px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+.draft-edit input { width: 100%; margin-bottom: 4px; }

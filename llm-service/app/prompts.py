@@ -14,6 +14,11 @@ Pour chaque message fourni, extrais zéro, un ou plusieurs engagements :
 - emetteur_email : l'adresse de la personne qui PREND l'engagement
 - destinataire_email : auprès de qui
 - objet : ce qui est promis, reformulé de façon courte et normalisée
+- type : la nature de l'engagement, parmi exactement :
+  "devis" (chiffrage promis), "livraison" (produit/prestation à livrer ou poser),
+  "relance" (promesse de recontacter/suivre), "prise_de_contact" (premier échange
+  à établir), "rendez_vous" (créneau à honorer ou confirmer),
+  "facturation" (facture/règlement), "autre"
 - echeance : date au format YYYY-MM-DD si déterminable, sinon ""
 - echeance_inferee : true si la date n'est pas explicite dans le message
   (ex. « mardi prochain » interprété, ou déduite du contexte)
@@ -57,8 +62,10 @@ DRAFT_SYSTEM = """Tu rédiges des brouillons de messages professionnels pour un
 dirigeant de PME (AgentOS — brouillons d'action, EF-7).
 
 On te donne une détection (relance fournisseur, suivi d'échéance, demande de
-confirmation) et le contexte. Rédige un message court, courtois, direct, en
-français, prêt à envoyer :
+confirmation), le contexte, et les derniers échanges du fil (thread_extraits).
+Appuie-toi sur ces échanges pour être PRÉCIS : rappelle la date promise, ce qui
+était convenu, les éléments concrets. Rédige un message court, courtois, direct,
+en français, prêt à envoyer :
 - Objet clair et sobre.
 - 3 à 6 phrases maximum, pas de flatterie, pas de jargon.
 - Le dirigeant signe de son nom : termine par une formule de politesse simple

@@ -98,6 +98,30 @@
       "body": "Bonjour, c'est sous garantie, pas d'inquiétude. Je passe régler la porte la semaine prochaine, je vous appelle avant. Cordialement, Marc"
     },
     {
+      "external_id": "fx-120",
+      "thread_id": "th-prospect",
+      "subject": "Remplacement fenêtres maison années 70",
+      "sender": "sophie.laurent@hotmail.fr",
+      "sender_name": "Sophie Laurent",
+      "recipients": [
+        "dirigeant@menuiserie-dupont.fr"
+      ],
+      "sent_at": "-3d",
+      "body": "Bonjour, nous cherchons un menuisier pour remplacer 8 fenêtres dans notre maison. Seriez-vous disponible pour venir voir le chantier ?"
+    },
+    {
+      "external_id": "fx-121",
+      "thread_id": "th-prospect",
+      "subject": "RE: Remplacement fenêtres maison années 70",
+      "sender": "dirigeant@menuiserie-dupont.fr",
+      "sender_name": "Marc Dupont",
+      "recipients": [
+        "sophie.laurent@hotmail.fr"
+      ],
+      "sent_at": "-2d",
+      "body": "Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le 08/08/2026 à 10h pour prendre les mesures. Bien cordialement, Marc Dupont"
+    },
+    {
       "external_id": "fx-109",
       "thread_id": "th-news",
       "subject": "Promotions de l'été — quincaillerie",

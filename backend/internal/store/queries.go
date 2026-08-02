@@ -159,13 +159,16 @@ func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, erro
 	if e.CreeLe.IsZero() {
 		e.CreeLe = time.Now()
 	}
+	if e.Type == "" {
+		e.Type = "autre"
+	}
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO engagements
-		(emetteur_id, destinataire_id, objet, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id, cree_le, maj_le)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
+		(emetteur_id, destinataire_id, objet, type, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id, cree_le, maj_le)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)
 		ON CONFLICT (source_message_id, objet) WHERE source_message_id IS NOT NULL DO NOTHING
 		RETURNING id`,
-		e.EmetteurID, e.DestinataireID, e.Objet, e.Echeance, e.EcheanceInferee, e.EcheanceConfirmee,
+		e.EmetteurID, e.DestinataireID, e.Objet, e.Type, e.Echeance, e.EcheanceInferee, e.EcheanceConfirmee,
 		e.Statut, e.Confiance, e.Priorite, e.SourceMessageID, e.ThreadID, e.CreeLe).Scan(&id)
 	if err == pgx.ErrNoRows {
 		return 0, nil // doublon : engagement déjà extrait de ce message
@@ -175,7 +178,7 @@ func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, erro
 
 const engagementSelect = `SELECT e.id, e.emetteur_id, e.destinataire_id,
 	coalesce(pe.email,''), coalesce(pd.email,''),
-	e.objet, e.echeance, e.echeance_inferee, e.echeance_confirmee, e.statut, e.confiance, e.priorite,
+	e.objet, e.type, e.echeance, e.echeance_inferee, e.echeance_confirmee, e.statut, e.confiance, e.priorite,
 	e.source_message_id, e.thread_id, e.cree_le, e.maj_le
 	FROM engagements e
 	LEFT JOIN persons pe ON pe.id = e.emetteur_id
@@ -187,7 +190,7 @@ func scanEngagements(rows pgx.Rows) ([]Engagement, error) {
 	for rows.Next() {
 		var e Engagement
 		if err := rows.Scan(&e.ID, &e.EmetteurID, &e.DestinataireID, &e.EmetteurEmail, &e.DestinataireEmail,
-			&e.Objet, &e.Echeance, &e.EcheanceInferee, &e.EcheanceConfirmee, &e.Statut, &e.Confiance,
+			&e.Objet, &e.Type, &e.Echeance, &e.EcheanceInferee, &e.EcheanceConfirmee, &e.Statut, &e.Confiance,
 			&e.Priorite, &e.SourceMessageID, &e.ThreadID, &e.CreeLe, &e.MajLe); err != nil {
 			return nil, err
 		}
@@ -480,13 +483,17 @@ func (s *Store) CreateDraft(ctx context.Context, d Draft) (int64, error) {
 }
 
 func (s *Store) ListDrafts(ctx context.Context, statut string) ([]Draft, error) {
-	q := `SELECT id, detection_id, engagement_id, to_email, subject, body, statut, created_at, sent_at FROM drafts`
+	q := `SELECT d.id, d.detection_id, d.engagement_id, d.to_email, d.subject, d.body, d.statut, d.created_at, d.sent_at,
+		coalesce(det.titre,''), coalesce(det.detail,''), coalesce(e.objet,'')
+		FROM drafts d
+		LEFT JOIN detections det ON det.id = d.detection_id
+		LEFT JOIN engagements e ON e.id = d.engagement_id`
 	var rows pgx.Rows
 	var err error
 	if statut != "" {
-		rows, err = s.Pool.Query(ctx, q+` WHERE statut=$1 ORDER BY id DESC`, statut)
+		rows, err = s.Pool.Query(ctx, q+` WHERE d.statut=$1 ORDER BY d.id DESC`, statut)
 	} else {
-		rows, err = s.Pool.Query(ctx, q+` ORDER BY id DESC`)
+		rows, err = s.Pool.Query(ctx, q+` ORDER BY d.id DESC`)
 	}
 	if err != nil {
 		return nil, err
@@ -495,12 +502,24 @@ func (s *Store) ListDrafts(ctx context.Context, statut string) ([]Draft, error) 
 	var out []Draft
 	for rows.Next() {
 		var d Draft
-		if err := rows.Scan(&d.ID, &d.DetectionID, &d.EngagementID, &d.ToEmail, &d.Subject, &d.Body, &d.Statut, &d.CreatedAt, &d.SentAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.DetectionID, &d.EngagementID, &d.ToEmail, &d.Subject, &d.Body, &d.Statut, &d.CreatedAt, &d.SentAt,
+			&d.DetectionTitre, &d.DetectionDetail, &d.EngagementObjet); err != nil {
 			return nil, err
 		}
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+// UpdateDraft modifie un brouillon encore en attente (retour : trouvé).
+// Le dirigeant doit pouvoir ajuster le message avant de valider l'envoi.
+func (s *Store) UpdateDraft(ctx context.Context, id int64, toEmail, subject, body string) (bool, error) {
+	tag, err := s.Pool.Exec(ctx, `UPDATE drafts SET to_email=$2, subject=$3, body=$4
+		WHERE id=$1 AND statut='propose'`, id, toEmail, subject, body)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 func (s *Store) GetDraft(ctx context.Context, id int64) (*Draft, error) {

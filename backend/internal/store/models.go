@@ -47,6 +47,7 @@ type Engagement struct {
 	EmetteurEmail     string     `json:"emetteur_email"`
 	DestinataireEmail string     `json:"destinataire_email"`
 	Objet             string     `json:"objet"`
+	Type              string     `json:"type"`
 	Echeance          *time.Time `json:"echeance"`
 	EcheanceInferee   bool       `json:"echeance_inferee"`
 	EcheanceConfirmee bool       `json:"echeance_confirmee"`
@@ -120,6 +121,10 @@ type Draft struct {
 	Statut       string     `json:"statut"`
 	CreatedAt    time.Time  `json:"created_at"`
 	SentAt       *time.Time `json:"sent_at"`
+	// contexte pour l'affichage : pourquoi ce brouillon existe
+	DetectionTitre  string `json:"detection_titre,omitempty"`
+	DetectionDetail string `json:"detection_detail,omitempty"`
+	EngagementObjet string `json:"engagement_objet,omitempty"`
 }
 
 type AuditEntry struct {

@@ -123,6 +123,7 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	}
 	eng := store.Engagement{
 		Objet:           strings.TrimSpace(ex.Objet),
+		Type:            normalizeType(ex.Type),
 		Statut:          "ouvert",
 		Confiance:       clamp01(ex.Confiance),
 		Priorite:        "normale",
@@ -196,6 +197,16 @@ func (e *Engine) applyUpdate(ctx context.Context, m store.Message, up llm.Engage
 		return false
 	}
 	return true
+}
+
+// normalizeType borne le type d'engagement au vocabulaire connu du produit.
+func normalizeType(t string) string {
+	switch strings.ToLower(strings.TrimSpace(t)) {
+	case "devis", "livraison", "relance", "prise_de_contact", "rendez_vous", "facturation":
+		return strings.ToLower(strings.TrimSpace(t))
+	default:
+		return "autre"
+	}
 }
 
 func clamp01(f float64) float64 {

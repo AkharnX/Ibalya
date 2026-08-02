@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS engagements (
   emetteur_id BIGINT REFERENCES persons(id),
   destinataire_id BIGINT REFERENCES persons(id),
   objet TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'autre',
   echeance DATE,
   echeance_inferee BOOLEAN NOT NULL DEFAULT false,
   echeance_confirmee BOOLEAN NOT NULL DEFAULT false,
@@ -73,6 +74,8 @@ CREATE INDEX IF NOT EXISTS idx_engagements_statut ON engagements(statut);
 -- dédoublonnage : un message retraité ne recrée pas les mêmes engagements
 CREATE UNIQUE INDEX IF NOT EXISTS uq_engagements_source
   ON engagements(source_message_id, objet) WHERE source_message_id IS NOT NULL;
+-- migration : typage des engagements (devis, relance, rendez_vous, ...)
+ALTER TABLE engagements ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'autre';
 
 CREATE TABLE IF NOT EXISTS engagement_events (
   id BIGSERIAL PRIMARY KEY,

@@ -73,10 +73,23 @@ class MockProvider(LLMProvider):
             inferee = True  # date relative : le vrai LLM la résoudrait, le mock la signale
         first_line = next((l.strip() for l in body.splitlines() if len(l.strip()) > 20), "")
         objet = (m.get("subject") or "").removeprefix("RE: ").strip() or first_line[:120]
+        if "devis" in low:
+            etype = "devis"
+        elif "rendez-vous" in low or "rdv" in low or "entretien" in low:
+            etype = "rendez_vous"
+        elif "facture" in low or "règlement" in low:
+            etype = "facturation"
+        elif "je vous rappelle" in low or "je reviens vers vous" in low:
+            etype = "relance"
+        elif "pose" in low or "livr" in low or "install" in low:
+            etype = "livraison"
+        else:
+            etype = "autre"
         return [{
             "emetteur_email": m.get("sender", ""),
             "destinataire_email": (m.get("to") or "").split(",")[0].strip(),
             "objet": objet,
+            "type": etype,
             "echeance": echeance,
             "echeance_inferee": inferee if not echeance else False,
             "confiance": 0.85 if echeance else 0.7,

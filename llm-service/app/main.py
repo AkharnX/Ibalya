@@ -50,6 +50,7 @@ class ExtractedEngagement(BaseModel):
     emetteur_email: str = ""
     destinataire_email: str = ""
     objet: str = ""
+    type: str = "autre"
     echeance: str = ""
     echeance_inferee: bool = False
     confiance: float = 0.0
@@ -141,7 +142,8 @@ class DraftRequest(BaseModel):
     to_email: str = ""
     to_name: str = ""
     from_email: str = ""
-    capsule: dict | None = None
+    capsule: object = None
+    thread_extraits: list[str] | None = None
 
 
 @app.post("/draft")

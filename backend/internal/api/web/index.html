@@ -25,6 +25,7 @@
 
   <nav>
     <button data-tab="apercu" class="active">Aperçu</button>
+    <button data-tab="pilotage">Pilotage</button>
     <button data-tab="miroir">Miroir</button>
     <button data-tab="engagements">Engagements</button>
     <button data-tab="detections">Détections</button>
@@ -49,6 +50,20 @@
       </div>
     </section>
 
+    <section id="tab-pilotage" class="hidden">
+      <h2>Pilotage <span class="muted">— l'essentiel, actionnable en un clic</span></h2>
+      <p class="help">Cette vue de synthèse rassemble ce qui demande votre attention : les dossiers en retard, les jalons des 14 prochains jours, et les actions que vous pouvez traiter immédiatement.</p>
+      <div id="pilotage-alertes"></div>
+      <h3>Répartition des engagements</h3>
+      <div id="pilotage-types" class="chips"></div>
+      <h3>🔴 En retard</h3>
+      <div id="pilotage-retard"></div>
+      <h3>📅 Jalons à livrer (14 jours)</h3>
+      <div id="pilotage-jalons"></div>
+      <h3>⚡ Actions rapides</h3>
+      <div id="pilotage-quickwins"></div>
+    </section>
+
     <section id="tab-miroir" class="hidden">
       <h2>Miroir d'activité <span class="muted">— vos 30 derniers jours</span></h2>
       <div id="miroir"></div>
@@ -69,7 +84,18 @@
     </section>
 
     <section id="tab-detections" class="hidden">
-      <h2>Détections</h2>
+      <h2>Détections <span class="muted">— ce que l'agent surveille pour vous</span></h2>
+      <p class="help">L'agent scrute vos engagements en continu et vous alerte dans 5 situations précises.
+      Chaque détection porte un score de fiabilité : en dessous de votre seuil, elle reste ici sans jamais polluer votre digest.</p>
+      <details class="legend"><summary>Les 5 types d'alerte expliqués</summary>
+        <ul>
+          <li><b>Échéance à risque</b> — une promesse arrive à échéance sans aucun signe d'avancement récent.</li>
+          <li><b>Silence anormal</b> — un fil avec un engagement en cours ne répond plus depuis plus longtemps que son rythme habituel.</li>
+          <li><b>Contradiction</b> — une promesse faite à un client devient intenable à cause d'un retard en amont (fournisseur, prestataire).</li>
+          <li><b>Orphelin</b> — une promesse détectée mais jamais suivie d'effet : ni confirmation, ni livraison, ni relance. Les oublis, tout simplement.</li>
+          <li><b>Surcharge</b> — trop d'échéances concentrées sur la même personne la même semaine.</li>
+        </ul>
+      </details>
       <div id="detections"></div>
     </section>
 
@@ -84,8 +110,10 @@
     </section>
 
     <section id="tab-capsule" class="hidden">
-      <h2>Capsule de contexte</h2>
-      <p class="muted">Voici ce que je comprends de votre activité. Corrigez-moi : chaque correction améliore l'extraction et la priorisation.</p>
+      <h2>Capsule de contexte <span class="muted">— la fiche d'identité de votre activité</span></h2>
+      <p class="help">La capsule, c'est ce que l'agent sait de votre entreprise : votre secteur, vos clients qui comptent, vos fournisseurs critiques, vos priorités du moment.
+      Il l'a déduite tout seul de vos emails — à vous de corriger ce qui est faux. Elle guide ensuite tout le reste :
+      ce qu'il extrait, ce qu'il priorise, et quand il vous alerte. Deux minutes ici valent des semaines de calibrage.</p>
       <h3>Faits (inférés, corrigeables)</h3>
       <textarea id="capsule-facts" rows="12"></textarea>
       <h3>Vos intentions</h3>
@@ -102,7 +130,10 @@
     </section>
 
     <section id="tab-regles" class="hidden">
-      <h2>Règles apprises <span class="muted">— lisibles, jamais de boîte noire</span></h2>
+      <h2>Règles apprises <span class="muted">— la mémoire de l'agent</span></h2>
+      <p class="help">Chaque fois que vous corrigez l'agent d'un geste (« ce n'est pas un engagement », « priorité haute », « ne plus m'alerter »),
+      il en tire une règle écrite en clair, listée ici. Pas de boîte noire : vous pouvez lire, comprendre et désactiver chaque règle.
+      C'est comme ça que l'agent se calibre sur votre réalité en 2 à 3 semaines.</p>
       <div id="regles"></div>
     </section>
 

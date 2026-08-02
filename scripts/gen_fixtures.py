@@ -101,6 +101,23 @@ messages = [
         "sent_at": days(7),
         "body": "Bonjour, c'est sous garantie, pas d'inquiétude. Je passe régler la porte la semaine prochaine, je vous appelle avant. Cordialement, Marc",
     },
+    # --- prospect : prise de contact + rendez-vous proposé ---
+    {
+        "external_id": "fx-120", "thread_id": "th-prospect",
+        "subject": "Remplacement fenêtres maison années 70",
+        "sender": "sophie.laurent@hotmail.fr", "sender_name": "Sophie Laurent",
+        "recipients": [DIRIGEANT],
+        "sent_at": days(3),
+        "body": "Bonjour, nous cherchons un menuisier pour remplacer 8 fenêtres dans notre maison. Seriez-vous disponible pour venir voir le chantier ?",
+    },
+    {
+        "external_id": "fx-121", "thread_id": "th-prospect",
+        "subject": "RE: Remplacement fenêtres maison années 70",
+        "sender": DIRIGEANT, "sender_name": "Marc Dupont",
+        "recipients": ["sophie.laurent@hotmail.fr"],
+        "sent_at": days(2),
+        "body": f"Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le {fr(TODAY + timedelta(days=6))} à 10h pour prendre les mesures. Bien cordialement, Marc Dupont",
+    },
     # --- newsletter : doit être exclue par le pré-filtre (EF-11) ---
     {
         "external_id": "fx-109", "thread_id": "th-news",

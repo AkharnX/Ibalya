@@ -49,6 +49,7 @@ type ExtractedEngagement struct {
 	EmetteurEmail     string  `json:"emetteur_email"`
 	DestinataireEmail string  `json:"destinataire_email"`
 	Objet             string  `json:"objet"`
+	Type              string  `json:"type"` // devis / livraison / relance / prise_de_contact / rendez_vous / facturation / autre
 	Echeance          string  `json:"echeance"` // YYYY-MM-DD ou ""
 	EcheanceInferee   bool    `json:"echeance_inferee"`
 	Confiance         float64 `json:"confiance"`
@@ -107,6 +108,8 @@ type DraftRequest struct {
 	ToName         string          `json:"to_name"`
 	FromEmail      string          `json:"from_email"`
 	Capsule        json.RawMessage `json:"capsule"`
+	// derniers échanges du fil : le brouillon doit coller à la conversation
+	ThreadExtraits []string `json:"thread_extraits"`
 }
 
 type DraftResponse struct {

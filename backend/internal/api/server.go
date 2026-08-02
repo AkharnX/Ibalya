@@ -82,8 +82,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/digest/latest", s.auth(s.latestDigest))
 	mux.HandleFunc("POST /api/digest/generate", s.auth(s.generateDigest))
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
+	mux.HandleFunc("PATCH /api/drafts/{id}", s.auth(s.patchDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/validate", s.auth(s.validateDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/reject", s.auth(s.rejectDraft))
+
+	// vue de pilotage (format CODIR)
+	mux.HandleFunc("GET /api/pilotage", s.auth(s.pilotage))
 
 	// règles apprises, personnes, audit, réglages
 	mux.HandleFunc("GET /api/rules", s.auth(s.listRules))
@@ -649,6 +653,87 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Store.Audit(r.Context(), "dirigeant", "reglages_modifies", body)
 	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// patchDraft permet au dirigeant d'ajuster un brouillon avant validation.
+func (s *Server) patchDraft(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	var body struct {
+		ToEmail string `json:"to_email"`
+		Subject string `json:"subject"`
+		Body    string `json:"body"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	if strings.TrimSpace(body.ToEmail) == "" || strings.TrimSpace(body.Body) == "" {
+		httpError(w, 400, "destinataire et corps du message obligatoires")
+		return
+	}
+	ok, err := s.Store.UpdateDraft(r.Context(), id, strings.TrimSpace(body.ToEmail), strings.TrimSpace(body.Subject), body.Body)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if !ok {
+		httpError(w, 409, "brouillon introuvable ou déjà traité")
+		return
+	}
+	s.Store.Audit(r.Context(), "dirigeant", "brouillon_modifie", map[string]any{"draft_id": id})
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// pilotage agrège la vue CODIR : jalons à livrer, retards, répartition par
+// type, et actions à un clic (quick wins).
+func (s *Server) pilotage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	seuil := s.Engine.SeuilPublication(ctx)
+
+	engs, err := s.Store.ListEngagements(ctx, []string{"ouvert", "confirme", "en_retard"})
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	parType := map[string]int{}
+	var enRetard, jalons, aConfirmer []store.Engagement
+	horizon := time.Now().AddDate(0, 0, 14)
+	for _, e := range engs {
+		if e.Confiance < seuil {
+			continue // règle anti-churn : rien sous le seuil
+		}
+		parType[e.Type]++
+		switch {
+		case e.Statut == "en_retard":
+			enRetard = append(enRetard, e)
+		case e.Echeance != nil && e.EcheanceInferee && !e.EcheanceConfirmee:
+			aConfirmer = append(aConfirmer, e)
+		case e.Echeance != nil && e.EcheanceConfirmee && e.Echeance.Before(horizon):
+			jalons = append(jalons, e)
+		}
+	}
+
+	drafts, _ := s.Store.ListDrafts(ctx, "propose")
+	liens, _ := s.Store.ListLinks(ctx, "candidat")
+	criticals, _ := s.Store.ListDetections(ctx, []string{"nouvelle", "au_digest"}, seuil, 10)
+	var alertes []store.Detection
+	for _, d := range criticals {
+		if d.Critique {
+			alertes = append(alertes, d)
+		}
+	}
+
+	writeJSON(w, map[string]any{
+		"alertes_critiques":     alertes,
+		"en_retard":             enRetard,
+		"jalons_14_jours":       jalons,
+		"par_type":              parType,
+		"quick_wins": map[string]any{
+			"brouillons_a_valider":   drafts,
+			"echeances_a_confirmer":  aConfirmer,
+			"liens_a_trancher":       liens,
+		},
+	})
 }
 
 // kpis calcule les indicateurs des critères de réussite (CDC section 14).

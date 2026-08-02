@@ -289,10 +289,27 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	if capsule != nil {
 		facts = capsule.Facts
 	}
+	// les derniers échanges du fil donnent au brouillon un ancrage concret
+	extraits := []string{}
+	if d.ThreadID != nil {
+		if msgs, err := e.Store.ThreadMessages(ctx, *d.ThreadID); err == nil {
+			if len(msgs) > 3 {
+				msgs = msgs[len(msgs)-3:]
+			}
+			for _, m := range msgs {
+				body := m.Body
+				if len(body) > 300 {
+					body = body[:300] + "…"
+				}
+				extraits = append(extraits, fmt.Sprintf("[%s] %s : %s",
+					m.SentAt.Format("02/01"), m.Sender, body))
+			}
+		}
+	}
 	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{
 		DetectionType: d.Type, DetectionTitre: d.Titre, DetectionDetail: d.Detail,
 		EngagementObjet: engObjet, ToEmail: toEmail, ToName: toName,
-		FromEmail: accountEmail, Capsule: facts,
+		FromEmail: accountEmail, Capsule: facts, ThreadExtraits: extraits,
 	})
 	if err != nil {
 		return nil

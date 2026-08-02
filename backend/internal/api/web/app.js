@@ -50,6 +50,7 @@ const fmtDT = (s) => s ? new Date(s).toLocaleString('fr-FR') : '—';
 
 const STATUT_LABELS = { ouvert: 'Ouvert', confirme: 'Confirmé', livre: 'Livré', en_retard: 'En retard', abandonne: 'Abandonné' };
 const DET_LABELS = { echeance_a_risque: 'Échéance à risque', silence_anormal: 'Silence anormal', contradiction: 'Contradiction', orphelin: 'Orphelin', surcharge: 'Surcharge' };
+const TYPE_LABELS = { devis: '📋 Devis', livraison: '📦 Livraison', relance: '🔁 Relance', prise_de_contact: '🤝 Prise de contact', rendez_vous: '📆 Rendez-vous', facturation: '💶 Facturation', autre: 'Autre' };
 
 // --- Aperçu ---
 async function loadApercu() {
@@ -111,6 +112,61 @@ async function genDigest() {
   } catch (e) { toast(e.message, true); }
 }
 
+// --- Pilotage (vue CODIR) ---
+function miniEng(e, action) {
+  const ech = e.echeance ? fmtDate(e.echeance) : 'sans échéance';
+  return `<div class="item">
+    <span class="tag type">${TYPE_LABELS[e.type] || e.type}</span>
+    ${e.priorite === 'haute' ? '<span class="tag prio">Priorité haute</span>' : ''}
+    <b>${esc(e.objet)}</b>
+    <p>${esc(e.destinataire_email || e.emetteur_email || '')} · ${ech}</p>
+    ${action || ''}
+  </div>`;
+}
+
+async function loadPilotage() {
+  try {
+    const p = await api('/pilotage');
+    $('pilotage-alertes').innerHTML = (p.alertes_critiques || []).map((d) =>
+      `<div class="item critical"><span class="tag">${DET_LABELS[d.type] || d.type}</span> <b>${esc(d.titre)}</b><p>${esc(d.detail)}</p></div>`).join('');
+
+    const types = Object.entries(p.par_type || {}).sort((a, b) => b[1] - a[1]);
+    $('pilotage-types').innerHTML = types.map(([t, n]) =>
+      `<span class="chip">${TYPE_LABELS[t] || t} <b>${n}</b></span>`).join('') || '<p class="muted">Aucun engagement actif.</p>';
+
+    $('pilotage-retard').innerHTML = (p.en_retard || []).map((e) => miniEng(e,
+      `<div class="row-actions"><button onclick="patchEng(${e.id}, {statut:'livre'})">✓ C'est fait</button>
+       <button onclick="correct(${e.id}, 'pas_un_engagement')">✗ Pas un engagement</button></div>`)).join('')
+      || '<p class="muted">Rien en retard. 👌</p>';
+
+    $('pilotage-jalons').innerHTML = (p.jalons_14_jours || []).map((e) => miniEng(e)).join('')
+      || '<p class="muted">Aucun jalon confirmé sur les 14 prochains jours.</p>';
+
+    const qw = p.quick_wins || {};
+    let html = '';
+    for (const d of qw.brouillons_a_valider || []) {
+      html += `<div class="item draft"><span class="tag">✉ brouillon prêt</span> <b>${esc(d.subject)}</b>
+        <p>À ${esc(d.to_email)}${d.detection_titre ? ' · ' + esc(d.detection_titre) : ''}</p>
+        <div class="row-actions"><button class="primary" onclick="validateDraft(${d.id})">✓ Valider et envoyer</button>
+        <button onclick="switchTab('brouillons')">Voir / modifier</button></div></div>`;
+    }
+    for (const e of qw.echeances_a_confirmer || []) {
+      html += miniEng(e, `<div class="row-actions"><button class="primary" onclick="confirmEcheance(${e.id}, '${(e.echeance || '').slice(0, 10)}')">📅 Confirmer l'échéance</button></div>`);
+    }
+    for (const l of qw.liens_a_trancher || []) {
+      html += `<div class="item"><span class="tag candidat">lien à trancher</span>
+        <p><b>${esc(l.amont_objet)}</b> conditionne-t-il <b>${esc(l.aval_objet)}</b> ?</p>
+        <div class="row-actions"><button class="primary" onclick="linkAction(${l.id}, 'confirm').then(loadPilotage)">Oui</button>
+        <button onclick="linkAction(${l.id}, 'reject').then(loadPilotage)">Non</button></div></div>`;
+    }
+    $('pilotage-quickwins').innerHTML = html || '<p class="muted">Aucune action en attente — tout est traité.</p>';
+  } catch (e) { toast(e.message, true); }
+}
+
+function switchTab(name) {
+  document.querySelector(`nav button[data-tab="${name}"]`)?.click();
+}
+
 // --- Miroir ---
 async function loadMiroir() {
   try {
@@ -137,6 +193,7 @@ async function genMiroir() {
 function engagementCard(e) {
   const ech = e.echeance ? fmtDate(e.echeance) + (e.echeance_inferee && !e.echeance_confirmee ? ' <span class="tag warn-tag">inférée — à confirmer</span>' : '') : '—';
   return `<div class="item">
+    <span class="tag type">${TYPE_LABELS[e.type] || e.type}</span>
     <span class="tag ${e.statut}">${STATUT_LABELS[e.statut] || e.statut}</span>
     ${e.priorite === 'haute' ? '<span class="tag prio">Priorité haute</span>' : ''}
     <b>${esc(e.objet)}</b>
@@ -200,14 +257,46 @@ async function loadBrouillons() {
   try {
     const drafts = await api('/drafts?statut=propose');
     $('brouillons').innerHTML = (drafts || []).map((d) => `
-      <div class="item draft">
-        <b>À : ${esc(d.to_email)}</b> — <b>${esc(d.subject)}</b>
-        <pre>${esc(d.body)}</pre>
-        <div class="row-actions">
-          <button class="primary" onclick="validateDraft(${d.id})">✓ Valider et envoyer</button>
-          <button onclick="rejectDraft(${d.id})">✗ Rejeter</button>
+      <div class="item draft" id="draft-${d.id}">
+        ${d.detection_titre ? `<p class="context">💡 Pourquoi : ${esc(d.detection_titre)}${d.detection_detail ? ' — ' + esc(d.detection_detail) : ''}</p>` : ''}
+        ${d.engagement_objet ? `<p class="context">🔗 Engagement concerné : ${esc(d.engagement_objet)}</p>` : ''}
+        <div class="draft-view">
+          <b>À : ${esc(d.to_email)}</b> — <b>${esc(d.subject)}</b>
+          <pre>${esc(d.body)}</pre>
+          <div class="row-actions">
+            <button class="primary" onclick="validateDraft(${d.id})">✓ Valider et envoyer</button>
+            <button onclick="editDraft(${d.id})">✎ Modifier</button>
+            <button onclick="rejectDraft(${d.id})">✗ Rejeter</button>
+          </div>
+        </div>
+        <div class="draft-edit hidden">
+          <label>Destinataire</label><input id="draft-to-${d.id}" value="${esc(d.to_email)}">
+          <label>Objet</label><input id="draft-subject-${d.id}" value="${esc(d.subject)}">
+          <label>Message</label><textarea id="draft-body-${d.id}" rows="8">${esc(d.body)}</textarea>
+          <div class="row-actions">
+            <button class="primary" onclick="saveDraft(${d.id})">💾 Enregistrer</button>
+            <button onclick="editDraft(${d.id})">Annuler</button>
+          </div>
         </div>
       </div>`).join('') || '<p class="muted">Aucun brouillon en attente.</p>';
+  } catch (e) { toast(e.message, true); }
+}
+
+function editDraft(id) {
+  const card = $('draft-' + id);
+  card.querySelector('.draft-view').classList.toggle('hidden');
+  card.querySelector('.draft-edit').classList.toggle('hidden');
+}
+
+async function saveDraft(id) {
+  try {
+    await api('/drafts/' + id, { method: 'PATCH', body: JSON.stringify({
+      to_email: $('draft-to-' + id).value.trim(),
+      subject: $('draft-subject-' + id).value.trim(),
+      body: $('draft-body-' + id).value,
+    }) });
+    toast('Brouillon enregistré');
+    loadBrouillons();
   } catch (e) { toast(e.message, true); }
 }
 
@@ -358,7 +447,7 @@ async function runOnboarding() {
 }
 
 const loaders = {
-  apercu: loadApercu, miroir: loadMiroir, engagements: loadEngagements,
+  apercu: loadApercu, pilotage: loadPilotage, miroir: loadMiroir, engagements: loadEngagements,
   detections: loadDetections, brouillons: loadBrouillons, liens: loadLiens,
   capsule: loadCapsule, regles: loadRegles, kpis: loadKpis, audit: loadAudit, reglages: loadReglages,
 };
