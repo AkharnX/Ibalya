@@ -26,10 +26,18 @@ d'activité, des digests et des brouillons d'action validables d'un clic.
 ```bash
 cp .env.example .env        # renseigner ADMIN_TOKEN, MISTRAL_API_KEY, GOOGLE_CLIENT_ID/SECRET
 make db                     # PostgreSQL (Docker, 127.0.0.1:5435)
-make front                  # build du frontend React → frontend/dist
-make run-llm                # service LLM (127.0.0.1:8092)
-make run-backend            # API + tableau de bord (:9999)
+make restart-all            # build front + back, démarre les deux services
+make status                 # vérifie que tout répond
 ```
+
+Au quotidien : `make restart` après toute modification du backend (recompile et
+relance — évite le décalage binaire/processus), `make front` après une
+modification du frontend, `make demo` pour rejouer le scénario de démonstration,
+`make logs` pour suivre le journal, `make help` pour la liste complète.
+
+`make status` ne se contente pas du code HTTP : il vérifie que `/api/synthese`
+renvoie bien du JSON et non la page du tableau de bord — signe que le binaire en
+cours d'exécution connaît les routes actuelles.
 
 Tableau de bord : `http://<serveur>:9999` — se connecter avec `ADMIN_TOKEN`.
 

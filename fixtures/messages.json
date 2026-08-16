@@ -11,7 +11,7 @@
         "services-techniques@mairie-valbonne.fr"
       ],
       "sent_at": "-15d",
-      "body": "Bonjour, je vous confirme la pose des 12 fenêtres de l'école le 06/08/2026. L'équipe sera sur place dès 8h. Cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme la pose des 12 fenêtres de l'école le 20/08/2026. L'équipe sera sur place dès 8h. Cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-102",
@@ -35,7 +35,7 @@
         "dirigeant@menuiserie-dupont.fr"
       ],
       "sent_at": "-13d",
-      "body": "Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le 30/07/2026. Cordialement, le service commandes."
+      "body": "Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le 13/08/2026. Cordialement, le service commandes."
     },
     {
       "external_id": "fx-104",
@@ -119,7 +119,7 @@
         "sophie.laurent@hotmail.fr"
       ],
       "sent_at": "-2d",
-      "body": "Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le 08/08/2026 à 10h pour prendre les mesures. Bien cordialement, Marc Dupont"
+      "body": "Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le 22/08/2026 à 10h pour prendre les mesures. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-109",
@@ -144,7 +144,7 @@
         "client0@exemple.fr"
       ],
       "sent_at": "-4d",
-      "body": "Bonjour, je vous confirme l'intervention : pose des volets roulants le 03/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : pose des volets roulants le 17/08/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-201",
@@ -156,7 +156,7 @@
         "client1@exemple.fr"
       ],
       "sent_at": "-3d",
-      "body": "Bonjour, je vous confirme l'intervention : vernissage de l'escalier le 04/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : vernissage de l'escalier le 18/08/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-202",
@@ -168,7 +168,7 @@
         "client2@exemple.fr"
       ],
       "sent_at": "-2d",
-      "body": "Bonjour, je vous confirme l'intervention : installation des placards le 05/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : installation des placards le 19/08/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-203",
@@ -180,7 +180,7 @@
         "client3@exemple.fr"
       ],
       "sent_at": "-1d",
-      "body": "Bonjour, je vous confirme l'intervention : envoi de la facture définitive le 06/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : envoi de la facture définitive le 20/08/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-204",
@@ -192,7 +192,7 @@
         "client4@exemple.fr"
       ],
       "sent_at": "-0d",
-      "body": "Bonjour, je vous confirme l'intervention : pose du portail coulissant le 07/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : pose du portail coulissant le 21/08/2026. Bien cordialement, Marc Dupont"
     }
   ]
 }
