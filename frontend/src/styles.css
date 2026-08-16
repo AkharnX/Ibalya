@@ -2,24 +2,11 @@
    Parti pris : sidebar toujours sombre, angles droits, bleu cobalt, accents
    monospace. Thème sombre par défaut, thème clair disponible. */
 
-/* ── thème clair ── */
-.light {
-  --background: #f8f9fa;
-  --foreground: #111827;
-  --card: #ffffff;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --risk: #e11d48;      --risk-bg: #ffe4e6;
-  --delay: #d97706;     --delay-bg: #fef3c7;
-  --healthy: #059669;   --healthy-bg: #d1fae5;
-  --sidebar: #0b0f19;
-}
-
-/* ── thème sombre (défaut) ── */
+/* ── thème sombre (défaut) ──
+   Déclaré EN PREMIER : `:root` et `:root.light` doivent être dans cet ordre,
+   sinon (même spécificité) le sombre écraserait le clair. */
 :root {
+  color-scheme: dark; /* fait suivre les contrôles natifs : select, scrollbars… */
   --background: #0b0f19;
   --foreground: #f8f9fa;
   --card: #111827;
@@ -33,6 +20,15 @@
   --healthy: #34d399;   --healthy-bg: rgba(5, 150, 105, .15);
   --sidebar: #06080c;
 
+  /* couleurs de catégorie (identité du type, jamais la gravité) */
+  --t-livraison: #60a5fa;
+  --t-devis: #c084fc;
+  --t-facturation: #f472b6;
+  --t-rendez_vous: #34d399;
+  --t-prise_de_contact: #22d3ee;
+  --t-relance: #fbbf24;
+  --t-autre: #94a3b8;
+
   /* invariants */
   --sidebar-foreground: #f8f9fa;
   --sidebar-border: #1e293b;
@@ -41,15 +37,31 @@
   --radius: 0px; /* angles droits : signature du design */
 }
 
-/* couleurs de catégorie (identité du type d'engagement, jamais la gravité) */
-:root {
-  --t-livraison: #3b82f6;
-  --t-devis: #a855f7;
-  --t-facturation: #ec4899;
-  --t-rendez_vous: #10b981;
-  --t-prise_de_contact: #06b6d4;
-  --t-relance: #f59e0b;
-  --t-autre: #94a3b8;
+/* ── thème clair ── */
+:root.light {
+  color-scheme: light;
+  --background: #f8f9fa;
+  --foreground: #111827;
+  --card: #ffffff;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --risk: #be123c;      --risk-bg: #ffe4e6;
+  --delay: #b45309;     --delay-bg: #fef3c7;
+  --healthy: #047857;   --healthy-bg: #d1fae5;
+  /* la sidebar reste sombre dans les deux thèmes : c'est l'ancrage de marque */
+  --sidebar: #0b0f19;
+
+  /* teintes de catégorie assombries pour rester lisibles sur fond clair */
+  --t-livraison: #1d4ed8;
+  --t-devis: #7e22ce;
+  --t-facturation: #be185d;
+  --t-rendez_vous: #047857;
+  --t-prise_de_contact: #0e7490;
+  --t-relance: #b45309;
+  --t-autre: #475569;
 }
 
 *{box-sizing:border-box;}
@@ -283,12 +295,16 @@ tbody tr:hover{background:var(--secondary);}
 .eng-action:hover{text-decoration:underline;}
 
 /* ═══ boutons & champs ═══ */
-.btn{
+/* Tout <button> est stylé par défaut : sans cette règle, un bouton sans classe
+   hérite du rendu natif du navigateur (gris sombre illisible en thème sombre). */
+button,.btn{
   padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
   border:1px solid var(--border);background:var(--card);color:var(--foreground);
   transition:border-color .12s,background .12s;
 }
-.btn:hover{border-color:var(--primary);}
+button:hover,.btn:hover{border-color:var(--primary);}
+.ghost{background:none;border-color:transparent;color:var(--muted-foreground);padding:5px 9px;}
+.ghost:hover{color:var(--foreground);border-color:var(--border);background:var(--secondary);}
 .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);}
 .btn.primary:hover{opacity:.9;}
 .btn:disabled{opacity:.5;cursor:default;}
