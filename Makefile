@@ -68,10 +68,16 @@ status: ## vérifie que les services répondent vraiment (pas seulement le code 
 		&& echo "ok (:$(LLM_PORT))" || echo "INJOIGNABLE (:$(LLM_PORT))"
 	@printf "backend     : "; curl -sf http://127.0.0.1:$(API_PORT)/api/health >/dev/null 2>&1 \
 		&& echo "ok (:$(API_PORT))" || echo "INJOIGNABLE (:$(API_PORT))"
-	@printf "routes API  : "; ct=$$(curl -s -H "Authorization: Bearer $(ADMIN_TOKEN)" \
-		-o /dev/null -w '%{content_type}' http://127.0.0.1:$(API_PORT)/api/synthese); \
-		case "$$ct" in application/json*) echo "à jour (JSON)";; \
-		*) echo "PÉRIMÉES — le binaire en cours ne connaît pas /api/synthese (lancer make restart)";; esac
+	@printf "authentif.  : "; code=$$(curl -s -H "Authorization: Bearer $(ADMIN_TOKEN)" \
+		-o /dev/null -w '%{http_code}' http://127.0.0.1:$(API_PORT)/api/status); \
+		case "$$code" in 200) echo "ok (jeton du .env accepté)";; \
+		401) echo "REFUSÉE — le jeton du .env ne correspond pas à celui du processus (lancer make restart)";; \
+		*) echo "réponse inattendue ($$code)";; esac
+	@printf "routes API  : "; out=$$(curl -s -H "Authorization: Bearer $(ADMIN_TOKEN)" \
+		-w '\n%{http_code} %{content_type}' http://127.0.0.1:$(API_PORT)/api/synthese | tail -1); \
+		case "$$out" in "200 application/json"*) echo "à jour (JSON)";; \
+		*"text/html"*) echo "PÉRIMÉES — le binaire en cours ne connaît pas /api/synthese (lancer make restart)";; \
+		*) echo "réponse inattendue ($$out)";; esac
 
 logs: ## suit le journal du backend
 	@tail -f $(LOGS)/backend.log

@@ -107,7 +107,7 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
 		if s.Cfg.AdminToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.Cfg.AdminToken)) != 1 {
 			httpError(w, 401, "jeton d'accès invalide")
 			return

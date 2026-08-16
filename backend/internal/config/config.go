@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -21,8 +22,11 @@ type Config struct {
 	DigestHour         int
 }
 
+// env lit une variable d'environnement en retirant les espaces parasites :
+// un espace en fin de ligne dans .env rendait le jeton d'accès inutilisable
+// (la valeur stockée différait de celle saisie par le dirigeant).
 func env(key, def string) string {
-	if v := os.Getenv(key); v != "" {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		return v
 	}
 	return def
