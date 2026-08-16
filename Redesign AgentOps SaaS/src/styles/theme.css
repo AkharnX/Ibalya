@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  /* Brand specific */
+  --color-brand: var(--brand);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-risk: var(--risk);
+  --color-risk-bg: var(--risk-bg);
+  --color-delay: var(--delay);
+  --color-delay-bg: var(--delay-bg);
+  --color-healthy: var(--healthy);
+  --color-healthy-bg: var(--healthy-bg);
+}
+
+:root {
+  --background: #f8f9fa;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  
+  /* Identité forte : Bleu Cobalt très saturé + angles droits */
+  --brand: #2563eb;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #111827;
+  --border: #e2e8f0;
+  --ring: #2563eb;
+  
+  /* L'identité visuelle passe par des angles stricts, "papier/document" */
+  --radius: 0px; 
+
+  /* Sidebar toujours sombre pour ancrer l'identité (façon Height/Discord) */
+  --sidebar: #0b0f19;
+  --sidebar-foreground: #f8f9fa;
+  --sidebar-border: #1e293b;
+
+  --risk: #e11d48;
+  --risk-bg: #ffe4e6;
+  --delay: #d97706;
+  --delay-bg: #fef3c7;
+  --healthy: #059669;
+  --healthy-bg: #d1fae5;
+}
+
+.dark {
+  --background: #0b0f19;
+  --foreground: #f8f9fa;
+  --card: #111827;
+  --card-foreground: #f8f9fa;
+  
+  --brand: #3b82f6;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #1e293b;
+  --secondary-foreground: #f8f9fa;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8f9fa;
+  --border: #334155;
+  --ring: #3b82f6;
+
+  --sidebar: #06080c;
+  --sidebar-foreground: #f8f9fa;
+  --sidebar-border: #1e293b;
+
+  --risk: #f43f5e;
+  --risk-bg: rgba(225, 29, 72, 0.15);
+  --delay: #fbbf24;
+  --delay-bg: rgba(217, 119, 6, 0.15);
+  --healthy: #34d399;
+  --healthy-bg: rgba(5, 150, 105, 0.15);
+}

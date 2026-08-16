@@ -41,7 +41,7 @@ export default function Agent() {
     <section>
       <div className="page-head">
         <div>
-          <h2>Votre agent</h2>
+          <h2>Règles métier</h2>
           <p className="help">Ce que l'agent sait de votre activité, et ce qu'il a appris de vos corrections. Tout est lisible et réversible — pas de boîte noire.</p>
         </div>
         <div className="page-actions"><button onClick={infer}>⟳ Ré-inférer les faits</button></div>

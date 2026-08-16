@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, AuthError, getToken, setToken } from './api'
-import Pilotage from './pages/Pilotage'
-import Engagements from './pages/Engagements'
+import Synthese from './pages/Synthese'
+import Suivi from './pages/Suivi'
+import AValider from './pages/AValider'
 import Alertes from './pages/Alertes'
-import Miroir from './pages/Miroir'
 import Agent from './pages/Agent'
 import Reglages from './pages/Reglages'
 
@@ -15,7 +15,7 @@ function Toaster() {
     const onToast = (e) => {
       setState(e.detail)
       clearTimeout(timer)
-      timer = setTimeout(() => setState(null), 4000)
+      timer = setTimeout(() => setState(null), 3200)
     }
     window.addEventListener('agentops:toast', onToast)
     return () => { window.removeEventListener('agentops:toast', onToast); clearTimeout(timer) }
@@ -24,94 +24,143 @@ function Toaster() {
   return <div className={'toast' + (state.isError ? ' error-toast' : '')}>{state.message}</div>
 }
 
+const Logo = () => (
+  <div className="logo"><div className="logo-mark">AO</div><span>AgentOps</span></div>
+)
+
 function Login({ error, onSubmit }) {
   const [value, setValue] = useState('')
   return (
     <div className="login">
       <div className="login-box">
-        <h1>Agent<span className="accent">Ops</span></h1>
+        <Logo />
         <p>Entrez votre jeton d'accès administrateur.</p>
-        <input
-          type="password" placeholder="Jeton d'accès" value={value} autoFocus
+        <input type="password" placeholder="Jeton d'accès" value={value} autoFocus
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSubmit(value.trim())}
-        />
-        <button className="primary" onClick={() => onSubmit(value.trim())}>Se connecter</button>
+          onKeyDown={(e) => e.key === 'Enter' && onSubmit(value.trim())} />
+        <button className="btn primary" onClick={() => onSubmit(value.trim())}>Se connecter</button>
         {error && <p className="error">{error}</p>}
       </div>
     </div>
   )
 }
 
-function StatusPill() {
-  const [st, setSt] = useState(null)
-  useEffect(() => {
-    const load = () => api('/status').then(setSt).catch(() => {})
-    load()
-    const t = setInterval(load, 60_000)
-    return () => clearInterval(t)
-  }, [])
-  if (!st) return <div className="pill">…</div>
-  const ok = st.canal_connecte && st.service_llm_ok
-  return (
-    <div className={'pill ' + (ok ? 'ok' : 'warn')}>
-      {(st.canal_connecte ? '● ' : '○ ') + st.canal}
-      {st.compte ? ' · ' + st.compte : ''}
-      {st.service_llm_ok ? '' : ' · LLM injoignable'}
-    </div>
-  )
-}
-
-const PAGES = [
-  ['/', 'Pilotage'],
-  ['/engagements', 'Engagements'],
-  ['/alertes', 'Alertes'],
-  ['/miroir', 'Miroir'],
-  ['/agent', 'Agent'],
-  ['/reglages', 'Réglages'],
+// Navigation groupée, reprise du redesign : Opérations / Extraction / Système.
+const NAV = [
+  ['Opérations', [
+    ['/', 'Synthèse', null],
+    ['/a-valider', 'À valider', 'messages_a_valider'],
+  ]],
+  ['Extraction', [
+    ['/suivi', 'Engagements', null],
+    ['/alertes', 'Alertes', 'alertes'],
+  ]],
+  ['Système', [
+    ['/agent', 'Règles métier', null],
+    ['/reglages', 'Réglages', null],
+  ]],
 ]
 
-export default function App() {
-  const [authed, setAuthed] = useState(null) // null = vérification en cours
-  const [loginError, setLoginError] = useState('')
+const TITRES = {
+  '/': 'Synthèse', '/a-valider': 'À valider', '/suivi': 'Engagements',
+  '/alertes': 'Alertes', '/agent': 'Règles métier', '/reglages': 'Réglages',
+}
 
-  const check = () => {
+export default function App() {
+  const [authed, setAuthed] = useState(null)
+  const [loginError, setLoginError] = useState('')
+  const [status, setStatus] = useState(null)
+  const [counts, setCounts] = useState({})
+  const [dark, setDark] = useState(() => localStorage.getItem('agentops_theme') !== 'light')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', !dark)
+    localStorage.setItem('agentops_theme', dark ? 'dark' : 'light')
+  }, [dark])
+
+  const check = useCallback(() => {
     if (!getToken()) { setAuthed(false); return }
     api('/status')
-      .then(() => setAuthed(true))
+      .then((st) => { setStatus(st); setAuthed(true) })
       .catch((e) => {
         setAuthed(false)
         setLoginError(e instanceof AuthError ? 'Jeton invalide.' : e.message)
       })
-  }
-  useEffect(check, [])
+  }, [])
+  useEffect(() => { check() }, [check])
+
+  // compteurs de la navigation, rafraîchis à chaque changement de page
+  const refreshCounts = useCallback(() => {
+    if (!getToken()) return
+    api('/status').then((st) => {
+      setStatus(st)
+      setCounts({
+        messages_a_valider: st.compteurs?.brouillons_proposes || 0,
+        alertes: st.compteurs?.detections_actives || 0,
+      })
+    }).catch(() => {})
+  }, [])
+  useEffect(() => { if (authed) refreshCounts() }, [authed, pathname, refreshCounts])
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
   if (authed === null) return null
   if (!authed) return <Login error={loginError} onSubmit={(t) => { setToken(t); setLoginError(''); check() }} />
 
+  const agentOk = status?.canal_connecte && status?.service_llm_ok
+
   return (
-    <>
-      <header>
-        <h1>Agent<span className="accent">Ops</span></h1>
-        <nav>
-          {PAGES.map(([path, label]) => (
-            <NavLink key={path} to={path} end={path === '/'}>{label}</NavLink>
+    <div className="shell">
+      <aside className={'sidebar' + (menuOpen ? ' open' : '')}>
+        <div className="sidebar-head"><Logo /></div>
+        <nav className="sidebar-nav">
+          {NAV.map(([groupe, items]) => (
+            <div key={groupe}>
+              <div className="nav-group">{groupe}</div>
+              {items.map(([path, label, countKey]) => (
+                <NavLink key={path} to={path} end={path === '/'}
+                  className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
+                  <span>{label}</span>
+                  {countKey && counts[countKey] > 0 && <span className="nav-count">{counts[countKey]}</span>}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
-        <StatusPill />
-      </header>
-      <main>
-        <Routes>
-          <Route path="/" element={<Pilotage />} />
-          <Route path="/engagements" element={<Engagements />} />
-          <Route path="/alertes" element={<Alertes />} />
-          <Route path="/miroir" element={<Miroir />} />
-          <Route path="/agent" element={<Agent />} />
-          <Route path="/reglages" element={<Reglages />} />
-          <Route path="*" element={<Pilotage />} />
-        </Routes>
-      </main>
+        <div className="sidebar-foot">
+          <div className="sidebar-user">
+            <b>{status?.compte ? status.compte.split('@')[0] : 'Dirigeant'}</b>
+            <span>{status?.compte || status?.canal || '—'}</span>
+          </div>
+          <button className="icon-btn" title={dark ? 'Thème clair' : 'Thème sombre'}
+            onClick={() => setDark(!dark)}>{dark ? '☀' : '☾'}</button>
+        </div>
+      </aside>
+
+      <div className="content">
+        <header className="topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="icon-btn burger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+            <h1>{TITRES[pathname] || 'AgentOps'}</h1>
+          </div>
+          <div className={'agent-live' + (agentOk ? '' : ' off')}>
+            <i />{agentOk ? 'Agent actif' : (status?.canal_connecte ? 'LLM injoignable' : 'Canal non connecté')}
+          </div>
+        </header>
+        <main>
+          <Routes>
+            <Route path="/" element={<Synthese />} />
+            <Route path="/a-valider" element={<AValider />} />
+            <Route path="/suivi" element={<Suivi />} />
+            <Route path="/alertes" element={<Alertes />} />
+            <Route path="/agent" element={<Agent />} />
+            <Route path="/reglages" element={<Reglages />} />
+            <Route path="*" element={<Synthese />} />
+          </Routes>
+        </main>
+      </div>
       <Toaster />
-    </>
+    </div>
   )
 }

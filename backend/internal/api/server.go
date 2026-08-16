@@ -83,7 +83,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/drafts/{id}/validate", s.auth(s.validateDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/reject", s.auth(s.rejectDraft))
 
-	// vue de pilotage (format CODIR)
+	// vues de la maquette : synthèse (direction) + suivi des engagements
+	mux.HandleFunc("GET /api/synthese", s.auth(s.synthese))
+	mux.HandleFunc("GET /api/suivi", s.auth(s.suivi))
+	mux.HandleFunc("POST /api/engagements/{id}/draft", s.auth(s.draftForEngagement))
 	mux.HandleFunc("GET /api/pilotage", s.auth(s.pilotage))
 
 	// règles apprises, personnes, audit, réglages
@@ -679,6 +682,41 @@ func (s *Server) patchDraft(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Store.Audit(r.Context(), "dirigeant", "brouillon_modifie", map[string]any{"draft_id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// synthese : vue direction — KPI, décisions à prendre, aperçu par catégorie.
+func (s *Server) synthese(w http.ResponseWriter, r *http.Request) {
+	syn, err := s.Engine.GenerateSynthese(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, syn)
+}
+
+// suivi : tous les engagements actifs, classés (en cours / retard / risque)
+// avec leur action suggérée.
+func (s *Server) suivi(w http.ResponseWriter, r *http.Request) {
+	list, err := s.Engine.Suivi(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, list)
+}
+
+// draftForEngagement rédige un message à la demande pour un engagement.
+func (s *Server) draftForEngagement(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Intent string `json:"intent"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+	draft, err := s.Engine.DraftForEngagement(r.Context(), pathID(r), body.Intent)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, draft)
 }
 
 // pilotage agrège la vue CODIR : jalons à livrer, retards, répartition par

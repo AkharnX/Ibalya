@@ -1,6 +1,8 @@
 // Package llm est le client de l'API interne du service LLM (Python isolé).
 // Règle de séparation du CDC section 4 : le backend Go ne parle jamais
 // directement au fournisseur de modèle.
+
+// TODO : Rajouter de la memoire afin de faire le fine-tuning du modèle sur les données de l'utilisateur (ex: historique des messages).
 package llm
 
 import (
@@ -110,6 +112,9 @@ type DraftRequest struct {
 	Capsule        json.RawMessage `json:"capsule"`
 	// derniers échanges du fil : le brouillon doit coller à la conversation
 	ThreadExtraits []string `json:"thread_extraits"`
+	// intention explicite (relancer, informer d'un retard, confirmer une date…)
+	Intent      string `json:"intent"`
+	IntentLabel string `json:"intent_label"`
 }
 
 type DraftResponse struct {

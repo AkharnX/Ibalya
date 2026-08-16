@@ -289,23 +289,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	if capsule != nil {
 		facts = capsule.Facts
 	}
-	// les derniers échanges du fil donnent au brouillon un ancrage concret
-	extraits := []string{}
-	if d.ThreadID != nil {
-		if msgs, err := e.Store.ThreadMessages(ctx, *d.ThreadID); err == nil {
-			if len(msgs) > 3 {
-				msgs = msgs[len(msgs)-3:]
-			}
-			for _, m := range msgs {
-				body := m.Body
-				if len(body) > 300 {
-					body = body[:300] + "…"
-				}
-				extraits = append(extraits, fmt.Sprintf("[%s] %s : %s",
-					m.SentAt.Format("02/01"), m.Sender, body))
-			}
-		}
-	}
+	extraits := e.threadExtraits(ctx, d.ThreadID)
 	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{
 		DetectionType: d.Type, DetectionTitre: d.Titre, DetectionDetail: d.Detail,
 		EngagementObjet: engObjet, ToEmail: toEmail, ToName: toName,
@@ -323,6 +307,72 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	draft.ID = id
 	e.Store.Audit(ctx, "agent", "brouillon_propose", map[string]any{"draft_id": id, "detection_id": d.ID, "to": toEmail})
 	return &draft
+}
+
+// threadExtraits renvoie les 3 derniers messages d'un fil, tronqués : ils
+// ancrent le brouillon dans la conversation réelle.
+func (e *Engine) threadExtraits(ctx context.Context, threadID *int64) []string {
+	extraits := []string{}
+	if threadID == nil {
+		return extraits
+	}
+	msgs, err := e.Store.ThreadMessages(ctx, *threadID)
+	if err != nil {
+		return extraits
+	}
+	if len(msgs) > 3 {
+		msgs = msgs[len(msgs)-3:]
+	}
+	for _, m := range msgs {
+		body := m.Body
+		if len(body) > 300 {
+			body = body[:300] + "…"
+		}
+		extraits = append(extraits, fmt.Sprintf("[%s] %s : %s", m.SentAt.Format("02/01"), m.Sender, body))
+	}
+	return extraits
+}
+
+// draftFor rédige un message pour un engagement selon l'action choisie.
+// Réutilise le brouillon déjà en attente s'il y en a un (clics répétés).
+func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionSuggeree) (*store.Draft, error) {
+	if existing, _ := e.Store.FindProposedDraftByEngagement(ctx, s.ID); existing != nil {
+		return existing, nil
+	}
+	accountEmail, _ := e.Channel.AccountEmail(ctx)
+	if strings.EqualFold(action.ToEmail, accountEmail) {
+		return nil, fmt.Errorf("le destinataire de l'action est votre propre adresse")
+	}
+	var facts json.RawMessage
+	if capsule, _ := e.Store.GetCapsule(ctx); capsule != nil {
+		facts = capsule.Facts
+	}
+	contexte := contexteLigne(s)
+	if s.Blocage != nil {
+		contexte += fmt.Sprintf(" — cause amont : « %s » (%s)", s.Blocage.AmontObjet, s.Blocage.AmontEmetteur)
+	}
+	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{
+		DetectionType: s.Categorie, DetectionTitre: action.Label, DetectionDetail: contexte,
+		EngagementObjet: s.Objet, ToEmail: action.ToEmail, FromEmail: accountEmail,
+		Capsule: facts, ThreadExtraits: e.threadExtraits(ctx, s.ThreadID),
+		Intent: action.Intent, IntentLabel: action.Label,
+	})
+	if err != nil {
+		return nil, err
+	}
+	engID := s.ID
+	draft := store.Draft{EngagementID: &engID, ToEmail: action.ToEmail,
+		Subject: resp.Subject, Body: resp.Body, Statut: "propose"}
+	id, err := e.Store.CreateDraft(ctx, draft)
+	if err != nil {
+		return nil, err
+	}
+	draft.ID = id
+	draft.EngagementObjet = s.Objet
+	draft.DetectionTitre = action.Label
+	e.Store.Audit(ctx, "agent", "brouillon_propose", map[string]any{
+		"draft_id": id, "engagement_id": s.ID, "intent": action.Intent, "to": action.ToEmail})
+	return &draft, nil
 }
 
 // SendDraft envoie un brouillon validé par le dirigeant (marche 3) et trace tout.

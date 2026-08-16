@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
-import { ConfBar, DET_LABELS, Empty, fmtDT } from '../components/ui'
+import { DET_LABELS, Empty, Reli, fmtDT } from '../components/ui'
 
 function DraftCard({ d, refresh }) {
   const [editing, setEditing] = useState(false)
@@ -103,7 +103,7 @@ export default function Alertes() {
                 <tr key={d.id}>
                   <td><b>{d.critique ? '⚠ ' : ''}{DET_LABELS[d.type] || d.type}</b></td>
                   <td className="obj">{d.titre}<div className="sub">{d.detail}</div></td>
-                  <td><ConfBar value={d.score} /></td>
+                  <td><Reli value={d.score} /></td>
                   <td className="sub">{fmtDT(d.created_at)}</td>
                   <td><button className="ghost" onClick={() => dismiss(d.id)}>✗ Écarter</button></td>
                 </tr>

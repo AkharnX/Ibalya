@@ -144,6 +144,8 @@ class DraftRequest(BaseModel):
     from_email: str = ""
     capsule: object = None
     thread_extraits: list[str] | None = None
+    intent: str = ""
+    intent_label: str = ""
 
 
 @app.post("/draft")

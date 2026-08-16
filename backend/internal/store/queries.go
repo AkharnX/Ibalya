@@ -542,6 +542,22 @@ func (s *Store) SetDraftStatus(ctx context.Context, id int64, statut string, sen
 	return err
 }
 
+// FindProposedDraftByEngagement évite de recréer un brouillon déjà en attente
+// pour le même engagement (clics répétés sur « proposer une action »).
+func (s *Store) FindProposedDraftByEngagement(ctx context.Context, engagementID int64) (*Draft, error) {
+	var d Draft
+	err := s.Pool.QueryRow(ctx, `SELECT id, detection_id, engagement_id, to_email, subject, body, statut, created_at, sent_at
+		FROM drafts WHERE engagement_id=$1 AND statut='propose' ORDER BY id DESC LIMIT 1`, engagementID).
+		Scan(&d.ID, &d.DetectionID, &d.EngagementID, &d.ToEmail, &d.Subject, &d.Body, &d.Statut, &d.CreatedAt, &d.SentAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (s *Store) HasActiveDraftForDetection(ctx context.Context, detectionID int64) (bool, error) {
 	var n int
 	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM drafts WHERE detection_id=$1 AND statut IN ('propose','valide','envoye')`, detectionID).Scan(&n)
