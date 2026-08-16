@@ -392,6 +392,28 @@ label{
 .draft-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
 .draft-loading{color:var(--muted-foreground);font-size:13px;font-family:var(--font-mono);}
 
+/* ── avis de l'agent sur un message modifié ── */
+.review{border:1px solid var(--border);border-left-width:2px;padding:12px 14px;background:var(--secondary);}
+.review.ok{border-left-color:var(--healthy);}
+.review.todo{border-left-color:var(--delay);}
+.review-verdict{margin:0 0 8px;font-size:12.5px;font-weight:600;}
+.review.ok .review-verdict{color:var(--healthy);}
+.review.todo .review-verdict{color:var(--delay);}
+.review-item{margin:0 0 7px;font-size:12.5px;color:var(--foreground);line-height:1.5;}
+.review-tag{
+  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+  padding:2px 6px;margin-right:7px;white-space:nowrap;
+  background:var(--card);color:var(--muted-foreground);
+}
+.review-tag.factuel{background:var(--risk-bg);color:var(--risk);}
+.review-tag.risque{background:var(--risk-bg);color:var(--risk);}
+.review-tag.manque{background:var(--delay-bg);color:var(--delay);}
+.review-sub{margin:10px 0 6px;font-size:12px;color:var(--muted-foreground);}
+.review-suggestion{
+  background:var(--card);border:1px solid var(--border);padding:10px 12px;margin:0 0 8px;
+  white-space:pre-wrap;font-size:12.5px;font-family:inherit;line-height:1.55;max-height:220px;overflow-y:auto;
+}
+
 .queue-row{
   display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
   padding:12px;background:var(--secondary);border:1px solid var(--border);cursor:pointer;

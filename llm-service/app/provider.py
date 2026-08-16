@@ -21,8 +21,10 @@ class MistralProvider(LLMProvider):
     BASE_URL = "https://api.mistral.ai/v1/chat/completions"
 
     def __init__(self) -> None:
-        self.api_key = os.environ.get("MISTRAL_API_KEY", "")
-        self.model = os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
+        # .strip() indispensable : un commentaire en fin de ligne dans .env laisse
+        # un espace dans la valeur vue par make, ce qui rend l'en-tête HTTP invalide.
+        self.api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
+        self.model = os.environ.get("MISTRAL_MODEL", "mistral-large-latest").strip()
         if not self.api_key:
             raise RuntimeError("MISTRAL_API_KEY manquant")
 
@@ -105,6 +107,20 @@ class MockProvider(LLMProvider):
                 ]}
             except Exception:
                 return {"results": []}
+        if "Tu relis un message" in system:
+            try:
+                req = json.loads(user)
+            except Exception:
+                req = {}
+            body = req.get("body") or ""
+            remarques = []
+            if "?" not in body:
+                remarques.append({"type": "manque",
+                                  "message": "Le message ne pose aucune question claire : le destinataire ne saura pas quoi répondre."})
+            if len(body) > 900:
+                remarques.append({"type": "ton", "message": "Message assez long — un dirigeant lit vite, deux paragraphes suffisent."})
+            return {"verdict": "a_revoir" if remarques else "pret_a_envoyer",
+                    "remarques": remarques, "suggestion": ""}
         if "capsule" in system:
             return {"facts": {
                 "secteur": "artisanat / second œuvre (hypothèse à confirmer)",

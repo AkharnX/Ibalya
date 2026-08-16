@@ -226,6 +226,31 @@ func (s *Store) GetEngagement(ctx context.Context, id int64) (*Engagement, error
 	return &list[0], nil
 }
 
+// OpenEngagementsByContact liste les engagements actifs partagés avec un
+// interlocuteur, tous fils confondus : c'est le contexte « client » qui manque
+// quand on ne regarde qu'un seul fil de discussion.
+func (s *Store) OpenEngagementsByContact(ctx context.Context, email string, excludeID int64) ([]Engagement, error) {
+	rows, err := s.Pool.Query(ctx, engagementSelect+
+		`WHERE e.statut IN ('ouvert','confirme','en_retard') AND e.id <> $2
+		   AND (lower(pe.email) = lower($1) OR lower(pd.email) = lower($1))
+		 ORDER BY e.echeance NULLS LAST LIMIT 8`, email, excludeID)
+	if err != nil {
+		return nil, err
+	}
+	return scanEngagements(rows)
+}
+
+// LastExchangeWithContact retourne la date du dernier message échangé avec un
+// interlocuteur et le nombre total d'échanges.
+func (s *Store) LastExchangeWithContact(ctx context.Context, email string) (*time.Time, int, error) {
+	var last *time.Time
+	var n int
+	err := s.Pool.QueryRow(ctx, `SELECT max(sent_at), count(*) FROM messages
+		WHERE lower(sender) = lower($1) OR lower($1) = ANY(SELECT lower(unnest(recipients)))`,
+		email).Scan(&last, &n)
+	return last, n, err
+}
+
 func (s *Store) OpenEngagementsByThread(ctx context.Context, threadID int64) ([]Engagement, error) {
 	rows, err := s.Pool.Query(ctx, engagementSelect+
 		`WHERE e.thread_id=$1 AND e.statut IN ('ouvert','confirme','en_retard') ORDER BY e.id`, threadID)

@@ -3,15 +3,40 @@
 import { useEffect, useState } from 'react'
 import { api, toast } from '../api'
 
+const REMARQUE_LABEL = { factuel: 'Fait à vérifier', manque: 'Élément manquant', risque: 'Risque', ton: 'Ton' }
+
 export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
   const [body, setBody] = useState('')
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [review, setReview] = useState(null)
+  const [reviewing, setReviewing] = useState(false)
 
   useEffect(() => {
     setBody(draft?.body || '')
     setEditing(false)
+    setReview(null)
   }, [draft?.id, draft?.body])
+
+  // Relecture par l'agent de la version en cours d'édition.
+  const askReview = async () => {
+    if (reviewing || !draft) return
+    setReviewing(true)
+    setReview(null)
+    try {
+      const r = await api(`/drafts/${draft.id}/review`, {
+        method: 'POST', body: JSON.stringify({ subject: draft.subject, body }),
+      })
+      setReview(r)
+    } catch (e) { toast(e.message, true) } finally { setReviewing(false) }
+  }
+
+  const applySuggestion = () => {
+    if (!review?.suggestion) return
+    setBody(review.suggestion)
+    setReview({ ...review, suggestion: '', applied: true })
+    toast('Version de l\'agent appliquée — relisez avant d\'envoyer')
+  }
 
   const open = loading || !!draft
 
@@ -69,9 +94,38 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
                 <label>Message</label>
                 <textarea
                   className="draft-textarea" readOnly={!editing} value={body}
-                  onChange={(e) => setBody(e.target.value)}
+                  onChange={(e) => { setBody(e.target.value); if (review) setReview(null) }}
                 />
               </div>
+
+              {editing && (
+                <button className="btn" disabled={reviewing} onClick={askReview}>
+                  {reviewing ? "L'agent relit…" : "⟲ Demander l'avis de l'agent"}
+                </button>
+              )}
+
+              {review && (
+                <div className={'review ' + (review.verdict === 'pret_a_envoyer' ? 'ok' : 'todo')}>
+                  <p className="review-verdict">
+                    {review.verdict === 'pret_a_envoyer'
+                      ? '✓ Rien à signaler — le message peut partir.'
+                      : `${review.remarques.length} point(s) à regarder avant d'envoyer`}
+                  </p>
+                  {review.remarques.map((r, i) => (
+                    <p className="review-item" key={i}>
+                      <span className={'review-tag ' + r.type}>{REMARQUE_LABEL[r.type] || r.type}</span>
+                      {r.message}
+                    </p>
+                  ))}
+                  {review.suggestion && (
+                    <>
+                      <p className="review-sub">L'agent propose une version corrigée :</p>
+                      <pre className="review-suggestion">{review.suggestion}</pre>
+                      <button className="btn" onClick={applySuggestion}>Utiliser cette version</button>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

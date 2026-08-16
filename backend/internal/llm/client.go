@@ -115,6 +115,42 @@ type DraftRequest struct {
 	// intention explicite (relancer, informer d'un retard, confirmer une date…)
 	Intent      string `json:"intent"`
 	IntentLabel string `json:"intent_label"`
+	// historique partagé avec cet interlocuteur, tous fils confondus
+	ContexteClient []string `json:"contexte_client"`
+}
+
+// --- Relecture d'un message modifié par le dirigeant ---
+
+type ReviewRequest struct {
+	ToEmail        string          `json:"to_email"`
+	Subject        string          `json:"subject"`
+	Body           string          `json:"body"`
+	Intent         string          `json:"intent"`
+	IntentLabel    string          `json:"intent_label"`
+	EngagementObjet string         `json:"engagement_objet"`
+	Contexte       string          `json:"contexte"`
+	ContexteClient []string        `json:"contexte_client"`
+	ThreadExtraits []string        `json:"thread_extraits"`
+	Capsule        json.RawMessage `json:"capsule"`
+}
+
+type ReviewRemark struct {
+	Type    string `json:"type"` // manque / ton / risque / ok
+	Message string `json:"message"`
+}
+
+type ReviewResponse struct {
+	Verdict    string         `json:"verdict"` // pret_a_envoyer / a_revoir
+	Remarques  []ReviewRemark `json:"remarques"`
+	Suggestion string         `json:"suggestion"` // version améliorée, facultative
+}
+
+func (c *Client) Review(ctx context.Context, req ReviewRequest) (*ReviewResponse, error) {
+	var resp ReviewResponse
+	if err := c.post(ctx, "/review", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 type DraftResponse struct {

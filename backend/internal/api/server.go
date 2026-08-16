@@ -80,6 +80,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/digest/generate", s.auth(s.generateDigest))
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
 	mux.HandleFunc("PATCH /api/drafts/{id}", s.auth(s.patchDraft))
+	mux.HandleFunc("POST /api/drafts/{id}/review", s.auth(s.reviewDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/validate", s.auth(s.validateDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/reject", s.auth(s.rejectDraft))
 
@@ -682,6 +683,24 @@ func (s *Server) patchDraft(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Store.Audit(r.Context(), "dirigeant", "brouillon_modifie", map[string]any{"draft_id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// reviewDraft : l'agent relit la version modifiée par le dirigeant et rend un avis.
+func (s *Server) reviewDraft(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Subject string `json:"subject"`
+		Body    string `json:"body"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	resp, err := s.Engine.ReviewDraft(r.Context(), pathID(r), body.Subject, body.Body)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, resp)
 }
 
 // synthese : vue direction — KPI, décisions à prendre, aperçu par catégorie.

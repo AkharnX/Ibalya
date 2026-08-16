@@ -10,7 +10,7 @@ from datetime import date
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from .prompts import CAPSULE_SYSTEM, DRAFT_SYSTEM, EXTRACTION_SYSTEM
+from .prompts import CAPSULE_SYSTEM, DRAFT_SYSTEM, EXTRACTION_SYSTEM, REVIEW_SYSTEM
 from .provider import get_provider
 
 logging.basicConfig(level=logging.INFO)
@@ -146,6 +146,7 @@ class DraftRequest(BaseModel):
     thread_extraits: list[str] | None = None
     intent: str = ""
     intent_label: str = ""
+    contexte_client: list[str] | None = None
 
 
 @app.post("/draft")
@@ -160,3 +161,51 @@ async def draft(req: DraftRequest):
     if not body:
         raise HTTPException(status_code=502, detail="brouillon vide")
     return {"subject": subject, "body": body}
+
+
+class ReviewRequest(BaseModel):
+    to_email: str = ""
+    subject: str = ""
+    body: str
+    intent: str = ""
+    intent_label: str = ""
+    engagement_objet: str = ""
+    contexte: str = ""
+    contexte_client: list[str] | None = None
+    thread_extraits: list[str] | None = None
+    capsule: object = None
+
+
+TYPES_REMARQUE = {"factuel", "manque", "risque", "ton"}
+
+
+@app.post("/review")
+async def review(req: ReviewRequest):
+    """Relit le message modifié par le dirigeant et rend un avis (jamais un ordre)."""
+    payload = req.model_dump()
+    payload["capsule"] = req.capsule if isinstance(req.capsule, dict) else {}
+    try:
+        raw = await provider.complete_json(REVIEW_SYSTEM, json.dumps(payload, ensure_ascii=False))
+    except Exception as exc:  # noqa: BLE001
+        log.error("review: %s", exc)
+        raise HTTPException(status_code=502, detail=f"fournisseur LLM: {exc}") from exc
+
+    remarques = []
+    for r in (raw.get("remarques") or [])[:4]:
+        if not isinstance(r, dict):
+            continue
+        msg = str(r.get("message", "")).strip()
+        if not msg:
+            continue
+        t = str(r.get("type", "")).lower()
+        remarques.append({"type": t if t in TYPES_REMARQUE else "ton", "message": msg})
+
+    verdict = str(raw.get("verdict", "")).strip()
+    if verdict not in ("pret_a_envoyer", "a_revoir"):
+        verdict = "a_revoir" if remarques else "pret_a_envoyer"
+
+    suggestion = str(raw.get("suggestion") or "").strip()
+    # une suggestion identique au message d'origine n'apporte rien
+    if suggestion and suggestion.split() == req.body.split():
+        suggestion = ""
+    return {"verdict": verdict, "remarques": remarques, "suggestion": suggestion}

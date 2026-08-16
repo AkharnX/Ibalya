@@ -309,6 +309,41 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	return &draft
 }
 
+// contexteClient rassemble ce que l'agent sait de l'interlocuteur au-delà du
+// fil courant : les autres engagements ouverts avec lui et l'ancienneté de la
+// relation. Sans cela, un client suivi sur trois dossiers n'est vu qu'à travers
+// un seul.
+func (e *Engine) contexteClient(ctx context.Context, email string, excludeID int64) []string {
+	out := []string{}
+	if email == "" {
+		return out
+	}
+	if last, n, err := e.Store.LastExchangeWithContact(ctx, email); err == nil && n > 0 {
+		ligne := fmt.Sprintf("%d message(s) échangé(s) avec %s", n, email)
+		if last != nil {
+			ligne += fmt.Sprintf(", dernier le %s", last.Format("02/01/2006"))
+		}
+		out = append(out, ligne)
+	}
+	engs, err := e.Store.OpenEngagementsByContact(ctx, email, excludeID)
+	if err != nil || len(engs) == 0 {
+		return out
+	}
+	out = append(out, fmt.Sprintf("Autres engagements en cours avec cet interlocuteur (%d) :", len(engs)))
+	for _, x := range engs {
+		ech := "sans échéance"
+		if x.Echeance != nil {
+			ech = "échéance " + x.Echeance.Format("02/01/2006")
+		}
+		sens := "il s'est engagé"
+		if accountEmail, _ := e.Channel.AccountEmail(ctx); strings.EqualFold(x.EmetteurEmail, accountEmail) {
+			sens = "vous vous êtes engagé"
+		}
+		out = append(out, fmt.Sprintf("  · %s (%s, %s, %s)", x.Objet, x.Type, ech, sens))
+	}
+	return out
+}
+
 // threadExtraits renvoie les 3 derniers messages d'un fil, tronqués : ils
 // ancrent le brouillon dans la conversation réelle.
 func (e *Engine) threadExtraits(ctx context.Context, threadID *int64) []string {
@@ -356,6 +391,7 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 		EngagementObjet: s.Objet, ToEmail: action.ToEmail, FromEmail: accountEmail,
 		Capsule: facts, ThreadExtraits: e.threadExtraits(ctx, s.ThreadID),
 		Intent: action.Intent, IntentLabel: action.Label,
+		ContexteClient: e.contexteClient(ctx, action.ToEmail, s.ID),
 	})
 	if err != nil {
 		return nil, err
@@ -373,6 +409,54 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 	e.Store.Audit(ctx, "agent", "brouillon_propose", map[string]any{
 		"draft_id": id, "engagement_id": s.ID, "intent": action.Intent, "to": action.ToEmail})
 	return &draft, nil
+}
+
+// ReviewDraft fait relire par l'agent la version modifiée par le dirigeant.
+// Aucune écriture en base : c'est un avis, le dirigeant reste décideur.
+func (e *Engine) ReviewDraft(ctx context.Context, draftID int64, subject, body string) (*llm.ReviewResponse, error) {
+	d, err := e.Store.GetDraft(ctx, draftID)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(body) == "" {
+		return nil, fmt.Errorf("le message est vide")
+	}
+	if subject == "" {
+		subject = d.Subject
+	}
+	var facts json.RawMessage
+	if capsule, _ := e.Store.GetCapsule(ctx); capsule != nil {
+		facts = capsule.Facts
+	}
+	req := llm.ReviewRequest{
+		ToEmail: d.ToEmail, Subject: subject, Body: body,
+		Capsule: facts, ContexteClient: e.contexteClient(ctx, d.ToEmail, 0),
+	}
+	// contexte de l'engagement rattaché, s'il existe
+	if d.EngagementID != nil {
+		if eng, err := e.Store.GetEngagement(ctx, *d.EngagementID); err == nil && eng != nil {
+			req.EngagementObjet = eng.Objet
+			req.ThreadExtraits = e.threadExtraits(ctx, eng.ThreadID)
+			if eng.Echeance != nil {
+				req.Contexte = "échéance " + eng.Echeance.Format("02/01/2006") + ", statut " + eng.Statut
+			}
+		}
+	}
+	if d.DetectionID != nil {
+		if det, err := e.Store.GetDetection(ctx, *d.DetectionID); err == nil && det != nil {
+			req.IntentLabel = det.Titre
+			if req.Contexte == "" {
+				req.Contexte = det.Detail
+			}
+		}
+	}
+	resp, err := e.LLM.Review(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	e.Store.Audit(ctx, "dirigeant", "brouillon_relu", map[string]any{
+		"draft_id": draftID, "verdict": resp.Verdict, "remarques": len(resp.Remarques)})
+	return resp, nil
 }
 
 // SendDraft envoie un brouillon validé par le dirigeant (marche 3) et trace tout.
