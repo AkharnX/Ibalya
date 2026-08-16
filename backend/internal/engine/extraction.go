@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -19,6 +20,33 @@ type Engine struct {
 	Store   *store.Store
 	LLM     *llm.Client
 	Channel channel.Reader
+}
+
+// capsuleLLM assemble la capsule complète transmise au modèle : les faits
+// inférés ET les intentions déclarées par le dirigeant. Sans les intentions,
+// le modèle ignore ce qui compte pour lui en ce moment (CDC 9.2 : c'est
+// l'intention qui détermine la priorisation).
+func (e *Engine) capsuleLLM(ctx context.Context) json.RawMessage {
+	c, err := e.Store.GetCapsule(ctx)
+	if err != nil || c == nil {
+		return json.RawMessage(`{}`)
+	}
+	faits := c.Facts
+	if len(faits) == 0 {
+		faits = json.RawMessage(`{}`)
+	}
+	intentions := c.Intentions
+	if len(intentions) == 0 {
+		intentions = json.RawMessage(`{}`)
+	}
+	b, err := json.Marshal(map[string]json.RawMessage{
+		"faits":      faits,
+		"intentions": intentions,
+	})
+	if err != nil {
+		return faits
+	}
+	return b
 }
 
 // SeuilPublication : sous ce score de confiance, un engagement n'est jamais
@@ -41,10 +69,7 @@ type ExtractStats struct {
 // LLM, création des engagements + événements, application des règles apprises.
 func (e *Engine) RunExtraction(ctx context.Context, batchSize int) (ExtractStats, error) {
 	var st ExtractStats
-	capsule, err := e.Store.GetCapsule(ctx)
-	if err != nil {
-		return st, err
-	}
+	capsule := e.capsuleLLM(ctx)
 	rules, _ := e.Store.ListRules(ctx, true)
 	accountEmail, _ := e.Channel.AccountEmail(ctx)
 
@@ -57,7 +82,7 @@ func (e *Engine) RunExtraction(ctx context.Context, batchSize int) (ExtractStats
 			break
 		}
 		req := llm.ExtractRequest{
-			Capsule:         capsule.Facts,
+			Capsule:         capsule,
 			AccountEmail:    accountEmail,
 			OpenEngagements: []llm.OpenEngagement{},
 		}

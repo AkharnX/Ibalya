@@ -284,11 +284,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	if toEmail == "" || strings.EqualFold(toEmail, accountEmail) {
 		return nil
 	}
-	capsule, _ := e.Store.GetCapsule(ctx)
-	var facts json.RawMessage
-	if capsule != nil {
-		facts = capsule.Facts
-	}
+	facts := e.capsuleLLM(ctx)
 	extraits := e.threadExtraits(ctx, d.ThreadID)
 	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{
 		DetectionType: d.Type, DetectionTitre: d.Titre, DetectionDetail: d.Detail,
@@ -378,10 +374,7 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 	if strings.EqualFold(action.ToEmail, accountEmail) {
 		return nil, fmt.Errorf("le destinataire de l'action est votre propre adresse")
 	}
-	var facts json.RawMessage
-	if capsule, _ := e.Store.GetCapsule(ctx); capsule != nil {
-		facts = capsule.Facts
-	}
+	facts := e.capsuleLLM(ctx)
 	contexte := contexteLigne(s)
 	if s.Blocage != nil {
 		contexte += fmt.Sprintf(" — cause amont : « %s » (%s)", s.Blocage.AmontObjet, s.Blocage.AmontEmetteur)
@@ -424,10 +417,7 @@ func (e *Engine) ReviewDraft(ctx context.Context, draftID int64, subject, body s
 	if subject == "" {
 		subject = d.Subject
 	}
-	var facts json.RawMessage
-	if capsule, _ := e.Store.GetCapsule(ctx); capsule != nil {
-		facts = capsule.Facts
-	}
+	facts := e.capsuleLLM(ctx)
 	req := llm.ReviewRequest{
 		ToEmail: d.ToEmail, Subject: subject, Body: body,
 		Capsule: facts, ContexteClient: e.contexteClient(ctx, d.ToEmail, 0),

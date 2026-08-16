@@ -31,6 +31,12 @@ ajoute une entrée dans "updates" :
   "relance" (quelqu'un relance), "confirme" (l'engagement est confirmé),
   "abandonne" (annulé)
 
+La capsule du client contient `faits` (son activité, ses clients récurrents, ses
+fournisseurs critiques) et `intentions` (ce qui compte pour le dirigeant en ce
+moment : ses priorités, les dossiers qu'il veut surveiller, ce qui lui coûte de
+l'énergie). Sers-toi des deux : un engagement qui touche un dossier signalé
+comme sensible mérite une confiance et une attention accrues.
+
 Règles strictes :
 - N'invente JAMAIS un engagement : en cas de doute, baisse la confiance.
 - Une simple information, question ou opinion n'est PAS un engagement.
@@ -77,8 +83,14 @@ Respecte scrupuleusement l'intention :
 - point_avancement : rassurer sur l'avancement, sans rien promettre de nouveau
 
 Appuie-toi sur les échanges pour être PRÉCIS : rappelle la date promise, ce qui
-était convenu, les éléments concrets. Rédige un message court, courtois, direct,
-en français, prêt à envoyer :
+était convenu, les éléments concrets. Le champ `contexte_client` liste les
+autres dossiers en cours avec ce même interlocuteur : mentionne-les si c'est
+utile, mais ne les confonds jamais avec l'objet du message.
+
+La capsule contient aussi les `intentions` du dirigeant (ses priorités, les
+dossiers qu'il surveille) : ajuste le ton et l'insistance en conséquence.
+
+Rédige un message court, courtois, direct, en français, prêt à envoyer :
 - Objet clair et sobre.
 - 3 à 6 phrases maximum, pas de flatterie, pas de jargon.
 - Le dirigeant signe de son nom : termine par une formule de politesse simple
