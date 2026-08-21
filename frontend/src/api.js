@@ -1,10 +1,10 @@
 // Client API — jeton en localStorage, erreurs normalisées.
-let token = localStorage.getItem('agentops_token') || '';
+let token = localStorage.getItem('ibalya_token') || '';
 
 export const getToken = () => token;
 export function setToken(t) {
   token = t;
-  localStorage.setItem('agentops_token', t);
+  localStorage.setItem('ibalya_token', t);
 }
 
 export class AuthError extends Error {}
@@ -22,5 +22,5 @@ export async function api(path, opts = {}) {
 
 // Toast minimaliste : dispatch d'un événement, écouté par <Toaster/>.
 export function toast(message, isError = false) {
-  window.dispatchEvent(new CustomEvent('agentops:toast', { detail: { message, isError } }));
+  window.dispatchEvent(new CustomEvent('ibalya:toast', { detail: { message, isError } }));
 }

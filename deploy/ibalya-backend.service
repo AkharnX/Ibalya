@@ -1,13 +1,13 @@
 [Unit]
-Description=AgentOps backend (Go, port 9999)
+Description=Ibalya backend (Go, port 9999)
 After=network.target docker.service
-Wants=agentops-llm.service
+Wants=ibalya-llm.service
 
 [Service]
 User=akharn
 WorkingDirectory=/home/akharn/agnet-ia
 EnvironmentFile=/home/akharn/agnet-ia/.env
-ExecStart=/home/akharn/agnet-ia/backend/bin/agentops
+ExecStart=/home/akharn/agnet-ia/backend/bin/ibalya
 Restart=on-failure
 RestartSec=5
 

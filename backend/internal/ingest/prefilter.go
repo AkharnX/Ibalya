@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/store"
 )
 
 var noReplyPattern = regexp.MustCompile(`(?i)(no-?reply|do-?not-?reply|notification|mailer-daemon|postmaster|newsletter|marketing@|info@.*\.(mailchimp|sendgrid|brevo))`)

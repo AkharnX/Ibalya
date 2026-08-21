@@ -1,21 +1,21 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: agentops-db
+    container_name: ibalya-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: agentops
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentops_dev}
-      POSTGRES_DB: agentops
+      POSTGRES_USER: ibalya
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ibalya_dev}
+      POSTGRES_DB: ibalya
     ports:
       - "127.0.0.1:5435:5432"
     volumes:
-      - agentops_pgdata:/var/lib/postgresql/data
+      - ibalya_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agentops"]
+      test: ["CMD-SHELL", "pg_isready -U ibalya"]
       interval: 5s
       timeout: 3s
       retries: 10
 
 volumes:
-  agentops_pgdata:
+  ibalya_pgdata:

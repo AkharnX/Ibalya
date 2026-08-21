@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"agentops/backend/internal/channel"
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/store"
 )
 
 type Ingester struct {

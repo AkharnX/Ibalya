@@ -17,15 +17,15 @@ function Toaster() {
       clearTimeout(timer)
       timer = setTimeout(() => setState(null), 3200)
     }
-    window.addEventListener('agentops:toast', onToast)
-    return () => { window.removeEventListener('agentops:toast', onToast); clearTimeout(timer) }
+    window.addEventListener('ibalya:toast', onToast)
+    return () => { window.removeEventListener('ibalya:toast', onToast); clearTimeout(timer) }
   }, [])
   if (!state) return null
   return <div className={'toast' + (state.isError ? ' error-toast' : '')}>{state.message}</div>
 }
 
 const Logo = () => (
-  <div className="logo"><div className="logo-mark">AO</div><span>AgentOps</span></div>
+  <div className="logo"><div className="logo-mark">IB</div><span>Ibalya</span></div>
 )
 
 function Login({ error, onSubmit }) {
@@ -71,13 +71,13 @@ export default function App() {
   const [loginError, setLoginError] = useState('')
   const [status, setStatus] = useState(null)
   const [counts, setCounts] = useState({})
-  const [dark, setDark] = useState(() => localStorage.getItem('agentops_theme') !== 'light')
+  const [dark, setDark] = useState(() => localStorage.getItem('ibalya_theme') !== 'light')
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', !dark)
-    localStorage.setItem('agentops_theme', dark ? 'dark' : 'light')
+    localStorage.setItem('ibalya_theme', dark ? 'dark' : 'light')
   }, [dark])
 
   const check = useCallback(() => {
@@ -142,7 +142,7 @@ export default function App() {
         <header className="topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="icon-btn burger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
-            <h1>{TITRES[pathname] || 'AgentOps'}</h1>
+            <h1>{TITRES[pathname] || 'Ibalya'}</h1>
           </div>
           <div className={'agent-live' + (agentOk ? '' : ' off')}>
             <i />{agentOk ? 'Agent actif' : (status?.canal_connecte ? 'LLM injoignable' : 'Canal non connecté')}

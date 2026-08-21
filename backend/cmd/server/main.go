@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"agentops/backend/internal/api"
-	"agentops/backend/internal/channel"
-	"agentops/backend/internal/config"
-	"agentops/backend/internal/engine"
-	"agentops/backend/internal/ingest"
-	"agentops/backend/internal/llm"
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/api"
+	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/config"
+	"ibalya/backend/internal/engine"
+	"ibalya/backend/internal/ingest"
+	"ibalya/backend/internal/llm"
+	"ibalya/backend/internal/store"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 	// planificateur : cycle complet + digest quotidien
 	go scheduler(ctx, cfg, st, eng, ing)
 
-	log.Printf("AgentOps à l'écoute sur %s", cfg.APIAddr)
+	log.Printf("Ibalya à l'écoute sur %s", cfg.APIAddr)
 	if err := http.ListenAndServe(cfg.APIAddr, srv.Handler()); err != nil {
 		log.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-# Brief design — AgentOps (module Agent Ops & Delivery)
+# Brief design — Ibalya (module Agent Ops & Delivery)
 
 Document destiné à un designer produit ou à Figma AI / Figma Make.
 L'application existe et fonctionne : il s'agit d'en refaire l'habillage, pas d'en
@@ -9,7 +9,7 @@ réels et déjà branchés à une API.
 
 ## 1. Prompt court (à coller dans Figma AI / Figma Make)
 
-> Conçois l'interface d'**AgentOps**, un SaaS B2B français destiné aux dirigeants
+> Conçois l'interface d'**Ibalya**, un SaaS B2B français destiné aux dirigeants
 > de PME (artisans, TPE de services, 5 à 50 salariés). L'application lit
 > automatiquement les emails de l'entreprise et en extrait les **engagements**
 > pris — qui a promis quoi, à qui, pour quand — puis alerte le dirigeant quand

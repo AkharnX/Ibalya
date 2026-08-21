@@ -16,7 +16,7 @@ from .provider import get_provider
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("llm-service")
 
-app = FastAPI(title="AgentOps LLM Service", docs_url=None, redoc_url=None)
+app = FastAPI(title="Ibalya LLM Service", docs_url=None, redoc_url=None)
 provider = get_provider()
 
 

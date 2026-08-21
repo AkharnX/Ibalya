@@ -1,4 +1,4 @@
-module agentops/backend
+module ibalya/backend
 
 go 1.22
 

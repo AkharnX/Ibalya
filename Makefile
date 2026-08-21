@@ -20,7 +20,7 @@ db: ## démarre PostgreSQL (Docker)
 	docker-compose up -d db
 
 build: ## compile le backend Go
-	cd backend && go build -o bin/agentops ./cmd/server
+	cd backend && go build -o bin/ibalya ./cmd/server
 
 front: ## build du frontend React (frontend/dist, servi par le backend)
 	cd frontend && npm install && npm run build
@@ -32,7 +32,7 @@ run-llm: ## lance le service LLM au premier plan
 	cd llm-service && $(VENV)/bin/uvicorn app.main:app --host 127.0.0.1 --port $(LLM_PORT)
 
 run-backend: build ## lance le backend au premier plan
-	CHANNEL=$(CHANNEL) FIXTURE_PATH=$(FIXTURE_PATH) ./backend/bin/agentops
+	CHANNEL=$(CHANNEL) FIXTURE_PATH=$(FIXTURE_PATH) ./backend/bin/ibalya
 
 # ── recompilation + redémarrage en une commande ──
 # Évite le décalage binaire/processus : on tue par PORT (et non par nom de
@@ -42,7 +42,7 @@ restart: build ## recompile le backend et le relance en arrière-plan
 	@fuser -k $(API_PORT)/tcp >/dev/null 2>&1 || true
 	@sleep 1
 	@( CHANNEL=$(CHANNEL) FIXTURE_PATH=$(FIXTURE_PATH) \
-		nohup ./backend/bin/agentops >> $(LOGS)/backend.log 2>&1 & )
+		nohup ./backend/bin/ibalya >> $(LOGS)/backend.log 2>&1 & )
 	@sleep 2
 	@$(MAKE) --no-print-directory status
 
@@ -63,7 +63,7 @@ stop: ## arrête backend et service LLM
 	@echo "services arrêtés"
 
 status: ## vérifie que les services répondent vraiment (pas seulement le code HTTP)
-	@printf "base      : "; docker inspect -f '{{.State.Status}}' agentops-db 2>/dev/null || echo "arrêtée"
+	@printf "base      : "; docker inspect -f '{{.State.Status}}' ibalya-db 2>/dev/null || echo "arrêtée"
 	@printf "service LLM : "; curl -sf http://127.0.0.1:$(LLM_PORT)/health >/dev/null 2>&1 \
 		&& echo "ok (:$(LLM_PORT))" || echo "INJOIGNABLE (:$(LLM_PORT))"
 	@printf "backend     : "; curl -sf http://127.0.0.1:$(API_PORT)/api/health >/dev/null 2>&1 \

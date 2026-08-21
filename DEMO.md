@@ -1,4 +1,4 @@
-# Démo équipe — AgentOps MVP
+# Démo équipe — Ibalya MVP
 
 ## Avant la réunion (5 min)
 

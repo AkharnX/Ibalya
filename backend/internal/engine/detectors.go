@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/store"
 )
 
 // Les 5 détecteurs permanents (CDC section 8.2). Tous s'exécutent côté

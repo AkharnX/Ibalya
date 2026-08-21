@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"agentops/backend/internal/channel"
-	"agentops/backend/internal/llm"
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/llm"
+	"ibalya/backend/internal/store"
 )
 
 type Engine struct {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Démo complète AgentOps — à lancer avant/pendant la réunion.
+# Démo complète Ibalya — à lancer avant/pendant la réunion.
 # Rejoue tout le parcours J+0 → J+7 du CDC sur le scénario « Menuiserie Dupont » :
 # ingestion → pré-filtre → extraction → graphe → 5 détecteurs → miroir → digest → brouillons.
 set -euo pipefail
@@ -14,7 +14,7 @@ step "0. Fixtures régénérées (dates relatives à aujourd'hui)"
 python3 scripts/gen_fixtures.py fixtures/messages.json
 
 step "1. Remise à zéro de la base"
-docker exec agentops-db psql -U agentops -d agentops -q -c \
+docker exec ibalya-db psql -U ibalya -d ibalya -q -c \
   "TRUNCATE audit_log, drafts, detections, dependency_links, engagement_events, engagements, learned_rules, messages, threads, persons, reports RESTART IDENTITY CASCADE;
    UPDATE capsule SET facts='{}', intentions='{}' WHERE id=1;
    DELETE FROM settings WHERE key IN ('dernier_cycle','dernier_digest');"

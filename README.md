@@ -1,4 +1,4 @@
-# AgentOps — Module Agent Ops & Delivery (MVP)
+# Ibalya — Module Agent Ops & Delivery (MVP)
 
 Implémentation du cahier des charges **AgentOS PME — Agent Ops & Delivery V2** (juin 2026).
 

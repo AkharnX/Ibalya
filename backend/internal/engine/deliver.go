@@ -9,8 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"agentops/backend/internal/llm"
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/llm"
+	"ibalya/backend/internal/store"
 )
 
 // --- Miroir d'activité (EF-2, livrable J+1) ---
@@ -180,7 +180,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	// envoi du digest par email au dirigeant si activé (Réglages)
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
 		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
-			subject := "Votre digest AgentOps — " + time.Now().Format("02/01/2006")
+			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
 			if err := e.Channel.Send(ctx, to, subject, renderDigestText(dc)); err != nil {
 				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
 			} else {
@@ -221,7 +221,7 @@ func renderDigestText(dc *DigestContent) string {
 	if len(dc.Detections) == 0 && len(dc.Engagements) == 0 {
 		b.WriteString("\nRien à signaler au-dessus du seuil aujourd'hui.\n")
 	}
-	b.WriteString("\n— AgentOps\n")
+	b.WriteString("\n— Ibalya\n")
 	return b.String()
 }
 

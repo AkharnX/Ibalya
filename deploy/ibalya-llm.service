@@ -1,5 +1,5 @@
 [Unit]
-Description=AgentOps LLM service (Python, 127.0.0.1:8092)
+Description=Ibalya LLM service (Python, 127.0.0.1:8092)
 After=network.target
 
 [Service]

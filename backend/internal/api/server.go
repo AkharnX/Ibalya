@@ -17,11 +17,11 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"agentops/backend/internal/channel"
-	"agentops/backend/internal/config"
-	"agentops/backend/internal/engine"
-	"agentops/backend/internal/ingest"
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/config"
+	"ibalya/backend/internal/engine"
+	"ibalya/backend/internal/ingest"
+	"ibalya/backend/internal/store"
 )
 
 type Server struct {

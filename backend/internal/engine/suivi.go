@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"agentops/backend/internal/store"
+	"ibalya/backend/internal/store"
 )
 
 // Vue de suivi : chaque engagement est classé en une catégorie unique et porte
