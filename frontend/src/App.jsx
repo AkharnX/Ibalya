@@ -24,8 +24,18 @@ function Toaster() {
   return <div className={'toast' + (state.isError ? ' error-toast' : '')}>{state.message}</div>
 }
 
+// Symbole Ibalya : trois pièces formant un cadre. currentColor pour qu'il
+// suive la couleur du thème, sur la barre latérale comme sur l'écran de connexion.
+const Symbole = ({ className = 'logo-mark' }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
+    <path d="M0 0h64v24H0z" />
+    <path d="M76 0h24v64H76z" />
+    <path d="M0 36h24v40h76v24H0z" />
+  </svg>
+)
+
 const Logo = () => (
-  <div className="logo"><div className="logo-mark">IB</div><span>Ibalya</span></div>
+  <div className="logo"><Symbole /><span>Ibalya</span></div>
 )
 
 function Login({ onConnecte }) {
