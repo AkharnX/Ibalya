@@ -16,6 +16,23 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # Sans ce contrôle, l'action SSH échoue sur un « missing server host »
+      # difficile à relier à sa cause réelle.
+      - name: Vérifier que les secrets de déploiement existent
+        run: |
+          manquants=""
+          [ -n "${{ secrets.SSH_HOST }}" ] || manquants="$manquants SSH_HOST"
+          [ -n "${{ secrets.SSH_USER }}" ] || manquants="$manquants SSH_USER"
+          [ -n "${{ secrets.SSH_KEY }}" ]  || manquants="$manquants SSH_KEY"
+          if [ -n "$manquants" ]; then
+            echo "::error::Secrets manquants :$manquants"
+            echo "Créez-les dans Settings → Secrets and variables → Actions."
+            echo "  SSH_HOST : adresse IP du serveur"
+            echo "  SSH_USER : akharn"
+            echo "  SSH_KEY  : contenu de ~/.ssh/ibalya_deploy (clé privée, en entier)"
+            exit 1
+          fi
+
       - name: Déployer sur le serveur
         uses: appleboy/ssh-action@v1.2.0
         with:

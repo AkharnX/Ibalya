@@ -39,7 +39,11 @@ modification du frontend, `make demo` pour rejouer le scénario de démonstratio
 renvoie bien du JSON et non la page du tableau de bord — signe que le binaire en
 cours d'exécution connaît les routes actuelles.
 
-Tableau de bord : `https://ibalya.com` — connexion par email et mot de passe.
+**Page commerciale** : `https://ibalya.com` — statique (`landing/`), sans build.
+**Tableau de bord** : `https://ibalya.com/app` — connexion par email et mot de
+passe, ou « Continuer avec Google ».
+
+Un visiteur qui tape le domaine voit le produit, pas un formulaire de connexion.
 
 ### Comptes
 
