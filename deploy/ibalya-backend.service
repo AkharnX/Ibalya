@@ -1,15 +1,37 @@
 [Unit]
-Description=Ibalya backend (Go, port 9999)
-After=network.target docker.service
-Wants=ibalya-llm.service
+Description=Ibalya — backend Go (API et tableau de bord, port 9999)
+Documentation=https://github.com/AkharnX/Agent-ops
+After=network-online.target docker.service ibalya-llm.service
+Wants=network-online.target ibalya-llm.service
 
 [Service]
+Type=simple
 User=akharn
+Group=akharn
 WorkingDirectory=/home/akharn/agnet-ia
 EnvironmentFile=/home/akharn/agnet-ia/.env
+# Le connecteur réel : la démo se lance à la main avec CHANNEL=fixture.
+Environment=CHANNEL=gmail
 ExecStart=/home/akharn/agnet-ia/backend/bin/ibalya
-Restart=on-failure
+Restart=always
 RestartSec=5
+# Redémarrages en boucle : on abandonne plutôt que de marteler la base.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Cloisonnement : le service n'a besoin que de son propre répertoire.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/akharn/agnet-ia/logs
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ibalya-backend
 
 [Install]
 WantedBy=multi-user.target

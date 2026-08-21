@@ -41,17 +41,17 @@ type OpenEngagement struct {
 }
 
 type ExtractRequest struct {
-	Messages        []ExtractMessage  `json:"messages"`
-	OpenEngagements []OpenEngagement  `json:"open_engagements"`
-	Capsule         json.RawMessage   `json:"capsule"`
-	AccountEmail    string            `json:"account_email"`
+	Messages        []ExtractMessage `json:"messages"`
+	OpenEngagements []OpenEngagement `json:"open_engagements"`
+	Capsule         json.RawMessage  `json:"capsule"`
+	AccountEmail    string           `json:"account_email"`
 }
 
 type ExtractedEngagement struct {
 	EmetteurEmail     string  `json:"emetteur_email"`
 	DestinataireEmail string  `json:"destinataire_email"`
 	Objet             string  `json:"objet"`
-	Type              string  `json:"type"` // devis / livraison / relance / prise_de_contact / rendez_vous / facturation / autre
+	Type              string  `json:"type"`     // devis / livraison / relance / prise_de_contact / rendez_vous / facturation / autre
 	Echeance          string  `json:"echeance"` // YYYY-MM-DD ou ""
 	EcheanceInferee   bool    `json:"echeance_inferee"`
 	Confiance         float64 `json:"confiance"`
@@ -102,14 +102,14 @@ func (c *Client) InferCapsule(ctx context.Context, req CapsuleRequest) (*Capsule
 // --- Brouillons d'action (EF-7) ---
 
 type DraftRequest struct {
-	DetectionType  string          `json:"detection_type"`
-	DetectionTitre string          `json:"detection_titre"`
-	DetectionDetail string         `json:"detection_detail"`
-	EngagementObjet string         `json:"engagement_objet"`
-	ToEmail        string          `json:"to_email"`
-	ToName         string          `json:"to_name"`
-	FromEmail      string          `json:"from_email"`
-	Capsule        json.RawMessage `json:"capsule"`
+	DetectionType   string          `json:"detection_type"`
+	DetectionTitre  string          `json:"detection_titre"`
+	DetectionDetail string          `json:"detection_detail"`
+	EngagementObjet string          `json:"engagement_objet"`
+	ToEmail         string          `json:"to_email"`
+	ToName          string          `json:"to_name"`
+	FromEmail       string          `json:"from_email"`
+	Capsule         json.RawMessage `json:"capsule"`
 	// derniers échanges du fil : le brouillon doit coller à la conversation
 	ThreadExtraits []string `json:"thread_extraits"`
 	// intention explicite (relancer, informer d'un retard, confirmer une date…)
@@ -122,16 +122,16 @@ type DraftRequest struct {
 // --- Relecture d'un message modifié par le dirigeant ---
 
 type ReviewRequest struct {
-	ToEmail        string          `json:"to_email"`
-	Subject        string          `json:"subject"`
-	Body           string          `json:"body"`
-	Intent         string          `json:"intent"`
-	IntentLabel    string          `json:"intent_label"`
-	EngagementObjet string         `json:"engagement_objet"`
-	Contexte       string          `json:"contexte"`
-	ContexteClient []string        `json:"contexte_client"`
-	ThreadExtraits []string        `json:"thread_extraits"`
-	Capsule        json.RawMessage `json:"capsule"`
+	ToEmail         string          `json:"to_email"`
+	Subject         string          `json:"subject"`
+	Body            string          `json:"body"`
+	Intent          string          `json:"intent"`
+	IntentLabel     string          `json:"intent_label"`
+	EngagementObjet string          `json:"engagement_objet"`
+	Contexte        string          `json:"contexte"`
+	ContexteClient  []string        `json:"contexte_client"`
+	ThreadExtraits  []string        `json:"thread_extraits"`
+	Capsule         json.RawMessage `json:"capsule"`
 }
 
 type ReviewRemark struct {

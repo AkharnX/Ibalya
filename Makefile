@@ -13,7 +13,7 @@ FIXTURE_PATH ?= $(PWD)/fixtures/messages.json
 -include .env
 export
 
-.PHONY: db build front front-dev run-backend run-llm restart restart-llm restart-all stop status logs logs-llm demo help
+.PHONY: db build front front-dev run-backend run-llm restart restart-llm restart-nohup restart-all stop services test status logs logs-llm demo help utilisateur
 
 help: ## liste les cibles disponibles
 	@grep -hE '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | column -t -s $$'\t'
@@ -36,33 +36,45 @@ run-llm: ## lance le service LLM au premier plan
 run-backend: build ## lance le backend au premier plan
 	CHANNEL=$(CHANNEL) FIXTURE_PATH=$(FIXTURE_PATH) ./backend/bin/ibalya
 
-# ── recompilation + redémarrage en une commande ──
-# Évite le décalage binaire/processus : on tue par PORT (et non par nom de
-# processus, qui tuerait aussi le shell appelant si son motif correspond).
-restart: build ## recompile le backend et le relance en arrière-plan
+# ── recompilation + redémarrage ──
+# Les services sont supervisés par systemd : ils repartent seuls après un
+# plantage ou un redémarrage du serveur. Les cibles ci-dessous s'appuient
+# dessus, avec repli sur un lancement direct en développement local.
+restart: build ## recompile le backend et le relance
+	@sudo -n systemctl restart ibalya-backend 2>/dev/null || $(MAKE) --no-print-directory restart-nohup
+	@sleep 3
+	@$(MAKE) --no-print-directory status
+
+restart-llm: ## relance le service d'inférence
+	@sudo -n systemctl restart ibalya-llm 2>/dev/null || echo "systemd indisponible : lancer make run-llm"
+	@sleep 3
+	@$(MAKE) --no-print-directory status
+
+# Repli hors serveur supervisé (poste de développement).
+restart-nohup:
 	@mkdir -p $(LOGS)
 	@fuser -k $(API_PORT)/tcp >/dev/null 2>&1 || true
 	@sleep 1
 	@( CHANNEL=$(CHANNEL) FIXTURE_PATH=$(FIXTURE_PATH) \
 		nohup ./backend/bin/ibalya >> $(LOGS)/backend.log 2>&1 & )
-	@sleep 2
-	@$(MAKE) --no-print-directory status
-
-restart-llm: ## relance le service LLM en arrière-plan
-	@mkdir -p $(LOGS)
-	@fuser -k $(LLM_PORT)/tcp >/dev/null 2>&1 || true
-	@sleep 1
-	@( cd llm-service && nohup $(VENV)/bin/uvicorn app.main:app \
-		--host 127.0.0.1 --port $(LLM_PORT) >> $(LOGS)/llm.log 2>&1 & )
-	@sleep 2
-	@$(MAKE) --no-print-directory status
 
 restart-all: front restart restart-llm ## rebuild complet (front + back) et redémarrage des deux services
 
-stop: ## arrête backend et service LLM
-	@fuser -k $(API_PORT)/tcp >/dev/null 2>&1 || true
-	@fuser -k $(LLM_PORT)/tcp >/dev/null 2>&1 || true
+stop: ## arrête backend et service d'inférence
+	@sudo -n systemctl stop ibalya-backend ibalya-llm 2>/dev/null || { \
+		fuser -k $(API_PORT)/tcp >/dev/null 2>&1 || true; \
+		fuser -k $(LLM_PORT)/tcp >/dev/null 2>&1 || true; }
 	@echo "services arrêtés"
+
+services: ## installe et active les unités systemd (une seule fois)
+	sudo cp deploy/ibalya-backend.service deploy/ibalya-llm.service /etc/systemd/system/
+	sudo systemctl daemon-reload
+	sudo systemctl enable --now ibalya-llm ibalya-backend
+	@systemctl is-active ibalya-llm ibalya-backend
+
+test: ## exécute les tests (Go et Python)
+	cd backend && go vet ./... && go test ./...
+	@$(VENV)/bin/python -m pytest llm-service/tests -q 2>/dev/null || echo "(pytest absent : tests Python ignorés)"
 
 status: ## vérifie que les services répondent vraiment (pas seulement le code HTTP)
 	@printf "base      : "; docker inspect -f '{{.State.Status}}' ibalya-db 2>/dev/null || echo "arrêtée"
@@ -86,10 +98,10 @@ status: ## vérifie que les services répondent vraiment (pas seulement le code 
 		*) echo "réponse inattendue ($$out)";; esac
 
 logs: ## suit le journal du backend
-	@tail -f $(LOGS)/backend.log
+	@journalctl -u ibalya-backend -f -n 50 2>/dev/null || tail -f $(LOGS)/backend.log
 
-logs-llm: ## suit le journal du service LLM
-	@tail -f $(LOGS)/llm.log
+logs-llm: ## suit le journal du service d'inférence
+	@journalctl -u ibalya-llm -f -n 50 2>/dev/null || tail -f $(LOGS)/llm.log
 
 demo: ## remet la démo à zéro et rejoue le scénario complet (connecteur fixture)
 	@$(MAKE) --no-print-directory restart CHANNEL=fixture

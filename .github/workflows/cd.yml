@@ -1,0 +1,29 @@
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # déclenchement manuel depuis l'onglet Actions
+
+# Jamais deux déploiements simultanés, et on ne les annule pas en cours de route.
+concurrency:
+  group: deploiement-production
+  cancel-in-progress: false
+
+jobs:
+  deployer:
+    name: Mise en production
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Déployer sur le serveur
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            cd /home/akharn/agnet-ia
+            ./scripts/deployer.sh

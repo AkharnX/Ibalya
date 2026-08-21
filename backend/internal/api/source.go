@@ -19,12 +19,12 @@ type MessageSource struct {
 }
 
 type SourceReponse struct {
-	EngagementID  int64           `json:"engagement_id"`
-	Objet         string          `json:"objet"`
-	Sujet         string          `json:"sujet"`
-	Canal         string          `json:"canal"`
-	URLGmailFil   string          `json:"url_gmail_fil,omitempty"`
-	Messages      []MessageSource `json:"messages"`
+	EngagementID int64           `json:"engagement_id"`
+	Objet        string          `json:"objet"`
+	Sujet        string          `json:"sujet"`
+	Canal        string          `json:"canal"`
+	URLGmailFil  string          `json:"url_gmail_fil,omitempty"`
+	Messages     []MessageSource `json:"messages"`
 }
 
 // urlGmail construit un lien direct vers un message ou un fil dans Gmail.

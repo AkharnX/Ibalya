@@ -22,8 +22,8 @@ const (
 
 // Blocage décrit la cause amont qui met un engagement en risque.
 type Blocage struct {
-	AmontID      int64  `json:"amont_id"`
-	AmontObjet   string `json:"amont_objet"`
+	AmontID       int64  `json:"amont_id"`
+	AmontObjet    string `json:"amont_objet"`
 	AmontEmetteur string `json:"amont_emetteur"`
 	AmontEcheance string `json:"amont_echeance"`
 }
@@ -170,8 +170,8 @@ type PrioriteItem struct {
 }
 
 type CategorieBloc struct {
-	Nombre  int      `json:"nombre"`
-	Apercu  []string `json:"apercu"`
+	Nombre int      `json:"nombre"`
+	Apercu []string `json:"apercu"`
 }
 
 type Synthese struct {
