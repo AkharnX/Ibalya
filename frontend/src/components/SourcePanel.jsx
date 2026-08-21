@@ -2,7 +2,7 @@
 // Affiche la conversation complète, message d'origine mis en évidence, avec
 // un lien direct vers Gmail pour répondre dans le fil réel.
 import { useEffect, useState } from 'react'
-import { api, toast } from '../api'
+import { api } from '../api'
 import { fmtDT } from './ui'
 
 export default function SourcePanel({ engagementId, onClose }) {

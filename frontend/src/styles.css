@@ -503,3 +503,54 @@ label{
   color:inherit;font-weight:500;cursor:pointer;text-align:left;
 }
 .lien-source:hover{color:var(--primary);text-decoration:underline;}
+
+/* ═══ squelettes de chargement ═══ */
+/* Le balayage est lent et discret : il signale l'activité sans attirer l'œil. */
+.sq{
+  display:block;height:11px;background:var(--secondary);
+  position:relative;overflow:hidden;
+}
+.sq::after{
+  content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--foreground) 7%,transparent),transparent);
+  animation:balayage 1.6s ease-in-out infinite;
+}
+.sq-court{width:52px;height:9px;margin-bottom:10px;}
+.sq-grand{width:64px;height:26px;}
+.sq-fin{height:9px;margin-top:9px;opacity:.6;}
+@keyframes balayage{100%{transform:translateX(100%);}}
+@media (prefers-reduced-motion:reduce){ .sq::after{animation:none;} }
+
+/* ═══ avancement de l'onboarding ═══ */
+.onb{
+  border:1px solid var(--primary);border-left-width:2px;background:var(--card);
+  padding:16px 18px;margin-bottom:22px;
+}
+.onb-fini{border-color:var(--healthy);}
+.onb-erreur{border-color:var(--risk);}
+.onb-tete{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.onb-tete b{font-size:14px;font-weight:600;}
+.onb-tete p{margin:3px 0 0;font-size:12.5px;color:var(--muted-foreground);max-width:60ch;}
+
+.onb-etapes{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;}
+.onb-etapes li{
+  font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted-foreground);
+  padding:4px 10px;background:var(--secondary);
+}
+.onb-etapes li.faite{color:var(--healthy);}
+.onb-etapes li.active{
+  color:var(--primary-foreground);background:var(--primary);
+  animation:respire 1.8s ease-in-out infinite;
+}
+@keyframes respire{0%,100%{opacity:1}50%{opacity:.72}}
+@media (prefers-reduced-motion:reduce){ .onb-etapes li.active{animation:none;} }
+
+.onb-compteurs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px;}
+@media (max-width:760px){ .onb-compteurs{grid-template-columns:repeat(2,1fr);} }
+.onb-compteurs div{border-top:1px solid var(--border);padding-top:9px;}
+.onb-compteurs b{
+  display:block;font-family:var(--font-mono);font-size:21px;font-weight:300;
+  letter-spacing:-.5px;line-height:1.1;
+}
+.onb-compteurs span{display:block;font-size:11.5px;color:var(--muted-foreground);margin-top:3px;}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { DET_LABELS, Empty, Reli, fmtDT } from '../components/ui'
+import { SqueletteTable } from '../components/Squelette'
 
 function DraftCard({ d, refresh }) {
   const [editing, setEditing] = useState(false)
@@ -59,7 +60,7 @@ function DraftCard({ d, refresh }) {
 }
 
 export default function Alertes() {
-  const [dets, setDets] = useState([])
+  const [dets, setDets] = useState(null)
   const [drafts, setDrafts] = useState([])
 
   const load = useCallback(() => {
@@ -92,7 +93,7 @@ export default function Alertes() {
         </ul>
       </details>
 
-      {!dets.length ? <Empty>Aucune alerte active. 👌</Empty> : (
+      {dets === null ? <SqueletteTable lignes={4} colonnes={5} /> : !dets.length ? <Empty>Aucune alerte active.</Empty> : (
         <div className="tbl-wrap">
           <table className="tbl">
             <thead>

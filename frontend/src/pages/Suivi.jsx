@@ -4,6 +4,7 @@ import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
 import { TYPE_LABELS, fmtDate } from '../components/ui'
+import { SqueletteTable } from '../components/Squelette'
 
 const CATEGORIES = [
   ['all', 'Tous'],
@@ -14,14 +15,14 @@ const CATEGORIES = [
 const TYPES = ['all', 'livraison', 'devis', 'facturation', 'rendez_vous', 'prise_de_contact']
 
 export default function Suivi() {
-  const [rows, setRows] = useState([])
+  const [rows, setRows] = useState(null)
   const [params, setParams] = useSearchParams()
   const [type, setType] = useState('all')
   const [search, setSearch] = useState('')
   const cat = params.get('cat') || 'all'
 
   const load = useCallback(() => {
-    api('/suivi').then((r) => setRows(r || [])).catch((e) => toast(e.message, true))
+    api('/suivi').then((r) => setRows(r || [])).catch((e) => { setRows([]); toast(e.message, true) })
   }, [])
   useEffect(load, [load])
 
@@ -29,12 +30,12 @@ export default function Suivi() {
   const [sourceId, setSourceId] = useState(null)
 
   const counts = useMemo(() => {
-    const c = { all: rows.length }
-    rows.forEach((r) => { c[r.categorie] = (c[r.categorie] || 0) + 1 })
+    const c = { all: (rows || []).length }
+    ;(rows || []).forEach((r) => { c[r.categorie] = (c[r.categorie] || 0) + 1 })
     return c
   }, [rows])
 
-  const shown = rows.filter((r) => {
+  const shown = (rows || []).filter((r) => {
     const okCat = cat === 'all' || r.categorie === cat
     const okType = type === 'all' || r.type === type
     const q = search.trim().toLowerCase()
@@ -87,7 +88,9 @@ export default function Suivi() {
         </div>
       </div>
 
-      {!shown.length ? (
+      {rows === null ? (
+        <SqueletteTable lignes={6} colonnes={6} />
+      ) : !shown.length ? (
         <div className="empty">Aucun engagement ne correspond à ces filtres.</div>
       ) : (
         <div className="tbl-wrap">

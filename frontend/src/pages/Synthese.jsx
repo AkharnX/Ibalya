@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
+import Onboarding from '../components/Onboarding'
+import { SqueletteKpi, SqueletteLignes } from '../components/Squelette'
 
 const CAT_META = {
   encours: { dot: 'blue', titre: 'Engagements en cours' },
@@ -53,7 +55,10 @@ export default function Synthese() {
         </div>
       </div>
 
-      <div className="kpi-row">
+      <Onboarding />
+
+      {!syn && <SqueletteKpi />}
+      {syn && <div className="kpi-row">
         <button className="kpi" onClick={() => navigate('/suivi')}>
           <span className="lbl">Actifs</span><span className="num">{k?.engagements_suivis ?? '—'}</span>
         </button>
@@ -69,11 +74,12 @@ export default function Synthese() {
         <div className="kpi static">
           <span className="lbl">Messages lus / 30j</span><span className="num">{k?.messages_lus ?? '—'}</span>
         </div>
-      </div>
+      </div>}
 
       <div className="section-title"><h2>Ce qui demande une décision maintenant</h2></div>
       <div className="priority-list">
-        {!syn?.priorites?.length && <div className="empty">Rien à arbitrer — aucun retard ni engagement bloqué. 👌</div>}
+        {!syn && <SqueletteLignes nombre={3} />}
+        {syn && !syn.priorites?.length && <div className="empty">Rien à arbitrer, aucun retard ni engagement bloqué.</div>}
         {(syn?.priorites || []).map((p) => (
           <div className={'priority-item ' + p.categorie} key={p.engagement_id}>
             <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'À risque' : 'Retard'}</span>
