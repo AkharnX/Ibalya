@@ -139,9 +139,18 @@ renommage côté serveur sans mise à jour du client produirait sinon un 404
 silencieux, masqué par le repli SPA.
 
 `.github/workflows/cd.yml` déploie sur **`main` uniquement**, via
-`scripts/deployer.sh` : construction, redémarrage, **contrôle de santé et
-retour arrière automatique** si la nouvelle version ne répond pas. Un
-déploiement raté ne laisse jamais le service à terre.
+`scripts/deployer.sh` : construction, redémarrage, contrôle de santé.
+
+**Le retour arrière couvre toute défaillance**, pas seulement un contrôle de
+santé négatif : un `trap` restaure la version précédente si le build casse, si
+le redémarrage échoue ou si le service ne répond pas. Sans cela, un build raté
+laissait le dépôt sur la nouvelle version — les fichiers servis statiquement
+disparaissaient et le site tombait en 404 alors que le déploiement s'annonçait
+simplement « échoué ».
+
+Le script charge **nvm** explicitement : le shell non interactif du déploiement
+retombe sinon sur le Node système (18), trop ancien pour Vite. La version est
+vérifiée avant construction, avec un message clair en cas d'insuffisance.
 
 La clé SSH de déploiement est restreinte par `command=` dans `authorized_keys` :
 elle ne peut lancer que le script de déploiement, pas ouvrir un shell. Le `sudo`
