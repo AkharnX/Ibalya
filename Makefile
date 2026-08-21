@@ -4,8 +4,10 @@ LOGS := $(PWD)/logs
 API_PORT := 9999
 LLM_PORT := 8092
 
-# Mode démo par défaut (connecteur fixture). Passer CHANNEL=gmail pour le réel.
-CHANNEL ?= fixture
+# Connecteur réel par défaut. La cible `demo` bascule explicitement sur les
+# données de démonstration — ne jamais inverser : un déploiement en ligne qui
+# lit des fixtures ressemble à s'y méprendre à une application qui fonctionne.
+CHANNEL ?= gmail
 FIXTURE_PATH ?= $(PWD)/fixtures/messages.json
 
 -include .env
@@ -68,6 +70,10 @@ status: ## vérifie que les services répondent vraiment (pas seulement le code 
 		&& echo "ok (:$(LLM_PORT))" || echo "INJOIGNABLE (:$(LLM_PORT))"
 	@printf "backend     : "; curl -sf http://127.0.0.1:$(API_PORT)/api/health >/dev/null 2>&1 \
 		&& echo "ok (:$(API_PORT))" || echo "INJOIGNABLE (:$(API_PORT))"
+	@printf "connecteur  : "; curl -sf -H "Authorization: Bearer $(ADMIN_TOKEN)" \
+		http://127.0.0.1:$(API_PORT)/api/status 2>/dev/null \
+		| grep -o '"canal":"[^"]*"' | cut -d'"' -f4 \
+		| sed 's/^fixture$$/fixture (DONNÉES DE DÉMONSTRATION)/; s/^gmail$$/gmail (réel)/' || echo "?"
 	@printf "authentif.  : "; code=$$(curl -s -H "Authorization: Bearer $(ADMIN_TOKEN)" \
 		-o /dev/null -w '%{http_code}' http://127.0.0.1:$(API_PORT)/api/status); \
 		case "$$code" in 200) echo "ok (jeton du .env accepté)";; \
@@ -85,5 +91,6 @@ logs: ## suit le journal du backend
 logs-llm: ## suit le journal du service LLM
 	@tail -f $(LOGS)/llm.log
 
-demo: restart ## remet la démo à zéro et rejoue le scénario complet
+demo: ## remet la démo à zéro et rejoue le scénario complet (connecteur fixture)
+	@$(MAKE) --no-print-directory restart CHANNEL=fixture
 	@./scripts/demo.sh
