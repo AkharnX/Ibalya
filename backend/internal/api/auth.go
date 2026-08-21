@@ -205,7 +205,7 @@ func (s *Server) googleLoginStart(w http.ResponseWriter, r *http.Request) {
 func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	echec := func(motif string) {
-		http.Redirect(w, r, "/?erreur="+url.QueryEscape(motif), http.StatusFound)
+		http.Redirect(w, r, "/app/?erreur="+url.QueryEscape(motif), http.StatusFound)
 	}
 
 	c, err := r.Cookie(cookieEtatOAuth)
@@ -244,7 +244,7 @@ func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	s.poserCookie(w, token, expire)
 	s.Store.Audit(ctx, u.Email, "connexion", map[string]string{"methode": "google"})
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/app/", http.StatusFound)
 }
 
 // infosCompteGoogle interroge le point d'accès userinfo : plus simple et plus

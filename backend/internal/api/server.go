@@ -35,9 +35,12 @@ type Server struct {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
-	// tableau de bord (SPA React buildée dans frontend/dist) : les routes
-	// client (/engagements, /alertes…) retombent sur index.html
-	mux.Handle("GET /", spaHandler(s.Cfg.FrontendDir))
+	// Page commerciale à la racine, application sous /app.
+	// Un visiteur qui tape ibalya.com doit voir le produit, pas un formulaire
+	// de connexion.
+	mux.Handle("GET /app", http.RedirectHandler("/app/", http.StatusMovedPermanently))
+	mux.Handle("GET /app/", http.StripPrefix("/app", spaHandler(s.Cfg.FrontendDir)))
+	mux.Handle("GET /", http.FileServer(http.Dir(s.Cfg.LandingDir)))
 
 	// authentification
 	mux.HandleFunc("POST /api/login", s.login)
@@ -179,7 +182,7 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": "google"})
 	// J+0 → J+1 : lance l'onboarding en arrière-plan (30 jours + miroir + capsule)
 	go s.onboarding()
-	http.Redirect(w, r, "/?connected=1", http.StatusFound)
+	http.Redirect(w, r, "/app/?connected=1", http.StatusFound)
 }
 
 // --- onboarding (Miroir J+1) ---

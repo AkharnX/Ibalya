@@ -17,6 +17,7 @@ type Config struct {
 	Channel            string // gmail | fixture
 	FixturePath        string
 	FrontendDir        string
+	LandingDir         string
 	IngestInterval     int // minutes
 	DetectInterval     int // minutes
 	DigestHour         int
@@ -53,6 +54,7 @@ func Load() Config {
 		Channel:            env("CHANNEL", "gmail"),
 		FixturePath:        env("FIXTURE_PATH", ""),
 		FrontendDir:        env("FRONTEND_DIR", "frontend/dist"),
+		LandingDir:         env("LANDING_DIR", "landing"),
 		IngestInterval:     envInt("INGEST_INTERVAL_MINUTES", 15),
 		DetectInterval:     envInt("DETECT_INTERVAL_MINUTES", 30),
 		DigestHour:         envInt("DIGEST_HOUR", 7),
