@@ -458,7 +458,9 @@ label{
 .login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--background);}
 .login-box{background:var(--card);border:1px solid var(--border);padding:40px;width:380px;}
 .login-box .logo{justify-content:center;margin-bottom:20px;font-size:18px;}
-.login-box p{color:var(--muted-foreground);margin:0 0 20px;font-size:13px;text-align:center;}
-.login-box input{width:100%;margin-bottom:12px;}
+.login-box p{color:var(--muted-foreground);margin:0 0 22px;font-size:13px;text-align:center;}
+.login-box label{text-align:left;margin:0 0 5px;}
+.login-box input{width:100%;margin-bottom:14px;}
+.login-box .btn{margin-top:4px;}
 .login-box .btn{width:100%;}
 .login-box .error{margin-top:12px;font-size:12.5px;text-align:center;}

@@ -7,6 +7,26 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+-- Comptes nominatifs : l'audit trail doit pouvoir désigner QUI a agi.
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  nom TEXT NOT NULL DEFAULT '',
+  password_hash TEXT NOT NULL,
+  actif BOOLEAN NOT NULL DEFAULT true,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  derniere_connexion TIMESTAMPTZ
+);
+
+-- Sessions : seul le HACHÉ du jeton est stocké, jamais le jeton lui-même.
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expire_le TIMESTAMPTZ NOT NULL,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
 CREATE TABLE IF NOT EXISTS oauth_tokens (
   provider TEXT PRIMARY KEY,
   token JSONB NOT NULL,

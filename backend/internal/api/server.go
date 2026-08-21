@@ -39,6 +39,13 @@ func (s *Server) Handler() http.Handler {
 	// client (/engagements, /alertes…) retombent sur index.html
 	mux.Handle("GET /", spaHandler(s.Cfg.FrontendDir))
 
+	// authentification
+	mux.HandleFunc("POST /api/login", s.login)
+	mux.HandleFunc("POST /api/logout", s.auth(s.logout))
+	mux.HandleFunc("GET /api/me", s.auth(s.me))
+	mux.HandleFunc("POST /api/password", s.auth(s.changerMotDePasse))
+	mux.HandleFunc("GET /api/users", s.auth(s.listUsers))
+
 	// santé (sans auth)
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"status": "ok"})
@@ -106,14 +113,25 @@ func (s *Server) Handler() http.Handler {
 
 // --- middleware ---
 
+// auth accepte deux modes :
+//   1. une session nominative (cookie HttpOnly) — le cas normal du tableau de bord ;
+//   2. le jeton de service, UNIQUEMENT depuis la boucle locale — pour les
+//      scripts (make status, demo.sh) ; jamais joignable depuis Internet.
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if c, err := r.Cookie(cookieSession); err == nil && c.Value != "" {
+			if u, err := s.Store.UserBySession(r.Context(), c.Value); err == nil {
+				next(w, r.WithContext(context.WithValue(r.Context(), ctxUser{}, u)))
+				return
+			}
+		}
 		token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
-		if s.Cfg.AdminToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.Cfg.AdminToken)) != 1 {
-			httpError(w, 401, "jeton d'accès invalide")
+		if token != "" && s.Cfg.AdminToken != "" && estLocal(r) &&
+			subtle.ConstantTimeCompare([]byte(token), []byte(s.Cfg.AdminToken)) == 1 {
+			next(w, r)
 			return
 		}
-		next(w, r)
+		httpError(w, 401, "authentification requise")
 	}
 }
 
@@ -291,7 +309,7 @@ func (s *Server) putCapsule(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "capsule_corrigee", nil)
+	s.Store.Audit(r.Context(), acteur(r), "capsule_corrigee", nil)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -366,7 +384,7 @@ func (s *Server) patchEngagement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = s.Store.AddEvent(r.Context(), id, "corrige", nil, fields)
-	s.Store.Audit(r.Context(), "dirigeant", "engagement_corrige", map[string]any{"id": id, "champs": fields})
+	s.Store.Audit(r.Context(), acteur(r), "engagement_corrige", map[string]any{"id": id, "champs": fields})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -445,7 +463,7 @@ func (s *Server) dismissDetection(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "detection_ecartee", map[string]int64{"id": id})
+	s.Store.Audit(r.Context(), acteur(r), "detection_ecartee", map[string]int64{"id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -467,7 +485,7 @@ func (s *Server) linkStatus(statut string) http.HandlerFunc {
 			httpError(w, 500, err.Error())
 			return
 		}
-		s.Store.Audit(r.Context(), "dirigeant", "lien_"+statut, map[string]int64{"id": id})
+		s.Store.Audit(r.Context(), acteur(r), "lien_"+statut, map[string]int64{"id": id})
 		writeJSON(w, map[string]string{"status": "ok"})
 	}
 }
@@ -533,7 +551,7 @@ func (s *Server) rejectDraft(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "brouillon_rejete", map[string]int64{"id": id})
+	s.Store.Audit(r.Context(), acteur(r), "brouillon_rejete", map[string]int64{"id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -559,7 +577,7 @@ func (s *Server) createRule(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "regle_creee", rule)
+	s.Store.Audit(r.Context(), acteur(r), "regle_creee", rule)
 	writeJSON(w, map[string]int64{"id": id})
 }
 
@@ -569,7 +587,7 @@ func (s *Server) deleteRule(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "regle_desactivee", map[string]int64{"id": id})
+	s.Store.Audit(r.Context(), acteur(r), "regle_desactivee", map[string]int64{"id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -652,7 +670,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 			s.Store.SetSetting(r.Context(), k, v)
 		}
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "reglages_modifies", body)
+	s.Store.Audit(r.Context(), acteur(r), "reglages_modifies", body)
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
@@ -681,7 +699,7 @@ func (s *Server) patchDraft(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 409, "brouillon introuvable ou déjà traité")
 		return
 	}
-	s.Store.Audit(r.Context(), "dirigeant", "brouillon_modifie", map[string]any{"draft_id": id})
+	s.Store.Audit(r.Context(), acteur(r), "brouillon_modifie", map[string]any{"draft_id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 

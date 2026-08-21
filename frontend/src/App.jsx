@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { api, AuthError, getToken, setToken } from './api'
+import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
 import Synthese from './pages/Synthese'
 import Suivi from './pages/Suivi'
 import AValider from './pages/AValider'
@@ -28,19 +28,41 @@ const Logo = () => (
   <div className="logo"><div className="logo-mark">IB</div><span>Ibalya</span></div>
 )
 
-function Login({ error, onSubmit }) {
-  const [value, setValue] = useState('')
+function Login({ onConnecte }) {
+  const [email, setEmail] = useState('')
+  const [motDePasse, setMotDePasse] = useState('')
+  const [erreur, setErreur] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const soumettre = async (e) => {
+    e?.preventDefault()
+    if (busy || !email || !motDePasse) return
+    setBusy(true); setErreur('')
+    try {
+      const u = await apiLogin(email.trim(), motDePasse)
+      onConnecte(u)
+    } catch (err) {
+      setErreur(err.message === 'Session expirée' ? 'Identifiants incorrects' : err.message)
+      setMotDePasse('')
+    } finally { setBusy(false) }
+  }
+
   return (
     <div className="login">
-      <div className="login-box">
+      <form className="login-box" onSubmit={soumettre}>
         <Logo />
-        <p>Entrez votre jeton d'accès administrateur.</p>
-        <input type="password" placeholder="Jeton d'accès" value={value} autoFocus
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSubmit(value.trim())} />
-        <button className="btn primary" onClick={() => onSubmit(value.trim())}>Se connecter</button>
-        {error && <p className="error">{error}</p>}
-      </div>
+        <p>Connectez-vous pour accéder au suivi de vos engagements.</p>
+        <label htmlFor="email">Adresse email</label>
+        <input id="email" type="email" autoComplete="username" autoFocus
+          value={email} onChange={(e) => setEmail(e.target.value)} />
+        <label htmlFor="mdp">Mot de passe</label>
+        <input id="mdp" type="password" autoComplete="current-password"
+          value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} />
+        <button className="btn primary" type="submit" disabled={busy}>
+          {busy ? 'Connexion…' : 'Se connecter'}
+        </button>
+        {erreur && <p className="error">{erreur}</p>}
+      </form>
     </div>
   )
 }
@@ -69,6 +91,7 @@ const TITRES = {
 export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')
+  const [user, setUser] = useState(null)
   const [status, setStatus] = useState(null)
   const [counts, setCounts] = useState({})
   const [dark, setDark] = useState(() => localStorage.getItem('ibalya_theme') !== 'light')
@@ -81,19 +104,17 @@ export default function App() {
   }, [dark])
 
   const check = useCallback(() => {
-    if (!getToken()) { setAuthed(false); return }
-    api('/status')
-      .then((st) => { setStatus(st); setAuthed(true) })
+    api('/me')
+      .then((u) => { setUser(u); setAuthed(true) })
       .catch((e) => {
         setAuthed(false)
-        setLoginError(e instanceof AuthError ? 'Jeton invalide.' : e.message)
+        if (!(e instanceof AuthError)) setLoginError(e.message)
       })
   }, [])
   useEffect(() => { check() }, [check])
 
   // compteurs de la navigation, rafraîchis à chaque changement de page
   const refreshCounts = useCallback(() => {
-    if (!getToken()) return
     api('/status').then((st) => {
       setStatus(st)
       setCounts({
@@ -106,7 +127,7 @@ export default function App() {
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
   if (authed === null) return null
-  if (!authed) return <Login error={loginError} onSubmit={(t) => { setToken(t); setLoginError(''); check() }} />
+  if (!authed) return <Login onConnecte={(u) => { setUser(u); setLoginError(''); setAuthed(true) }} />
 
   const agentOk = status?.canal_connecte && status?.service_llm_ok
 
@@ -130,11 +151,17 @@ export default function App() {
         </nav>
         <div className="sidebar-foot">
           <div className="sidebar-user">
-            <b>{status?.compte ? status.compte.split('@')[0] : 'Dirigeant'}</b>
-            <span>{status?.compte || status?.canal || '—'}</span>
+            <b>{user?.nom || user?.email || '—'}</b>
+            <span>{user?.email}</span>
           </div>
-          <button className="icon-btn" title={dark ? 'Thème clair' : 'Thème sombre'}
-            onClick={() => setDark(!dark)}>{dark ? '☀' : '☾'}</button>
+          <div style={{ display: 'flex', gap: 2 }}>
+            <button className="icon-btn" title={dark ? 'Thème clair' : 'Thème sombre'}
+              onClick={() => setDark(!dark)}>{dark ? '☀' : '☾'}</button>
+            <button className="icon-btn" title="Se déconnecter" onClick={async () => {
+              try { await apiLogout() } catch { /* session déjà close */ }
+              setAuthed(false); setUser(null)
+            }}>⏻</button>
+          </div>
         </div>
       </aside>
 

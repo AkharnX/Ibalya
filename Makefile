@@ -94,3 +94,7 @@ logs-llm: ## suit le journal du service LLM
 demo: ## remet la démo à zéro et rejoue le scénario complet (connecteur fixture)
 	@$(MAKE) --no-print-directory restart CHANNEL=fixture
 	@./scripts/demo.sh
+
+utilisateur: build ## crée un compte : make utilisateur EMAIL=... NOM="..."
+	@test -n "$(EMAIL)" || (echo 'usage : make utilisateur EMAIL=x@y.fr NOM="Prénom Nom"'; exit 1)
+	@set -a; . ./.env; set +a; ./backend/bin/ibalya -creer-utilisateur "$(EMAIL)" -nom "$(NOM)"

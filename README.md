@@ -39,7 +39,23 @@ modification du frontend, `make demo` pour rejouer le scénario de démonstratio
 renvoie bien du JSON et non la page du tableau de bord — signe que le binaire en
 cours d'exécution connaît les routes actuelles.
 
-Tableau de bord : `https://ibalya.com` — se connecter avec `ADMIN_TOKEN`.
+Tableau de bord : `https://ibalya.com` — connexion par email et mot de passe.
+
+### Comptes
+
+```bash
+make utilisateur EMAIL=prenom@exemple.fr NOM="Prénom Nom"
+```
+
+Le mot de passe est saisi sans écho : il n'apparaît ni à l'écran, ni dans
+l'historique du shell. Minimum 10 caractères, haché en bcrypt.
+
+Les sessions durent 30 jours (cookie `HttpOnly`, `Secure`, `SameSite=Lax`) ;
+seul le haché du jeton de session est conservé en base.
+
+`ADMIN_TOKEN` n'est plus un accès administrateur mais un **jeton de service**,
+accepté uniquement depuis la boucle locale (`make status`, `scripts/demo.sh`) :
+inutilisable depuis Internet, y compris avec un en-tête `X-Real-IP` forgé.
 
 ### Mise en ligne (une seule fois)
 

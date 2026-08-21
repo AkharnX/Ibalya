@@ -1,10 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
+	"syscall"
 	"time"
+
+	"golang.org/x/term"
 
 	"ibalya/backend/internal/api"
 	"ibalya/backend/internal/channel"
@@ -16,6 +24,10 @@ import (
 )
 
 func main() {
+	creerUtilisateur := flag.String("creer-utilisateur", "", "crée un compte : -creer-utilisateur email")
+	nom := flag.String("nom", "", "nom affiché du compte à créer")
+	flag.Parse()
+
 	cfg := config.Load()
 	ctx := context.Background()
 
@@ -24,6 +36,13 @@ func main() {
 		log.Fatalf("base de données: %v", err)
 	}
 	log.Println("base de données connectée, schéma appliqué")
+
+	if *creerUtilisateur != "" {
+		if err := creerCompte(ctx, st, *creerUtilisateur, *nom); err != nil {
+			log.Fatalf("création du compte: %v", err)
+		}
+		return
+	}
 
 	// connecteur derrière l'interface de canal (EF-10)
 	var reader channel.Reader
@@ -113,4 +132,48 @@ func maybeDailyDigest(ctx context.Context, cfg config.Config, st *store.Store, e
 	}
 	st.SetSetting(ctx, "dernier_digest", today)
 	log.Printf("digest %s généré", dtype)
+}
+
+// creerCompte crée un compte depuis la ligne de commande. Le mot de passe est
+// saisi sans écho et n'apparaît donc ni à l'écran ni dans l'historique du shell.
+func creerCompte(ctx context.Context, st *store.Store, email, nom string) error {
+	if nom == "" {
+		fmt.Print("Nom affiché : ")
+		lecteur := bufio.NewReader(os.Stdin)
+		ligne, _ := lecteur.ReadString('\n')
+		nom = strings.TrimSpace(ligne)
+	}
+	// Terminal : saisie masquée avec confirmation. Sinon (tuyau, script de
+	// provisionnement) : le mot de passe est lu sur l'entrée standard.
+	var mdp string
+	if term.IsTerminal(int(syscall.Stdin)) {
+		fmt.Print("Mot de passe (10 caractères minimum) : ")
+		a, err := term.ReadPassword(int(syscall.Stdin))
+		fmt.Println()
+		if err != nil {
+			return err
+		}
+		fmt.Print("Confirmation : ")
+		b, err := term.ReadPassword(int(syscall.Stdin))
+		fmt.Println()
+		if err != nil {
+			return err
+		}
+		if string(a) != string(b) {
+			return fmt.Errorf("les deux saisies diffèrent")
+		}
+		mdp = string(a)
+	} else {
+		ligne, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		if err != nil && ligne == "" {
+			return fmt.Errorf("mot de passe absent sur l'entrée standard")
+		}
+		mdp = strings.TrimRight(ligne, "\r\n")
+	}
+	id, err := st.CreateUser(ctx, email, nom, mdp)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Compte créé : %s (%s), identifiant %d\n", email, nom, id)
+	return nil
 }

@@ -1,24 +1,24 @@
-// Client API — jeton en localStorage, erreurs normalisées.
-let token = localStorage.getItem('ibalya_token') || '';
-
-export const getToken = () => token;
-export function setToken(t) {
-  token = t;
-  localStorage.setItem('ibalya_token', t);
-}
+// Client API — authentification par session (cookie HttpOnly posé par le serveur).
+// Aucun jeton n'est stocké côté navigateur : rien à voler via un XSS.
 
 export class AuthError extends Error {}
 
 export async function api(path, opts = {}) {
   const resp = await fetch('/api' + path, {
+    credentials: 'same-origin',
     ...opts,
-    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
   });
-  if (resp.status === 401) throw new AuthError('Jeton invalide');
+  if (resp.status === 401) throw new AuthError('Session expirée');
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) throw new Error(data.error || resp.statusText);
   return data;
 }
+
+export const login = (email, motDePasse) =>
+  api('/login', { method: 'POST', body: JSON.stringify({ email, mot_de_passe: motDePasse }) });
+
+export const logout = () => api('/logout', { method: 'POST' });
 
 // Toast minimaliste : dispatch d'un événement, écouté par <Toaster/>.
 export function toast(message, isError = false) {
