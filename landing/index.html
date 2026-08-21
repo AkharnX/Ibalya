@@ -4,21 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ibalya : l'assistant de direction qui sécurise vos échéances</title>
-<meta name="description" content="Ibalya lit vos emails, extrait automatiquement les engagements pris, détecte les retards et prépare vos relances. Sans saisie, en lecture seule.">
+<meta name="description" content="Ibalya suit les engagements de votre PME depuis vos emails : extraction automatique, détection des retards, relances préparées. Premier module de l'AgentOS de Kebe Agency, pour la France et la Côte d'Ivoire.">
 <meta property="og:title" content="Ibalya : l'assistant de direction qui sécurise vos échéances">
 <meta property="og:description" content="Extraction automatique des engagements depuis vos emails. Détection des retards. Relances préparées, validées d'un clic.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ibalya.com">
 <meta property="og:locale" content="fr_FR">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
 <header class="lp-header">
-  <a class="lp-logo" href="/"><span class="lp-mark">IB</span> Ibalya</a>
+  <a class="lp-logo" href="/"><svg class="lp-mark" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/></svg> Ibalya</a>
   <nav class="lp-nav">
+    <a href="#probleme">Le problème</a>
     <a href="#fonctionnement">Fonctionnement</a>
+    <a href="#tarifs">Tarifs</a>
     <a href="#securite">Sécurité</a>
+    <a href="#equipe">L'équipe</a>
   </nav>
   <div class="lp-header-actions">
     <a class="lp-lien-discret" href="/app">Connexion</a>
@@ -71,13 +75,44 @@
   </section>
 
   <!-- ── Le problème ── -->
-  <section class="lp-bandeau">
+  <section class="lp-bandeau" id="probleme">
     <p class="lp-surtitre">Le problème</p>
     <p class="lp-bandeau-texte">
-      Dans une PME, les engagements vivent dans les emails et dans la tête du dirigeant.
-      Les devis promis s'oublient, les fournisseurs en retard ne sont pas relancés,
-      les échéances se télescopent. <b>Rien n'est consigné.</b>
+      Les PME pilotent à l'aveugle. Leurs données commerciales sont dispersées entre
+      Excel, WhatsApp et les emails de leurs commerciaux. Leur activité opérationnelle
+      n'est retracée dans aucun outil. Le dirigeant cumule les fonctions de manager,
+      commercial et gestionnaire, <b>sans jamais avoir de vision consolidée.</b>
     </p>
+    <div class="lp-chiffres">
+      <div><b>3,7 M</b><span>PME en France, et l'essentiel du tissu économique ivoirien</span></div>
+      <div><b>10 %</b><span>des PME françaises utilisent activement l'IA, contre 35 % dans le monde</span></div>
+      <div><b>30 k€</b><span>le ticket d'entrée moyen d'une agence IA pour un projet sur mesure</span></div>
+    </div>
+  </section>
+
+  <!-- ── Le vide de marché ── -->
+  <section class="lp-section">
+    <div class="lp-section-tete">
+      <h2>Entre le tableur et la transformation à six chiffres, il n'y a rien.</h2>
+      <p>Les solutions existantes ne s'adressent pas aux entreprises de 10 à 200 salariés.</p>
+    </div>
+    <div class="lp-cartes lp-cartes-3">
+      <article class="lp-carte lp-carte-mate">
+        <h3>Les plateformes d'entreprise</h3>
+        <p>HubSpot, Salesforce, Agicap : trop chères et trop complexes. Elles supposent
+           une équipe pour les paramétrer et les maintenir.</p>
+      </article>
+      <article class="lp-carte lp-carte-mate">
+        <h3>Les outils sans code</h3>
+        <p>Make, n8n : puissants, mais ils exigent un profil technique que la PME n'a pas
+           en interne.</p>
+      </article>
+      <article class="lp-carte lp-carte-mate">
+        <h3>Les agences IA</h3>
+        <p>Projets sur mesure à partir de 30 000 €. Hors de portée, et sans garantie
+           de résultat rapide.</p>
+      </article>
+    </div>
   </section>
 
   <!-- ── Fonctionnement ── -->
@@ -138,6 +173,71 @@
         <p><span class="lp-c-mot">journal_audit</span> : <span class="lp-c-val">"intégral"</span></p>
         <p class="lp-c-note">L'agent ne peut pas envoyer, modifier ou supprimer<br>un email sans votre validation explicite.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ── Tarifs ── -->
+  <section class="lp-section" id="tarifs">
+    <div class="lp-section-tete">
+      <h2>Une grille lisible, calibrée par marché.</h2>
+      <p>Les niveaux de prix diffèrent entre la France et la Côte d'Ivoire, parce que les
+         réalités économiques diffèrent. Frais de mise en service la première année,
+         puis abonnement.</p>
+    </div>
+    <div class="lp-tarifs">
+      <article class="lp-tarif">
+        <h3>Starter</h3>
+        <p class="lp-tarif-desc">Un module au choix. Pour valider l'usage sur un premier périmètre.</p>
+        <div class="lp-prix"><span class="lp-pays">France</span><b>900 €</b><i>/ mois · mise en service 6 000 €</i></div>
+        <div class="lp-prix"><span class="lp-pays">Côte d'Ivoire</span><b>100 000 FCFA</b><i>/ mois · mise en service 750 000 FCFA</i></div>
+      </article>
+      <article class="lp-tarif lp-tarif-vedette">
+        <span class="lp-ruban">Le plus choisi</span>
+        <h3>Pro</h3>
+        <p class="lp-tarif-desc">Trois modules intégrés, qui s'orchestrent entre eux.</p>
+        <div class="lp-prix"><span class="lp-pays">France</span><b>2 200 €</b><i>/ mois · mise en service 15 000 €</i></div>
+        <div class="lp-prix"><span class="lp-pays">Côte d'Ivoire</span><b>280 000 FCFA</b><i>/ mois · mise en service 2 000 000 FCFA</i></div>
+      </article>
+      <article class="lp-tarif">
+        <h3>Scale</h3>
+        <p class="lp-tarif-desc">Sur mesure, avec engagement de service.</p>
+        <div class="lp-prix"><span class="lp-pays">France</span><b>4 500 €+</b><i>/ mois · mise en service 30 000 €+</i></div>
+        <div class="lp-prix"><span class="lp-pays">Côte d'Ivoire</span><b>700 000 FCFA+</b><i>/ mois · mise en service 5 000 000 FCFA+</i></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ── L'équipe et la trajectoire ── -->
+  <section class="lp-section" id="equipe">
+    <div class="lp-section-tete">
+      <h2>Ibalya est le premier module de l'AgentOS des PME.</h2>
+      <p>Kebe Agency construit une plateforme d'agents IA par métier, pour les entreprises
+         de 10 à 200 salariés en France et en Côte d'Ivoire. Sans équipe technique,
+         sans projet informatique lourd.</p>
+    </div>
+
+    <div class="lp-modules">
+      <div class="lp-module lp-module-actif">
+        <span class="lp-module-etat">Disponible</span>
+        <b>Agent Ops &amp; Delivery</b>
+        <p>Suivi des engagements, alertes sur les jalons, relances préparées. C'est Ibalya.</p>
+      </div>
+      <div class="lp-module">
+        <span class="lp-module-etat">À venir</span>
+        <b>Agent Pilotage commercial</b>
+        <p>Vision du pipeline, alertes de relance, prévision du chiffre d'affaires.</p>
+      </div>
+      <div class="lp-module">
+        <span class="lp-module-etat">À venir</span>
+        <b>Agent Trésorerie</b>
+        <p>Prévision de trésorerie, alertes de tension, simulation de scénarios.</p>
+      </div>
+    </div>
+
+    <div class="lp-equipe">
+      <div><b>Yacouba Kebe</b><span>Direction générale, stratégie</span></div>
+      <div><b>Ibrahim Kebe</b><span>Direction technique, IA</span></div>
+      <div><b>Aliou Kebe</b><span>Marketing, croissance</span></div>
     </div>
   </section>
 
