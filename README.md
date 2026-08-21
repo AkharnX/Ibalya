@@ -50,6 +50,13 @@ make utilisateur EMAIL=prenom@exemple.fr NOM="Prénom Nom"
 Le mot de passe est saisi sans écho : il n'apparaît ni à l'écran, ni dans
 l'historique du shell. Minimum 10 caractères, haché en bcrypt.
 
+Deux méthodes de connexion, au choix de l'utilisateur : email + mot de passe,
+ou **« Continuer avec Google »**. La connexion Google ne crée jamais de compte :
+Google atteste l'identité, l'autorisation vient de la table `users`. Une adresse
+inconnue est refusée et l'échec est tracé dans l'audit. Elle exige l'URI de
+redirection `https://ibalya.com/api/oauth/google/login/callback` dans la console
+Google — distincte de celle qui donne accès à Gmail.
+
 Les sessions durent 30 jours (cookie `HttpOnly`, `Secure`, `SameSite=Lax`) ;
 seul le haché du jeton de session est conservé en base.
 

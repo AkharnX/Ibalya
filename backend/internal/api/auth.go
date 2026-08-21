@@ -1,11 +1,19 @@
 package api
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
 	"ibalya/backend/internal/store"
 )
@@ -151,4 +159,111 @@ func (s *Server) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, users)
+}
+
+// ─── Connexion via Google ───
+// Flux distinct de celui qui donne accès à Gmail : ici on ne demande que
+// l'identité (openid, email, profil), jamais le contenu de la boîte.
+// Règle : Google prouve QUI vous êtes, il ne décide pas si vous avez le droit
+// d'entrer. Seules les adresses déjà provisionnées ouvrent une session.
+
+const cookieEtatOAuth = "ibalya_oauth_login"
+
+func (s *Server) configLoginGoogle() *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     s.Cfg.GoogleClientID,
+		ClientSecret: s.Cfg.GoogleClientSecret,
+		RedirectURL:  s.Cfg.PublicBaseURL + "/api/oauth/google/login/callback",
+		Scopes:       []string{"openid", "email", "profile"},
+		Endpoint:     google.Endpoint,
+	}
+}
+
+// GET /api/oauth/google/login — départ du parcours (lien direct, pas de session requise)
+func (s *Server) googleLoginStart(w http.ResponseWriter, r *http.Request) {
+	if s.Cfg.GoogleClientID == "" {
+		httpError(w, 400, "connexion Google non configurée")
+		return
+	}
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	etat := hex.EncodeToString(b)
+	// l'état vit dans un cookie éphémère : deux connexions simultanées ne se
+	// marchent pas dessus, contrairement à un état global en base
+	http.SetCookie(w, &http.Cookie{
+		Name: cookieEtatOAuth, Value: etat, Path: "/", MaxAge: 600,
+		HttpOnly: true, Secure: strings.HasPrefix(s.Cfg.PublicBaseURL, "https://"),
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.Redirect(w, r, s.configLoginGoogle().AuthCodeURL(etat), http.StatusFound)
+}
+
+// GET /api/oauth/google/login/callback
+func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	echec := func(motif string) {
+		http.Redirect(w, r, "/?erreur="+url.QueryEscape(motif), http.StatusFound)
+	}
+
+	c, err := r.Cookie(cookieEtatOAuth)
+	if err != nil || c.Value == "" || c.Value != r.URL.Query().Get("state") {
+		echec("Requête de connexion invalide ou expirée. Réessayez.")
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: cookieEtatOAuth, Value: "", Path: "/", MaxAge: -1})
+
+	tok, err := s.configLoginGoogle().Exchange(ctx, r.URL.Query().Get("code"))
+	if err != nil {
+		echec("Échec de l'échange avec Google.")
+		return
+	}
+	email, verifie, err := infosCompteGoogle(ctx, s.configLoginGoogle(), tok)
+	if err != nil {
+		echec("Impossible de lire votre compte Google.")
+		return
+	}
+	if !verifie {
+		echec("Cette adresse Google n'est pas vérifiée.")
+		return
+	}
+
+	// Aucune création implicite : le compte doit exister et être actif.
+	u, err := s.Store.UserByEmail(ctx, email)
+	if err != nil || u == nil || !u.Actif {
+		s.Store.Audit(ctx, "anonyme", "connexion_google_refusee", map[string]string{"email": email})
+		echec("Aucun compte Ibalya n'est associé à " + email + ".")
+		return
+	}
+	token, expire, err := s.Store.CreateSession(ctx, u.ID)
+	if err != nil {
+		echec("Création de session impossible.")
+		return
+	}
+	s.poserCookie(w, token, expire)
+	s.Store.Audit(ctx, u.Email, "connexion", map[string]string{"methode": "google"})
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// infosCompteGoogle interroge le point d'accès userinfo : plus simple et plus
+// sûr que de décoder soi-même le jeton d'identité.
+func infosCompteGoogle(ctx context.Context, cfg *oauth2.Config, tok *oauth2.Token) (string, bool, error) {
+	resp, err := cfg.Client(ctx, tok).Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return "", false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", false, fmt.Errorf("userinfo: statut %d", resp.StatusCode)
+	}
+	var infos struct {
+		Email         string `json:"email"`
+		VerifiedEmail bool   `json:"verified_email"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&infos); err != nil {
+		return "", false, err
+	}
+	return infos.Email, infos.VerifiedEmail, nil
 }

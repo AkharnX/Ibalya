@@ -147,3 +147,19 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 	}
 	return out, rows.Err()
 }
+
+// UserByEmail sert à la connexion Google : Google prouve l'identité, mais
+// l'autorisation vient de notre propre table.
+func (s *Store) UserByEmail(ctx context.Context, email string) (*User, error) {
+	var u User
+	err := s.Pool.QueryRow(ctx, `SELECT id, email, nom, actif, cree_le, derniere_connexion
+		FROM users WHERE email=$1`, normEmail(email)).
+		Scan(&u.ID, &u.Email, &u.Nom, &u.Actif, &u.CreeLe, &u.DerniereConnexion)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}

@@ -41,6 +41,8 @@ func (s *Server) Handler() http.Handler {
 
 	// authentification
 	mux.HandleFunc("POST /api/login", s.login)
+	mux.HandleFunc("GET /api/oauth/google/login", s.googleLoginStart)
+	mux.HandleFunc("GET /api/oauth/google/login/callback", s.googleLoginCallback)
 	mux.HandleFunc("POST /api/logout", s.auth(s.logout))
 	mux.HandleFunc("GET /api/me", s.auth(s.me))
 	mux.HandleFunc("POST /api/password", s.auth(s.changerMotDePasse))
