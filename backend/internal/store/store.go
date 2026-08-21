@@ -93,3 +93,18 @@ func (s *Store) ListAudit(ctx context.Context, limit int) ([]AuditEntry, error) 
 	}
 	return out, rows.Err()
 }
+
+// UpdateOAuthTokenOnly met à jour le jeton SANS toucher à l'adresse du compte.
+// À utiliser lors d'un rafraîchissement : SaveOAuthToken écraserait l'email.
+func (s *Store) UpdateOAuthTokenOnly(ctx context.Context, provider string, token []byte) error {
+	_, err := s.Pool.Exec(ctx, `UPDATE oauth_tokens SET token=$2, updated_at=now() WHERE provider=$1`,
+		provider, token)
+	return err
+}
+
+// SetOAuthAccountEmail enregistre l'adresse du compte connecté.
+func (s *Store) SetOAuthAccountEmail(ctx context.Context, provider, email string) error {
+	_, err := s.Pool.Exec(ctx, `UPDATE oauth_tokens SET account_email=$2 WHERE provider=$1`,
+		provider, email)
+	return err
+}

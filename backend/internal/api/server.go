@@ -72,6 +72,7 @@ func (s *Server) Handler() http.Handler {
 	// engagements
 	mux.HandleFunc("GET /api/engagements", s.auth(s.listEngagements))
 	mux.HandleFunc("GET /api/engagements/{id}/events", s.auth(s.listEvents))
+	mux.HandleFunc("GET /api/engagements/{id}/source", s.auth(s.engagementSource))
 	mux.HandleFunc("PATCH /api/engagements/{id}", s.auth(s.patchEngagement))
 	mux.HandleFunc("POST /api/engagements/{id}/correct", s.auth(s.correctEngagement))
 

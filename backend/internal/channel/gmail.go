@@ -20,6 +20,8 @@ import (
 type TokenStore interface {
 	SaveOAuthToken(ctx context.Context, provider string, token []byte, email string) error
 	GetOAuthToken(ctx context.Context, provider string) ([]byte, string, error)
+	UpdateOAuthTokenOnly(ctx context.Context, provider string, token []byte) error
+	SetOAuthAccountEmail(ctx context.Context, provider, email string) error
 }
 
 type Gmail struct {
@@ -62,7 +64,8 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 	if tok.AccessToken != p.last {
 		p.last = tok.AccessToken
 		b, _ := json.Marshal(tok)
-		_ = p.store.SaveOAuthToken(context.Background(), "google", b, "")
+		// surtout pas SaveOAuthToken : il écraserait account_email
+		_ = p.store.UpdateOAuthTokenOnly(context.Background(), "google", b)
 	}
 	return tok, nil
 }
@@ -97,7 +100,10 @@ func (g *Gmail) AccountEmail(ctx context.Context) (string, error) {
 		return "", err
 	}
 	g.email = prof.EmailAddress
-	_ = g.store.SaveOAuthToken // email persisté par le handler OAuth
+	// persistée ici : le tableau de bord et les liens Gmail en ont besoin,
+	// et l'appel au profil peut échouer au moment du callback (API Gmail
+	// pas encore activée, par exemple)
+	_ = g.store.SetOAuthAccountEmail(ctx, "google", prof.EmailAddress)
 	return prof.EmailAddress, nil
 }
 

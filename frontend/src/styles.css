@@ -474,3 +474,32 @@ label{
 }
 .btn-google:hover{border-color:var(--primary);}
 .login-note{font-size:11.5px;color:var(--muted-foreground);margin:12px 0 0;text-align:center;line-height:1.45;}
+
+/* ── panneau de traçabilité : la conversation d'origine ── */
+.source-panel{width:560px;}
+.msg{border:1px solid var(--border);background:var(--card);padding:12px 14px;}
+.msg + .msg{border-top:none;}
+.msg-source{border-left:2px solid var(--primary);background:var(--secondary);}
+.msg-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.msg-head b{font-size:12.5px;}
+.msg-to{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-left:6px;}
+.msg-date{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);white-space:nowrap;}
+.msg-badge{
+  display:inline-block;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.08em;padding:2px 7px;margin:6px 6px 0 0;
+  background:color-mix(in srgb, var(--primary) 15%, transparent);color:var(--primary);
+}
+.msg-badge.exclu{background:var(--secondary);color:var(--muted-foreground);}
+.msg-subject{font-weight:500;font-size:13px;margin:8px 0 4px;color:var(--foreground);}
+.msg-body{
+  background:var(--background);border:1px solid var(--border);padding:10px 12px;margin:0;
+  white-space:pre-wrap;font-size:12.5px;font-family:inherit;line-height:1.55;
+  max-height:260px;overflow-y:auto;color:var(--muted-foreground);
+}
+.msg-lien{display:inline-block;margin-top:8px;font-size:12px;color:var(--primary);text-decoration:none;}
+.msg-lien:hover{text-decoration:underline;}
+.lien-source{
+  background:none;border:none;padding:0;margin:0;font-family:inherit;font-size:inherit;
+  color:inherit;font-weight:500;cursor:pointer;text-align:left;
+}
+.lien-source:hover{color:var(--primary);text-decoration:underline;}

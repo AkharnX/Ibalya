@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
+import SourcePanel from '../components/SourcePanel'
 
 const CAT_META = {
   encours: { dot: 'blue', titre: 'Engagements en cours' },
@@ -19,6 +20,7 @@ export default function Synthese() {
   useEffect(load, [load])
 
   const d = useDraft(load)
+  const [sourceId, setSourceId] = useState(null)
 
   const runCycle = async () => {
     toast('Analyse en cours…')
@@ -76,7 +78,10 @@ export default function Synthese() {
           <div className={'priority-item ' + p.categorie} key={p.engagement_id}>
             <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'À risque' : 'Retard'}</span>
             <div className="p-body">
-              <p className="p-title">{p.titre}</p>
+              <p className="p-title">
+                <button className="lien-source" title="Voir la conversation d'origine"
+                  onClick={() => setSourceId(p.engagement_id)}>{p.titre}</button>
+              </p>
               <p className="p-sub">{p.contexte}</p>
             </div>
             <div className="p-actions">
@@ -123,6 +128,7 @@ export default function Synthese() {
 
       <DraftPanel draft={d.draft} loading={d.loading} title={d.meta.title} hint={d.meta.hint}
         onClose={d.close} onSent={d.onSent} />
+      <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
     </section>
   )
 }

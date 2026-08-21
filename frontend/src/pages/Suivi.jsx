@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
+import SourcePanel from '../components/SourcePanel'
 import { TYPE_LABELS, fmtDate } from '../components/ui'
 
 const CATEGORIES = [
@@ -25,6 +26,7 @@ export default function Suivi() {
   useEffect(load, [load])
 
   const d = useDraft(load)
+  const [sourceId, setSourceId] = useState(null)
 
   const counts = useMemo(() => {
     const c = { all: rows.length }
@@ -99,7 +101,8 @@ export default function Suivi() {
                   <td><span className={'badge ' + (r.type || 'autre')}>{TYPE_LABELS[r.type] || 'Autre'}</span></td>
                   <td>
                     <p className="eng-title">
-                      {r.objet}
+                      <button className="lien-source" title="Voir la conversation d'origine"
+                        onClick={() => setSourceId(r.id)}>{r.objet}</button>
                       {r.echeance && r.echeance_inferee && !r.echeance_confirmee && <span className="tag-confirm">à confirmer</span>}
                     </p>
                     <p className="eng-flow">{r.emetteur_email || '?'} → {r.destinataire_email || '?'}</p>
@@ -132,6 +135,7 @@ export default function Suivi() {
 
       <DraftPanel draft={d.draft} loading={d.loading} title={d.meta.title} hint={d.meta.hint}
         onClose={d.close} onSent={d.onSent} />
+      <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
     </section>
   )
 }
