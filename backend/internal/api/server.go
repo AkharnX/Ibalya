@@ -64,6 +64,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/status", s.auth(s.status))
 	mux.HandleFunc("POST /api/cycle/run", s.auth(s.runCycle))
 	mux.HandleFunc("POST /api/onboarding/run", s.auth(s.runOnboarding))
+	mux.HandleFunc("GET /api/onboarding/status", s.auth(s.onboardingStatus))
+	mux.HandleFunc("POST /api/onboarding/ack", s.auth(s.onboardingAck))
 
 	// miroir & capsule
 	mux.HandleFunc("GET /api/miroir", s.auth(s.getMiroir))
@@ -190,19 +192,33 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 func (s *Server) onboarding() {
 	ctx := context.Background()
 	log.Println("onboarding: lecture des 30 derniers jours…")
+	s.marquerPhase(ctx, "lecture", "")
+
 	res := s.Engine.RunCycle(ctx, func(ctx context.Context) (any, error) {
+		defer s.marquerPhase(ctx, "analyse", "")
 		return s.Ingester.Run(ctx, time.Now().AddDate(0, 0, -30), 1000)
 	})
 	if res.Erreur != "" {
 		log.Printf("onboarding: %s", res.Erreur)
+		s.marquerPhase(ctx, "erreur", res.Erreur)
+		return
 	}
+
+	s.marquerPhase(ctx, "miroir", "")
 	if _, err := s.Engine.GenerateMiroir(ctx); err != nil {
 		log.Printf("onboarding: miroir: %v", err)
+		s.marquerPhase(ctx, "erreur", err.Error())
+		return
 	}
+
 	// capsule temps 1 APRÈS le miroir (séquencement psychologique CDC 9.1)
+	s.marquerPhase(ctx, "capsule", "")
 	if err := s.Engine.InferCapsule(ctx); err != nil {
 		log.Printf("onboarding: capsule: %v", err)
+		s.marquerPhase(ctx, "erreur", err.Error())
+		return
 	}
+	s.marquerPhase(ctx, "termine", "")
 }
 
 func (s *Server) runOnboarding(w http.ResponseWriter, r *http.Request) {

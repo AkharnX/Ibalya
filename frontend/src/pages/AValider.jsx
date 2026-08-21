@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { DraftPanel } from '../components/DraftPanel'
 import { Empty, fmtDT } from '../components/ui'
+import { SqueletteTable } from '../components/Squelette'
 
 export default function AValider() {
-  const [drafts, setDrafts] = useState([])
+  const [drafts, setDrafts] = useState(null)
   const [selected, setSelected] = useState(null)
 
   const load = useCallback(() => {
@@ -28,7 +29,9 @@ export default function AValider() {
         </div>
       </div>
 
-      {!drafts.length ? (
+      {drafts === null ? (
+        <SqueletteTable lignes={3} colonnes={5} />
+      ) : !drafts.length ? (
         <Empty>Aucun message en attente. Tout est traité.</Empty>
       ) : (
         <div className="tbl-wrap">
