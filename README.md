@@ -39,12 +39,26 @@ modification du frontend, `make demo` pour rejouer le scénario de démonstratio
 renvoie bien du JSON et non la page du tableau de bord — signe que le binaire en
 cours d'exécution connaît les routes actuelles.
 
-Tableau de bord : `http://<serveur>:9999` — se connecter avec `ADMIN_TOKEN`.
+Tableau de bord : `https://ibalya.com` — se connecter avec `ADMIN_TOKEN`.
+
+### Mise en ligne (une seule fois)
+
+Faire pointer les enregistrements DNS `A` de `ibalya.com` et `www.ibalya.com`
+vers l'IP du serveur, puis :
+
+```bash
+./scripts/setup_https.sh
+```
+
+Le script vérifie le DNS, installe le vhost nginx (`deploy/nginx-ibalya.com.conf`),
+obtient le certificat Let's Encrypt, bascule `PUBLIC_BASE_URL` sur le domaine,
+redémarre le backend, vérifie l'accès depuis l'extérieur — et seulement alors
+ferme le port 9999 au public.
 
 ### Connexion Gmail (OAuth)
 
 1. Google Cloud Console → Credentials → OAuth Client ID (type Web).
-2. URI de redirection : `{PUBLIC_BASE_URL}/api/oauth/google/callback`.
+2. URI de redirection : `https://ibalya.com/api/oauth/google/callback`.
 3. Renseigner `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` dans `.env`.
 4. Tableau de bord → Réglages → « Connecter Gmail ».
 
