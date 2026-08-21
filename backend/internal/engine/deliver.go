@@ -16,20 +16,20 @@ import (
 // --- Miroir d'activité (EF-2, livrable J+1) ---
 
 type Miroir struct {
-	GenereLe          time.Time          `json:"genere_le"`
-	PeriodeJours      int                `json:"periode_jours"`
-	MessagesLus       int                `json:"messages_lus"`
+	GenereLe           time.Time          `json:"genere_le"`
+	PeriodeJours       int                `json:"periode_jours"`
+	MessagesLus        int                `json:"messages_lus"`
 	EngagementsOuverts []store.Engagement `json:"engagements_ouverts"`
-	EnRetardProbable  []store.Engagement `json:"en_retard_probable"`
-	FilsSansReponse   []FilSansReponse   `json:"fils_sans_reponse"`
-	Note              string             `json:"note"`
+	EnRetardProbable   []store.Engagement `json:"en_retard_probable"`
+	FilsSansReponse    []FilSansReponse   `json:"fils_sans_reponse"`
+	Note               string             `json:"note"`
 }
 
 type FilSansReponse struct {
-	ThreadID     int64  `json:"thread_id"`
-	Sujet        string `json:"sujet"`
+	ThreadID      int64  `json:"thread_id"`
+	Sujet         string `json:"sujet"`
 	Interlocuteur string `json:"interlocuteur"`
-	JoursSilence int    `json:"jours_silence"`
+	JoursSilence  int    `json:"jours_silence"`
 }
 
 // GenerateMiroir produit le premier rapport après lecture de l'historique.

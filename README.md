@@ -113,6 +113,36 @@ LLM_PROVIDER=mock make run-llm     # extraction factice par mots-clés
 make demo                          # connecteur fixture (fixtures/messages.json)
 ```
 
+## Exploitation
+
+Les services sont supervisés par **systemd** : ils redémarrent seuls après un
+plantage et au démarrage du serveur.
+
+```bash
+make services        # installe et active les unités (une seule fois)
+make restart         # recompile et redémarre le backend
+make test            # tests Go et Python
+make logs            # journal du backend (journalctl)
+```
+
+### Intégration et déploiement continus
+
+`.github/workflows/ci.yml` s'exécute sur **chaque branche et chaque pull
+request** : formatage Go, `go vet`, tests avec détecteur de compétition,
+compilation, tests Python, build du frontend, et un contrôle de cohérence qui
+vérifie que **chaque appel du frontend correspond à une route déclarée** — un
+renommage côté serveur sans mise à jour du client produirait sinon un 404
+silencieux, masqué par le repli SPA.
+
+`.github/workflows/cd.yml` déploie sur **`main` uniquement**, via
+`scripts/deployer.sh` : construction, redémarrage, **contrôle de santé et
+retour arrière automatique** si la nouvelle version ne répond pas. Un
+déploiement raté ne laisse jamais le service à terre.
+
+La clé SSH de déploiement est restreinte par `command=` dans `authorized_keys` :
+elle ne peut lancer que le script de déploiement, pas ouvrir un shell. Le `sudo`
+associé est limité au redémarrage des deux services.
+
 ## Garde-fous (CDC sections 11 et 13)
 
 - Aucun message ne part sans **validation explicite** (marche 3).

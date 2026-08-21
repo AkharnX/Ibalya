@@ -117,9 +117,9 @@ func (s *Server) Handler() http.Handler {
 // --- middleware ---
 
 // auth accepte deux modes :
-//   1. une session nominative (cookie HttpOnly) — le cas normal du tableau de bord ;
-//   2. le jeton de service, UNIQUEMENT depuis la boucle locale — pour les
-//      scripts (make status, demo.sh) ; jamais joignable depuis Internet.
+//  1. une session nominative (cookie HttpOnly) — le cas normal du tableau de bord ;
+//  2. le jeton de service, UNIQUEMENT depuis la boucle locale — pour les
+//     scripts (make status, demo.sh) ; jamais joignable depuis Internet.
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if c, err := r.Cookie(cookieSession); err == nil && c.Value != "" {
@@ -231,13 +231,13 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	llmOK := s.Engine.LLM.Health(ctx) == nil
 
 	writeJSON(w, map[string]any{
-		"canal":            s.Engine.Channel.Name(),
-		"canal_connecte":   tok != nil || s.Engine.Channel.Name() == "fixture",
-		"compte":           email,
-		"service_llm_ok":   llmOK,
-		"dernier_cycle":    s.Store.GetSetting(ctx, "dernier_cycle", ""),
+		"canal":             s.Engine.Channel.Name(),
+		"canal_connecte":    tok != nil || s.Engine.Channel.Name() == "fixture",
+		"compte":            email,
+		"service_llm_ok":    llmOK,
+		"dernier_cycle":     s.Store.GetSetting(ctx, "dernier_cycle", ""),
 		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
-		"compteurs":        counts,
+		"compteurs":         counts,
 	})
 }
 
@@ -799,14 +799,14 @@ func (s *Server) pilotage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, map[string]any{
-		"alertes_critiques":     alertes,
-		"en_retard":             enRetard,
-		"jalons_14_jours":       jalons,
-		"par_type":              parType,
+		"alertes_critiques": alertes,
+		"en_retard":         enRetard,
+		"jalons_14_jours":   jalons,
+		"par_type":          parType,
 		"quick_wins": map[string]any{
-			"brouillons_a_valider":   drafts,
-			"echeances_a_confirmer":  aConfirmer,
-			"liens_a_trancher":       liens,
+			"brouillons_a_valider":  drafts,
+			"echeances_a_confirmer": aConfirmer,
+			"liens_a_trancher":      liens,
 		},
 	})
 }
@@ -849,18 +849,18 @@ func (s *Server) kpis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, map[string]any{
-		"taux_exclusion_prefiltre":   tauxExclusion, // santé économique (EF-11)
-		"messages_analyses":          q(`SELECT count(*) FROM messages WHERE status='analyzed'`),
-		"engagements_extraits":       extraits,
-		"precision_estimee":          precision,          // cible > 85 %
-		"taux_faux_positifs":         tauxFauxPositifs,   // cible < 10 %
-		"corrections_7_jours":        q(`SELECT count(*) FROM audit_log WHERE actor='dirigeant' AND event_type IN ('correction','engagement_corrige') AND ts > now() - interval '7 days'`), // cible < 3 après S3
-		"actions_suggerees":          suggeres,
-		"actions_validees":           valides,
-		"taux_validation_actions":    tauxValidation, // cible > 40 %
-		"digests_generes":            q(`SELECT count(*) FROM reports WHERE type LIKE 'digest_%'`),
-		"regles_apprises_actives":    q(`SELECT count(*) FROM learned_rules WHERE active`),
-		"incidents_critiques":        0, // cible : 0 — toute action passe par validation explicite
+		"taux_exclusion_prefiltre": tauxExclusion, // santé économique (EF-11)
+		"messages_analyses":        q(`SELECT count(*) FROM messages WHERE status='analyzed'`),
+		"engagements_extraits":     extraits,
+		"precision_estimee":        precision,                                                                                                                                            // cible > 85 %
+		"taux_faux_positifs":       tauxFauxPositifs,                                                                                                                                     // cible < 10 %
+		"corrections_7_jours":      q(`SELECT count(*) FROM audit_log WHERE actor='dirigeant' AND event_type IN ('correction','engagement_corrige') AND ts > now() - interval '7 days'`), // cible < 3 après S3
+		"actions_suggerees":        suggeres,
+		"actions_validees":         valides,
+		"taux_validation_actions":  tauxValidation, // cible > 40 %
+		"digests_generes":          q(`SELECT count(*) FROM reports WHERE type LIKE 'digest_%'`),
+		"regles_apprises_actives":  q(`SELECT count(*) FROM learned_rules WHERE active`),
+		"incidents_critiques":      0, // cible : 0 — toute action passe par validation explicite
 	})
 }
 

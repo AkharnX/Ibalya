@@ -132,8 +132,8 @@ func (s *Server) changerMotDePasse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Actuel   string `json:"actuel"`
-		Nouveau  string `json:"nouveau"`
+		Actuel  string `json:"actuel"`
+		Nouveau string `json:"nouveau"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		httpError(w, 400, "requête invalide")

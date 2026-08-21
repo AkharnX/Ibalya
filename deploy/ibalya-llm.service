@@ -1,14 +1,32 @@
 [Unit]
-Description=Ibalya LLM service (Python, 127.0.0.1:8092)
-After=network.target
+Description=Ibalya — service d'inférence (Python, 127.0.0.1:8092, jamais exposé)
+Documentation=https://github.com/AkharnX/Agent-ops
+After=network-online.target
+Wants=network-online.target
 
 [Service]
+Type=simple
 User=akharn
+Group=akharn
 WorkingDirectory=/home/akharn/agnet-ia/llm-service
 EnvironmentFile=/home/akharn/agnet-ia/.env
 ExecStart=/home/akharn/app/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8092
-Restart=on-failure
+Restart=always
 RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ibalya-llm
 
 [Install]
 WantedBy=multi-user.target
