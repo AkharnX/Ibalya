@@ -89,6 +89,23 @@ ferme le port 9999 au public.
 jours → **Miroir d'activité** → capsule temps 1 (le miroir est généré AVANT
 les questions de setup — CDC 9.1).
 
+### Données de démonstration
+
+Les fixtures et les données réelles cohabitent dans la même base, distinguées par
+le champ `channel`. Pour retirer la démo sans toucher au réel :
+
+```bash
+./scripts/archiver_demo.sh                          # archive dans archives/, puis supprime
+./scripts/archiver_demo.sh --restaurer archives/... # réinjecte si besoin
+```
+
+La suppression respecte l'ordre des dépendances (brouillons → détections → liens
+→ événements → engagements → messages → fils) et retire les interlocuteurs
+devenus orphelins. `make demo` régénère de toute façon un scénario complet avec
+des dates recalculées : l'archive est un filet, pas la source.
+
+Le dossier `archives/` est ignoré par git — il peut contenir des données réelles.
+
 ### Mode démonstration (sans Gmail ni clé LLM)
 
 ```bash

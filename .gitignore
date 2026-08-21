@@ -7,3 +7,6 @@ node_modules/
 frontend/dist/
 .claude/
 logs/
+
+# archives de données (peuvent contenir des données réelles)
+archives/
