@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor" role="img" aria-label="Ibalya">
+  <!-- pièce 1 : barre haute -->
+  <path d="M0 0h64v24H0z"/>
+  <!-- pièce 2 : barre droite -->
+  <path d="M76 0h24v64H76z"/>
+  <!-- pièce 3 : le L, qui referme le cadre -->
+  <path d="M0 36h24v40h76v24H0z"/>
+</svg>
