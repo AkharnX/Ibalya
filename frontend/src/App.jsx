@@ -2,7 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
 import Synthese from './pages/Synthese'
+import Miroir from './pages/Miroir'
+import Digest from './pages/Digest'
 import Suivi from './pages/Suivi'
+import Liens from './pages/Liens'
+import Interlocuteurs from './pages/Interlocuteurs'
 import AValider from './pages/AValider'
 import Alertes from './pages/Alertes'
 import Agent from './pages/Agent'
@@ -102,21 +106,27 @@ function Login({ onConnecte }) {
 const NAV = [
   ['Opérations', [
     ['/', 'Synthèse', null],
+    ['/miroir', 'Miroir d’activité', null],
+    ['/digest', 'Digest', null],
     ['/a-valider', 'À valider', 'messages_a_valider'],
   ]],
   ['Extraction', [
     ['/suivi', 'Engagements', null],
     ['/alertes', 'Alertes', 'alertes'],
+    ['/liens', 'Dépendances', 'liens_a_confirmer'],
   ]],
   ['Système', [
     ['/agent', 'Règles métier', null],
+    ['/interlocuteurs', 'Interlocuteurs', null],
     ['/reglages', 'Réglages', null],
   ]],
 ]
 
 const TITRES = {
-  '/': 'Synthèse', '/a-valider': 'À valider', '/suivi': 'Engagements',
-  '/alertes': 'Alertes', '/agent': 'Règles métier', '/reglages': 'Réglages',
+  '/': 'Synthèse', '/miroir': 'Miroir d’activité', '/digest': 'Digest',
+  '/a-valider': 'À valider', '/suivi': 'Engagements', '/alertes': 'Alertes',
+  '/liens': 'Dépendances', '/agent': 'Règles métier',
+  '/interlocuteurs': 'Interlocuteurs', '/reglages': 'Réglages',
 }
 
 export default function App() {
@@ -151,6 +161,7 @@ export default function App() {
       setCounts({
         messages_a_valider: st.compteurs?.brouillons_proposes || 0,
         alertes: st.compteurs?.detections_actives || 0,
+        liens_a_confirmer: st.compteurs?.liens_a_confirmer || 0,
       })
     }).catch(() => {})
   }, [])
@@ -209,8 +220,12 @@ export default function App() {
         <main>
           <Routes>
             <Route path="/" element={<Synthese />} />
+            <Route path="/miroir" element={<Miroir />} />
+            <Route path="/digest" element={<Digest />} />
             <Route path="/a-valider" element={<AValider />} />
             <Route path="/suivi" element={<Suivi />} />
+            <Route path="/liens" element={<Liens />} />
+            <Route path="/interlocuteurs" element={<Interlocuteurs />} />
             <Route path="/alertes" element={<Alertes />} />
             <Route path="/agent" element={<Agent />} />
             <Route path="/reglages" element={<Reglages />} />

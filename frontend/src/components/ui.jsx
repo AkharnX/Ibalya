@@ -16,3 +16,15 @@ export const Reli = ({ value }) => (
     <span style={{ width: `${Math.round(value * 100)}%` }} />
   </div>
 )
+
+// Journal d'événements d'un engagement (CDC 5.2).
+export const EVT_LABELS = {
+  cree: 'Engagement détecté',
+  confirme: 'Confirmé',
+  signal_progression: 'Signe d’avancement',
+  relance: 'Relance envoyée',
+  livre: 'Livré',
+  passe_en_retard: 'Passé en retard',
+  abandonne: 'Écarté',
+  corrige: 'Corrigé par le dirigeant',
+}

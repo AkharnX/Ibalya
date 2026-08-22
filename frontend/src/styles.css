@@ -560,3 +560,47 @@ label{
   letter-spacing:-.5px;line-height:1.1;
 }
 .onb-compteurs span{display:block;font-size:11.5px;color:var(--muted-foreground);margin-top:3px;}
+
+/* ── écrans livrés en complément du CDC ── */
+
+/* Miroir d'activité : blocs successifs, respiration entre les catégories. */
+.miroir-bloc{margin-top:28px;}
+
+/* Journal d'un engagement (CDC 5.2), affiché dans le panneau de traçabilité. */
+.journal{border:1px solid var(--border);padding:12px 14px;margin-bottom:16px;}
+.journal h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted-foreground);}
+.journal-liste{list-style:none;margin:0;padding:0;}
+.journal-liste li{display:flex;gap:12px;align-items:baseline;padding:4px 0;border-top:1px solid var(--border);}
+.journal-liste li:first-child{border-top:none;}
+.journal-date{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);white-space:nowrap;}
+.journal-type{font-size:13px;}
+
+/* Échéance inférée : cliquable tant qu'elle n'est pas confirmée. */
+.echeance-a-confirmer{
+  background:none;border:1px dashed var(--delay);color:var(--delay);
+  padding:2px 7px;font:inherit;font-size:12px;cursor:pointer;
+}
+.echeance-a-confirmer:hover{background:var(--delay-bg);}
+.echeance-edit{display:flex;gap:4px;align-items:center;}
+.echeance-edit input{padding:4px 6px;font-size:12px;width:130px;}
+
+/* Menu de correction d'un geste. */
+.menu-wrap{position:relative;display:inline-block;}
+.menu-corr{
+  position:absolute;right:0;top:calc(100% + 4px);z-index:30;
+  min-width:250px;background:var(--card);border:1px solid var(--border);
+  box-shadow:0 8px 24px rgba(0,0,0,.28);padding:6px;
+}
+.menu-titre{
+  margin:2px 8px 6px;font-size:11px;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--muted-foreground);
+}
+.menu-corr button{
+  display:block;width:100%;text-align:left;background:none;border:none;
+  padding:7px 8px;font:inherit;font-size:13px;color:var(--foreground);cursor:pointer;
+}
+.menu-corr button:hover{background:var(--secondary);}
+
+/* Bascule de vigilance sur un interlocuteur. */
+.switch-inline{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;}
+.switch-inline input{width:auto;margin:0;accent-color:var(--primary);}
