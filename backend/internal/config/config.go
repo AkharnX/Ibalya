@@ -45,7 +45,7 @@ func envInt(key string, def int) int {
 func Load() Config {
 	return Config{
 		DatabaseURL:        env("DATABASE_URL", "postgres://ibalya:ibalya_dev@127.0.0.1:5435/ibalya?sslmode=disable"),
-		APIAddr:            env("API_ADDR", ":9999"),
+		APIAddr:            env("API_ADDR", "127.0.0.1:9999"),
 		AdminToken:         env("ADMIN_TOKEN", ""),
 		LLMServiceURL:      env("LLM_SERVICE_URL", "http://127.0.0.1:8092"),
 		PublicBaseURL:      env("PUBLIC_BASE_URL", "http://localhost:9999"),

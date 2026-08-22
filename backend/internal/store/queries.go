@@ -7,9 +7,43 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"strings"
 )
 
 // --- Personnes ---
+
+// ThreadParticipants retourne toutes les adresses ayant réellement écrit ou
+// reçu un message dans ce fil.
+//
+// Sert de garde-fou d'extraction : le modèle lit du texte fourni par des tiers,
+// et une adresse qu'il en tire ne vaut pas confirmation. Sans ce contrôle, un
+// email rédigé pour tromper l'extraction peut créer un engagement pointant vers
+// une adresse choisie par son auteur, que l'agent proposera ensuite de relancer
+// avec le contexte du client dans le corps du message.
+func (s *Store) ThreadParticipants(ctx context.Context, threadID int64) (map[string]bool, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT sender, recipients FROM messages WHERE thread_id=$1`, threadID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var sender string
+		var dest []string
+		if err := rows.Scan(&sender, &dest); err != nil {
+			return nil, err
+		}
+		if a := strings.ToLower(strings.TrimSpace(sender)); a != "" {
+			out[a] = true
+		}
+		for _, d := range dest {
+			if a := strings.ToLower(strings.TrimSpace(d)); a != "" {
+				out[a] = true
+			}
+		}
+	}
+	return out, rows.Err()
+}
 
 func (s *Store) UpsertPerson(ctx context.Context, email, name string) (int64, error) {
 	var id int64

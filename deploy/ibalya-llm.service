@@ -5,6 +5,10 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# Le noyau choisit sa victime au score de « nuisance ». Un score négatif place
+# le service en fin de liste : lors d'une pénurie mémoire causée par un autre
+# occupant de la machine, Ibalya n'est pas le premier sacrifié.
+OOMScoreAdjust=-500
 Type=simple
 User=akharn
 Group=akharn

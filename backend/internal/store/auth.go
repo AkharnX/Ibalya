@@ -124,6 +124,14 @@ func (s *Store) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
+// DeleteSessionsOf ferme toutes les sessions d'un compte. Appelé au changement
+// de mot de passe : sans cela, une session ouverte par un tiers avec l'ancien
+// mot de passe survit précisément à la mesure censée la révoquer.
+func (s *Store) DeleteSessionsOf(ctx context.Context, userID int64) error {
+	_, err := s.Pool.Exec(ctx, `DELETE FROM sessions WHERE user_id=$1`, userID)
+	return err
+}
+
 func (s *Store) CountUsers(ctx context.Context) (int, error) {
 	var n int
 	err := s.Pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE actif`).Scan(&n)

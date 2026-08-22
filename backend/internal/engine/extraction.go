@@ -159,13 +159,32 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	if eng.Objet == "" {
 		return false
 	}
-	if ex.EmetteurEmail != "" {
-		if id, err := e.Store.UpsertPerson(ctx, strings.ToLower(ex.EmetteurEmail), ""); err == nil {
+	// Les adresses viennent du modèle, qui a lu du texte écrit par des tiers.
+	// On n'en retient que celles réellement présentes dans le fil : sinon un
+	// email rédigé pour tromper l'extraction fixe lui-même le destinataire
+	// que l'agent proposera ensuite de relancer, contexte client à l'appui.
+	participants, err := e.Store.ThreadParticipants(ctx, m.ThreadID)
+	if err != nil {
+		log.Printf("extraction: participants du fil %d: %v", m.ThreadID, err)
+		return false
+	}
+	retenir := func(brut string) string {
+		a := adresseDeConfiance(participants, brut)
+		if a == "" && strings.TrimSpace(brut) != "" {
+			e.Store.Audit(ctx, "agent", "adresse_extraite_ecartee", map[string]any{
+				"adresse": strings.ToLower(strings.TrimSpace(brut)),
+				"fil":     m.ThreadID, "message": m.ID,
+				"motif": "absente des participants du fil"})
+		}
+		return a
+	}
+	if a := retenir(ex.EmetteurEmail); a != "" {
+		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.EmetteurID = &id
 		}
 	}
-	if ex.DestinataireEmail != "" {
-		if id, err := e.Store.UpsertPerson(ctx, strings.ToLower(ex.DestinataireEmail), ""); err == nil {
+	if a := retenir(ex.DestinataireEmail); a != "" {
+		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.DestinataireID = &id
 		}
 	}
@@ -246,4 +265,20 @@ func clamp01(f float64) float64 {
 
 func parseFloat(s string) (float64, error) {
 	return strconv.ParseFloat(strings.TrimSpace(s), 64)
+}
+
+// adresseDeConfiance ne retient une adresse produite par le modèle que si elle
+// figure parmi les participants réels du fil.
+//
+// Le modèle lit du texte rédigé par des tiers. Sans ce filtre, un email conçu
+// pour tromper l'extraction désigne lui-même le destinataire d'un engagement,
+// que l'agent proposera ensuite de relancer avec le contexte du client dans le
+// corps du message. Une adresse écartée laisse le champ vide, et un engagement
+// sans destinataire ne produit aucun brouillon : l'échec est silencieux mais sûr.
+func adresseDeConfiance(participants map[string]bool, brut string) string {
+	a := strings.ToLower(strings.TrimSpace(brut))
+	if a == "" || !participants[a] {
+		return ""
+	}
+	return a
 }
