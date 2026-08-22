@@ -604,3 +604,54 @@ label{
 /* Bascule de vigilance sur un interlocuteur. */
 .switch-inline{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;}
 .switch-inline input{width:auto;margin:0;accent-color:var(--primary);}
+
+/* ── Digest : archive d'éditions figées ── */
+
+.edition-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 14px;border:1px solid var(--border);background:var(--card);
+}
+.edition-bar label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted-foreground);}
+.edition-bar select{width:auto;min-width:230px;}
+.edition-total{font-size:12px;color:var(--muted-foreground);margin-left:auto;}
+
+/* Le digest se lit comme un document, pas comme un tableau de bord : une
+   colonne de largeur confortable, aucune action, une composition stable. */
+.document{
+  margin-top:16px;border:1px solid var(--border);background:var(--card);
+  padding:24px 26px;max-width:860px;
+}
+.document-head{border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:8px;}
+.document-head h2{margin:0 0 4px;font-size:19px;}
+.document-resume{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:13px;}
+.document-resume b{font-family:var(--font-mono);font-size:15px;}
+.document h3{
+  margin:24px 0 10px;font-size:12px;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--muted-foreground);
+}
+.document-liste{list-style:none;margin:0;padding:0;}
+.document-liste li{
+  display:flex;gap:12px;align-items:baseline;
+  padding:9px 0;border-top:1px solid var(--border);
+}
+.document-liste li:first-child{border-top:none;}
+.doc-etiquette{
+  flex:0 0 auto;min-width:150px;max-width:220px;font-size:12px;
+  font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.doc-texte{flex:1;font-size:13px;}
+.doc-texte em{font-style:normal;}
+.document-liste .reli{flex:0 0 60px;}
+.document-pied{
+  margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+  font-size:13px;color:var(--muted-foreground);
+}
+.document-pied a{color:var(--primary);}
+
+/* Renvoi vers la page où l'action se fait réellement. */
+.renvoi{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  margin-top:28px;padding:14px 16px;
+  border:1px solid var(--border);background:var(--secondary);font-size:14px;
+}
+.renvoi .btn{margin-left:auto;}

@@ -92,6 +92,8 @@ func (s *Server) Handler() http.Handler {
 
 	// digest & brouillons
 	mux.HandleFunc("GET /api/digest/latest", s.auth(s.latestDigest))
+	mux.HandleFunc("GET /api/digest/editions", s.auth(s.digestEditions))
+	mux.HandleFunc("GET /api/digest/{id}", s.auth(s.digestEdition))
 	mux.HandleFunc("POST /api/digest/generate", s.auth(s.generateDigest))
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
 	mux.HandleFunc("PATCH /api/drafts/{id}", s.auth(s.patchDraft))
@@ -534,6 +536,32 @@ func (s *Server) latestDigest(w http.ResponseWriter, r *http.Request) {
 	}
 	if rep == nil {
 		httpError(w, 404, "aucun digest généré")
+		return
+	}
+	writeJSON(w, rep)
+}
+
+// digestEditions liste les éditions passées, sans leur contenu : la page
+// d'archive n'a besoin que des dates pour construire son sélecteur.
+func (s *Server) digestEditions(w http.ResponseWriter, r *http.Request) {
+	reps, err := s.Store.ListReports(r.Context(), "digest_", 60)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, reps)
+}
+
+// digestEdition retourne une édition précise, telle qu'elle a été produite.
+// Un digest est un document figé : on ne le recalcule jamais à la lecture.
+func (s *Server) digestEdition(w http.ResponseWriter, r *http.Request) {
+	rep, err := s.Store.GetReport(r.Context(), pathID(r))
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if rep == nil || !strings.HasPrefix(rep.Type, "digest_") {
+		httpError(w, 404, "édition introuvable")
 		return
 	}
 	writeJSON(w, rep)

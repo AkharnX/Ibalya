@@ -138,6 +138,6 @@ type AuditEntry struct {
 type Report struct {
 	ID        int64           `json:"id"`
 	Type      string          `json:"type"`
-	Content   json.RawMessage `json:"content"`
+	Content   json.RawMessage `json:"content,omitempty"`
 	CreatedAt time.Time       `json:"created_at"`
 }
