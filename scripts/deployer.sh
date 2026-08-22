@@ -8,6 +8,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BRANCHE="${BRANCHE:-main}"
+# Commit effectivement construit, redémarré et déclaré sain.
+EMPREINTE=".deploy-stamp"
 etape() { echo; echo "━━━ $1 ━━━"; }
 
 # Le déploiement s'exécute dans un shell non interactif : nvm n'est pas chargé
@@ -58,10 +60,21 @@ trap restaurer EXIT
 etape "Récupération de $BRANCHE"
 git fetch --quiet origin "$BRANCHE"
 cible="$(git rev-parse "origin/$BRANCHE")"
-if [ "$cible" = "$precedente" ]; then
-  echo "  déjà à jour, rien à faire"
+# On compare au commit réellement construit et mis en service (empreinte écrite
+# après le contrôle de santé), et non au HEAD du dépôt. Un arbre déplacé à la
+# main pointait déjà sur la cible : le déploiement concluait « rien à faire »,
+# sautait la construction et laissait tourner l'ancien binaire en annonçant un
+# succès. C'est ainsi qu'une route livrée est restée absente en production.
+deploye=""
+[ -f "$EMPREINTE" ] && deploye="$(cat "$EMPREINTE")"
+if [ "$cible" = "$deploye" ]; then
+  echo "  ${cible:0:8} déjà construit et en service, rien à faire"
   trap - EXIT
   exit 0
+fi
+if [ "$cible" = "$precedente" ] && [ -z "$deploye" ]; then
+  echo "  arbre déjà sur ${cible:0:8}, mais rien ne prouve que les binaires en"
+  echo "  correspondent : on reconstruit."
 fi
 git checkout --quiet "$BRANCHE"
 git reset --hard --quiet "$cible"
@@ -89,5 +102,6 @@ done
 [ $sante -eq 0 ] || exit 1
 
 trap - EXIT
+echo "$cible" > "$EMPREINTE"
 etape "Déployé : ${cible:0:8}"
 git --no-pager log -1 --format='  %s%n  par %an, %ar'
