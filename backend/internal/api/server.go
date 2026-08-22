@@ -237,6 +237,10 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		Engagements int `json:"engagements"`
 		Detections  int `json:"detections_actives"`
 		Brouillons  int `json:"brouillons_proposes"`
+		// liens de dépendance en attente d'arbitrage : tant qu'ils restent
+		// candidats, le détecteur de contradiction (CDC 8.1) les ignore.
+		LiensAConfirmer     int `json:"liens_a_confirmer"`
+		EcheancesAConfirmer int `json:"echeances_a_confirmer"`
 	}
 	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&counts.Messages)
 	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='pending'`).Scan(&counts.EnAttente)
@@ -244,6 +248,10 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM engagements`).Scan(&counts.Engagements)
 	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM detections WHERE statut IN ('nouvelle','au_digest')`).Scan(&counts.Detections)
 	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&counts.Brouillons)
+	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM dependency_links WHERE statut='candidat'`).Scan(&counts.LiensAConfirmer)
+	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM engagements
+		WHERE echeance IS NOT NULL AND echeance_inferee AND NOT echeance_confirmee
+		  AND statut IN ('ouvert','confirme','en_retard')`).Scan(&counts.EcheancesAConfirmer)
 
 	_, email, _ := s.Store.GetOAuthToken(ctx, "google")
 	tok, _, _ := s.Store.GetOAuthToken(ctx, "google")

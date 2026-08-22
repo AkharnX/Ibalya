@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
@@ -14,6 +14,15 @@ const CATEGORIES = [
 ]
 const TYPES = ['all', 'livraison', 'devis', 'facturation', 'rendez_vous', 'prise_de_contact']
 
+// Corrections d'un geste (CDC 11) : chaque geste devient une règle explicite,
+// lisible et révocable depuis « Règles métier ». Pas de boîte noire.
+const CORRECTIONS = [
+  ['pas_un_engagement', 'Ce n’est pas un engagement'],
+  ['priorite_haute', 'Priorité haute pour cet interlocuteur'],
+  ['ignorer_interlocuteur', 'Ne plus rien extraire de cet interlocuteur'],
+  ['ne_plus_alerter', 'Ne plus m’alerter sur ce fil'],
+]
+
 export default function Suivi() {
   const [rows, setRows] = useState(null)
   const [params, setParams] = useSearchParams()
@@ -28,6 +37,19 @@ export default function Suivi() {
 
   const d = useDraft(load)
   const [sourceId, setSourceId] = useState(null)
+  const [menuId, setMenuId] = useState(null)      // menu de correction ouvert
+  const [dateId, setDateId] = useState(null)      // échéance en cours de confirmation
+  const [dateVal, setDateVal] = useState('')
+  const zone = useRef(null)
+
+  // Un clic hors du menu le referme : sans cela il reste ouvert derrière la
+  // ligne suivante et on corrige le mauvais engagement.
+  useEffect(() => {
+    if (menuId === null) return
+    const ailleurs = (e) => { if (zone.current && !zone.current.contains(e.target)) setMenuId(null) }
+    document.addEventListener('mousedown', ailleurs)
+    return () => document.removeEventListener('mousedown', ailleurs)
+  }, [menuId])
 
   const counts = useMemo(() => {
     const c = { all: (rows || []).length }
@@ -48,10 +70,26 @@ export default function Suivi() {
     try { await api(`/engagements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }); toast(msg); load() }
     catch (e) { toast(e.message, true) }
   }
-  const correct = async (id) => {
+  const correct = async (id, action) => {
+    setMenuId(null)
     try {
-      const r = await api(`/engagements/${id}/correct`, { method: 'POST', body: JSON.stringify({ action: 'pas_un_engagement' }) })
-      toast(r.regle ? 'Règle apprise : ' + r.regle : 'Écarté'); load()
+      const r = await api(`/engagements/${id}/correct`, { method: 'POST', body: JSON.stringify({ action }) })
+      toast(r.regle ? 'Règle apprise : ' + r.regle : 'Correction enregistrée'); load()
+    } catch (e) { toast(e.message, true) }
+  }
+
+  // Une échéance inférée par le modèle n'alimente les détecteurs qu'une fois
+  // confirmée (CDC 7.3) : cet écran est le seul endroit où la confirmer.
+  const ouvrirDate = (r) => {
+    setDateId(r.id)
+    setDateVal(r.echeance ? new Date(r.echeance).toISOString().slice(0, 10) : '')
+  }
+  const confirmerEcheance = async (id) => {
+    if (!dateVal) return
+    try {
+      await api(`/engagements/${id}`, { method: 'PATCH', body: JSON.stringify({ echeance: dateVal }) })
+      toast('Échéance confirmée, les alertes la prennent en compte')
+      setDateId(null); load()
     } catch (e) { toast(e.message, true) }
   }
 
@@ -116,7 +154,21 @@ export default function Suivi() {
                       </button>
                     )}
                   </td>
-                  <td>{r.echeance ? fmtDate(r.echeance) : <span className="mono">—</span>}</td>
+                  <td>
+                    {dateId === r.id ? (
+                      <div className="echeance-edit">
+                        <input type="date" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
+                        <button className="btn-icon primary" title="Confirmer cette échéance"
+                          onClick={() => confirmerEcheance(r.id)}>✓</button>
+                        <button className="btn-icon" title="Annuler" onClick={() => setDateId(null)}>✕</button>
+                      </div>
+                    ) : r.echeance ? (
+                      r.echeance_inferee && !r.echeance_confirmee ? (
+                        <button className="echeance-a-confirmer" title="Échéance déduite par l’agent : à confirmer"
+                          onClick={() => ouvrirDate(r)}>{fmtDate(r.echeance)}</button>
+                      ) : fmtDate(r.echeance)
+                    ) : <span className="mono">—</span>}
+                  </td>
                   <td><div className="reli"><span style={{ width: `${Math.round(r.confiance * 100)}%` }} /></div></td>
                   <td><div className={'status ' + statusClass(r)}><span className="dot" />{statusLabel(r)}</div></td>
                   <td>
@@ -126,7 +178,19 @@ export default function Suivi() {
                           onClick={() => d.openForEngagement(r.id, r.action)}>✉</button>
                       )}
                       <button className="btn-icon" title="Marquer livré" onClick={() => patch(r.id, { statut: 'livre' }, 'Marqué comme livré')}>✓</button>
-                      <button className="btn-icon" title="Pas un engagement" onClick={() => correct(r.id)}>✕</button>
+                      <div className="menu-wrap" ref={menuId === r.id ? zone : null}>
+                        <button className="btn-icon" title="Corriger l’agent"
+                          aria-haspopup="menu" aria-expanded={menuId === r.id}
+                          onClick={() => setMenuId(menuId === r.id ? null : r.id)}>⋯</button>
+                        {menuId === r.id && (
+                          <div className="menu-corr" role="menu">
+                            <p className="menu-titre">Corriger l’agent</p>
+                            {CORRECTIONS.map(([action, label]) => (
+                              <button key={action} role="menuitem" onClick={() => correct(r.id, action)}>{label}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

@@ -3,18 +3,24 @@
 // un lien direct vers Gmail pour répondre dans le fil réel.
 import { useEffect, useState } from 'react'
 import { api } from '../api'
-import { fmtDT } from './ui'
+import { EVT_LABELS, fmtDT } from './ui'
 
 export default function SourcePanel({ engagementId, onClose }) {
   const [data, setData] = useState(null)
+  const [events, setEvents] = useState([])
   const [erreur, setErreur] = useState('')
 
   useEffect(() => {
-    if (!engagementId) { setData(null); setErreur(''); return }
-    setData(null); setErreur('')
+    if (!engagementId) { setData(null); setEvents([]); setErreur(''); return }
+    setData(null); setEvents([]); setErreur('')
     api(`/engagements/${engagementId}/source`)
       .then(setData)
       .catch((e) => setErreur(e.message))
+    // Journal d'événements (CDC 5.2) : l'état d'un engagement se reconstruit à
+    // tout instant, et c'est la matière de l'audit trail.
+    api(`/engagements/${engagementId}/events`)
+      .then((r) => setEvents(r || []))
+      .catch(() => setEvents([]))
   }, [engagementId])
 
   const ouvert = !!engagementId
@@ -36,6 +42,20 @@ export default function SourcePanel({ engagementId, onClose }) {
           {data && (
             <>
               <p className="context">🔗 Engagement extrait : {data.objet}</p>
+
+              {events.length > 0 && (
+                <div className="journal">
+                  <h4>Journal de l'engagement</h4>
+                  <ol className="journal-liste">
+                    {events.map((ev) => (
+                      <li key={ev.id}>
+                        <span className="journal-date">{fmtDT(ev.horodatage)}</span>
+                        <span className="journal-type">{EVT_LABELS[ev.type] || ev.type}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
               {data.messages.map((m) => (
                 <div className={'msg' + (m.est_source ? ' msg-source' : '')} key={m.id}>
                   <div className="msg-head">
