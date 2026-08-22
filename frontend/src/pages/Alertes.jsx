@@ -25,8 +25,8 @@ export default function Alertes() {
     <section>
       <div className="page-head">
         <div>
-          <h2>Alertes</h2>
-          <p className="help">L'agent surveille vos engagements en continu et vous alerte dans 5 situations. Chaque alerte fiable s'accompagne, quand c'est possible, d'un message prêt à envoyer.</p>
+          <h1>Alertes</h1>
+          <p>L'agent surveille vos engagements en continu et vous alerte dans 5 situations. Chaque alerte fiable s'accompagne, quand c'est possible, d'un message prêt à envoyer.</p>
         </div>
       </div>
       <details className="legend">
@@ -42,9 +42,9 @@ export default function Alertes() {
 
       {dets === null ? <SqueletteTable lignes={4} colonnes={5} /> : !dets.length ? <Empty>Aucune alerte active.</Empty> : (
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table>
             <thead>
-              <tr><th>Alerte</th><th>Détail</th><th>Fiabilité</th><th>Date</th><th></th></tr>
+              <tr><th>Alerte</th><th>Détail</th><th>Fiabilité</th><th>Date</th><th><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
               {dets.map((d) => (

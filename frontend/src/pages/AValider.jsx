@@ -24,7 +24,7 @@ export default function AValider() {
     <section>
       <div className="page-head">
         <div>
-          <h2>À valider</h2>
+          <h1>À valider</h1>
           <p>Les messages que l'agent a pré-rédigés à partir de vos engagements. Relisez, ajustez si besoin, puis envoyez — rien ne part sans votre validation.</p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function AValider() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Destinataire</th><th>Message proposé</th><th>Motif</th><th>Créé</th><th></th></tr>
+              <tr><th>Destinataire</th><th>Message proposé</th><th>Motif</th><th>Créé</th><th><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
               {drafts.map((d) => (

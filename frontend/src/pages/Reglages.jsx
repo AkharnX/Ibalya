@@ -48,7 +48,12 @@ export default function Reglages() {
 
   return (
     <section>
-      <div className="page-head"><div><h2>Réglages</h2></div></div>
+      <div className="page-head">
+        <div>
+          <h1>Réglages</h1>
+          <p>La connexion au canal, le seuil à partir duquel l'agent vous parle, et la trace de tout ce qu'il a fait.</p>
+        </div>
+      </div>
       <div className="grid-2">
         <div className="panel">
           <h3>Connexion</h3>
@@ -98,7 +103,7 @@ export default function Reglages() {
 
       <h3>Journal d'audit <span className="muted">— chaque lecture, détection et action, horodatée</span></h3>
       <div className="tbl-wrap">
-        <table className="tbl">
+        <table>
           <thead><tr><th>Date</th><th>Acteur</th><th>Événement</th><th>Détails</th></tr></thead>
           <tbody>
             {audit.map((e) => (

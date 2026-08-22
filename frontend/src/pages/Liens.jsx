@@ -76,7 +76,7 @@ export default function Liens() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Dépend de (amont)</th><th>Engagement concerné (aval)</th><th>Pourquoi ce lien</th><th>Proposé le</th><th></th></tr>
+              <tr><th>Dépend de (amont)</th><th>Engagement concerné (aval)</th><th>Pourquoi ce lien</th><th>Proposé le</th><th><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
               {shown.map((l) => (

@@ -62,7 +62,7 @@ export default function Agent() {
     <section>
       <div className="page-head">
         <div>
-          <h2>Règles métier</h2>
+          <h1>Règles métier</h1>
           <p>Ce que l'agent a compris de votre activité, et ce qu'il a appris de vos corrections. Tout est modifiable et réversible.</p>
         </div>
         <div className="page-actions">
@@ -179,7 +179,7 @@ export default function Agent() {
       ) : (
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Règle</th><th>Portée</th><th>Apprise le</th><th></th></tr></thead>
+            <thead><tr><th>Règle</th><th>Portée</th><th>Apprise le</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>
               {rules.map((r) => (
                 <tr key={r.id} style={r.active ? undefined : { opacity: 0.45 }}>

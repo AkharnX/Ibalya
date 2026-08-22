@@ -166,6 +166,9 @@ export default function App() {
     }).catch(() => {})
   }, [])
   useEffect(() => { if (authed) refreshCounts() }, [authed, pathname, refreshCounts])
+  useEffect(() => {
+    document.title = TITRES[pathname] ? `${TITRES[pathname]} · Ibalya` : 'Ibalya'
+  }, [pathname])
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
   if (authed === null) return null
@@ -209,9 +212,11 @@ export default function App() {
 
       <div className="content">
         <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="topbar-gauche">
             <button className="icon-btn burger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
-            <h1>{TITRES[pathname] || 'Ibalya'}</h1>
+            {/* La marque n'apparaît ici qu'en petite largeur, là où la barre
+                latérale est escamotée : sur grand écran le logo y est déjà. */}
+            <Logo />
           </div>
           <div className={'agent-live' + (agentOk ? '' : ' off')}>
             <i />{agentOk ? 'Agent actif' : (status?.canal_connecte ? 'LLM injoignable' : 'Canal non connecté')}
