@@ -1,71 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DET_LABELS, Empty, Reli, fmtDT } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
 
-function DraftCard({ d, refresh }) {
-  const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ to_email: d.to_email, subject: d.subject, body: d.body })
-  const [busy, setBusy] = useState(false)
-
-  const save = async () => {
-    try {
-      await api(`/drafts/${d.id}`, { method: 'PATCH', body: JSON.stringify(form) })
-      toast('Message enregistré'); setEditing(false); refresh()
-    } catch (e) { toast(e.message, true) }
-  }
-  const validate = async () => {
-    if (busy || !confirm('Envoyer ce message maintenant ?')) return
-    setBusy(true)
-    try { await api(`/drafts/${d.id}/validate`, { method: 'POST' }); toast('Message envoyé ✓'); refresh() }
-    catch (e) { toast(e.message, true) }
-    finally { setBusy(false) }
-  }
-  const reject = async () => {
-    try { await api(`/drafts/${d.id}/reject`, { method: 'POST' }); toast('Message rejeté'); refresh() }
-    catch (e) { toast(e.message, true) }
-  }
-
-  return (
-    <div className="item">
-      {d.detection_titre && (
-        <p className="context">💡 {d.detection_titre}{d.engagement_objet ? ' · engagement : ' + d.engagement_objet : ''}</p>
-      )}
-      {!editing ? (
-        <>
-          <b>À : {d.to_email}</b> — {d.subject}
-          <pre>{d.body}</pre>
-          <div className="row-actions">
-            <button className="primary" disabled={busy} onClick={validate}>✓ Valider et envoyer</button>
-            <button onClick={() => setEditing(true)}>✎ Modifier</button>
-            <button onClick={reject}>✗ Rejeter</button>
-          </div>
-        </>
-      ) : (
-        <div className="draft-edit">
-          <label>Destinataire</label>
-          <input value={form.to_email} onChange={(e) => setForm({ ...form, to_email: e.target.value })} />
-          <label>Objet</label>
-          <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
-          <label>Message</label>
-          <textarea rows={8} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
-          <div className="row-actions">
-            <button className="primary" onClick={save}>Enregistrer</button>
-            <button onClick={() => setEditing(false)}>Annuler</button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function Alertes() {
   const [dets, setDets] = useState(null)
-  const [drafts, setDrafts] = useState([])
+  const [enAttente, setEnAttente] = useState(0)
 
   const load = useCallback(() => {
     api('/detections').then((r) => setDets(r || [])).catch((e) => toast(e.message, true))
-    api('/drafts?statut=propose').then((r) => setDrafts(r || [])).catch((e) => toast(e.message, true))
+    // On ne compte que les messages en attente : leur traitement se fait sur
+    // « À valider », inutile de reproduire la même file sur deux pages.
+    api('/drafts?statut=propose').then((r) => setEnAttente((r || []).length)).catch(() => {})
   }, [])
   useEffect(load, [load])
 
@@ -114,9 +61,15 @@ export default function Alertes() {
         </div>
       )}
 
-      <h3>✉ Messages proposés <span className="muted">— rien ne part sans votre validation</span></h3>
-      {!drafts.length ? <Empty>Aucun message en attente de validation.</Empty> :
-        drafts.map((d) => <DraftCard key={d.id} d={d} refresh={load} />)}
+      {enAttente > 0 && (
+        <div className="renvoi">
+          <span>
+            ✉ {enAttente} message{enAttente > 1 ? 's' : ''} pré-rédigé{enAttente > 1 ? 's' : ''} attend
+            {enAttente > 1 ? 'ent' : ''} votre validation. Rien ne part sans votre clic.
+          </span>
+          <Link className="btn" to="/a-valider">Ouvrir « À valider »</Link>
+        </div>
+      )}
     </section>
   )
 }
