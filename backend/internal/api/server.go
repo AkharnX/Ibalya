@@ -30,9 +30,16 @@ type Server struct {
 	Engine   *engine.Engine
 	Ingester *ingest.Ingester
 	OAuth    *oauth2.Config
+
+	// Compteur d'échecs de connexion. Initialisé par Handler pour que les
+	// appelants gardent leur littéral de structure.
+	limiteConnexion *limiteur
 }
 
 func (s *Server) Handler() http.Handler {
+	if s.limiteConnexion == nil {
+		s.limiteConnexion = nouveauLimiteur(10, 15*time.Minute)
+	}
 	mux := http.NewServeMux()
 
 	// Page commerciale à la racine, application sous /app.
@@ -162,10 +169,13 @@ func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if r.URL.Query().Get("state") != s.Store.GetSetting(ctx, "oauth_state", "-") {
+	attendu := s.Store.GetSetting(ctx, "oauth_state", "")
+	if attendu == "" || r.URL.Query().Get("state") != attendu {
 		httpError(w, 400, "état OAuth invalide")
 		return
 	}
+	// À usage unique : un nonce rejouable ne protège plus de rien.
+	s.Store.SetSetting(ctx, "oauth_state", "")
 	tok, err := s.OAuth.Exchange(ctx, r.URL.Query().Get("code"))
 	if err != nil {
 		httpError(w, 400, "échange OAuth: "+err.Error())

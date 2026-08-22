@@ -20,6 +20,10 @@ import (
 
 const cookieSession = "ibalya_session"
 
+// normaliserEmail aligne la clé du limiteur sur celle du magasin : sans cela,
+// varier la casse suffirait à repartir avec un compteur neuf.
+func normaliserEmail(e string) string { return strings.ToLower(strings.TrimSpace(e)) }
+
 type ctxUser struct{}
 
 // utilisateur renvoie l'utilisateur de la requête, ou nil pour un accès service.
@@ -89,12 +93,23 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, "requête invalide")
 		return
 	}
+	ip := clientIP(r)
+	cleCompte := "compte:" + normaliserEmail(body.Email)
+	if s.limiteConnexion.Bloque("ip:"+ip, cleCompte) {
+		s.Store.Audit(r.Context(), "anonyme", "connexion_bloquee",
+			map[string]string{"email": body.Email, "ip": ip})
+		w.Header().Set("Retry-After", "900")
+		httpError(w, 429, "trop de tentatives, réessayez dans quinze minutes")
+		return
+	}
 	u, err := s.Store.Authenticate(r.Context(), body.Email, body.MotDePasse)
 	if err != nil {
+		s.limiteConnexion.Echec("ip:"+ip, cleCompte)
 		s.Store.Audit(r.Context(), "anonyme", "connexion_refusee", map[string]string{"email": body.Email})
 		httpError(w, 401, err.Error())
 		return
 	}
+	s.limiteConnexion.Succes("ip:"+ip, cleCompte)
 	token, expire, err := s.Store.CreateSession(r.Context(), u.ID)
 	if err != nil {
 		httpError(w, 500, err.Error())
@@ -147,7 +162,17 @@ func (s *Server) changerMotDePasse(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, err.Error())
 		return
 	}
-	s.Store.Audit(r.Context(), u.Email, "mot_de_passe_modifie", nil)
+	// Toutes les sessions tombent, y compris celle-ci ; on en rouvre une pour
+	// l'auteur du changement afin qu'il ne soit pas déconnecté de son propre geste.
+	if err := s.Store.DeleteSessionsOf(r.Context(), u.ID); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if token, expire, err := s.Store.CreateSession(r.Context(), u.ID); err == nil {
+		s.poserCookie(w, token, expire)
+	}
+	s.Store.Audit(r.Context(), u.Email, "mot_de_passe_modifie",
+		map[string]string{"sessions": "toutes révoquées"})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
