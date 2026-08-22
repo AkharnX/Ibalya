@@ -38,17 +38,34 @@ export default function Suivi() {
   const d = useDraft(load)
   const [sourceId, setSourceId] = useState(null)
   const [menuId, setMenuId] = useState(null)      // menu de correction ouvert
+  const [menuPos, setMenuPos] = useState(null)    // ancrage écran du menu
   const [dateId, setDateId] = useState(null)      // échéance en cours de confirmation
   const [dateVal, setDateVal] = useState('')
   const zone = useRef(null)
 
-  // Un clic hors du menu le referme : sans cela il reste ouvert derrière la
-  // ligne suivante et on corrige le mauvais engagement.
+  // Le tableau défile horizontalement (.tbl-wrap est en overflow-x:auto), ce qui
+  // force le navigateur à rogner aussi la verticale : un menu en position absolue
+  // y était coupé net. On l'ancre donc à l'écran, à partir de la position du
+  // bouton — et on le referme dès que cette position n'est plus valable.
+  const ouvrirMenu = (e, id) => {
+    if (menuId === id) { setMenuId(null); return }
+    const r = e.currentTarget.getBoundingClientRect()
+    setMenuPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) })
+    setMenuId(id)
+  }
+
   useEffect(() => {
     if (menuId === null) return
     const ailleurs = (e) => { if (zone.current && !zone.current.contains(e.target)) setMenuId(null) }
+    const fermer = () => setMenuId(null)
     document.addEventListener('mousedown', ailleurs)
-    return () => document.removeEventListener('mousedown', ailleurs)
+    window.addEventListener('resize', fermer)
+    window.addEventListener('scroll', fermer, true) // true : capte aussi le défilement du tableau
+    return () => {
+      document.removeEventListener('mousedown', ailleurs)
+      window.removeEventListener('resize', fermer)
+      window.removeEventListener('scroll', fermer, true)
+    }
   }, [menuId])
 
   const counts = useMemo(() => {
@@ -134,7 +151,7 @@ export default function Suivi() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Type</th><th>Engagement</th><th>Échéance</th><th>Fiabilité</th><th>Statut</th><th></th></tr>
+              <tr><th>Type</th><th>Engagement</th><th>Échéance</th><th>Fiabilité</th><th>Statut</th><th><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
               {shown.map((r) => (
@@ -181,9 +198,9 @@ export default function Suivi() {
                       <div className="menu-wrap" ref={menuId === r.id ? zone : null}>
                         <button className="btn-icon" title="Corriger l’agent"
                           aria-haspopup="menu" aria-expanded={menuId === r.id}
-                          onClick={() => setMenuId(menuId === r.id ? null : r.id)}>⋯</button>
-                        {menuId === r.id && (
-                          <div className="menu-corr" role="menu">
+                          onClick={(e) => ouvrirMenu(e, r.id)}>⋯</button>
+                        {menuId === r.id && menuPos && (
+                          <div className="menu-corr" role="menu" style={{ top: menuPos.top, right: menuPos.right }}>
                             <p className="menu-titre">Corriger l’agent</p>
                             {CORRECTIONS.map(([action, label]) => (
                               <button key={action} role="menuitem" onClick={() => correct(r.id, action)}>{label}</button>

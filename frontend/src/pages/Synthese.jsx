@@ -108,9 +108,7 @@ export default function Synthese() {
           const meta = CAT_META[cat]
           return (
             <div className={'cat-card ' + cat} key={cat}>
-              <div className="cat-head">
-                <div className="cat-name"><span className={'dot ' + meta.dot} />{meta.titre}</div>
-              </div>
+              <div className="cat-name"><span className={'dot ' + meta.dot} />{meta.titre}</div>
               <div className="cat-count">{bloc.nombre}</div>
               <div className="cat-preview">
                 {(bloc.apercu || []).map((a, i) => <div className="cat-preview-item" key={i}>{a}</div>)}

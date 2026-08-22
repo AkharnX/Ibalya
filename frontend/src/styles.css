@@ -137,7 +137,6 @@ body{
   display:flex;align-items:center;justify-content:space-between;padding:0 32px;
   position:sticky;top:0;z-index:10;
 }
-.topbar h1{font-size:13.5px;font-weight:500;margin:0;}
 .agent-live{
   display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;
   color:var(--muted-foreground);
@@ -157,7 +156,10 @@ main{padding:32px;max-width:1160px;width:100%;margin:0 auto;flex:1;}
 
 /* ═══ en-têtes de page ═══ */
 .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;}
-.page-head h2{font-size:22px;font-weight:600;letter-spacing:-.4px;margin:0 0 4px;}
+/* Un seul niveau de titre de page. Sans règle pour h1, six pages tombaient
+   sur la taille par défaut du navigateur (~32px et des marges) quand les
+   quatre autres tenaient 22px : deux gabarits d'en-tête dans la même app. */
+.page-head h1,.page-head h2{font-size:22px;font-weight:600;letter-spacing:-.4px;margin:0 0 4px;}
 .page-head p,.help{color:var(--muted-foreground);font-size:13px;margin:0;max-width:660px;}
 .help{margin-bottom:14px;}
 .page-actions{display:flex;gap:8px;flex-shrink:0;}
@@ -586,8 +588,10 @@ label{
 
 /* Menu de correction d'un geste. */
 .menu-wrap{position:relative;display:inline-block;}
+/* position:fixed et non absolute : l'ancêtre .tbl-wrap est en overflow-x:auto,
+   ce qui rend l'axe vertical « auto » lui aussi et rognait le menu. */
 .menu-corr{
-  position:absolute;right:0;top:calc(100% + 4px);z-index:30;
+  position:fixed;z-index:60;
   min-width:250px;background:var(--card);border:1px solid var(--border);
   box-shadow:0 8px 24px rgba(0,0,0,.28);padding:6px;
 }
@@ -655,3 +659,16 @@ label{
   border:1px solid var(--border);background:var(--secondary);font-size:14px;
 }
 .renvoi .btn{margin-left:auto;}
+
+/* La marque dans la barre du haut ne sert que lorsque la barre latérale est
+   escamotée : sur grand écran elle ferait doublon avec le logo de la sidebar. */
+.topbar-gauche{display:flex;align-items:center;gap:12px;}
+.topbar-gauche .logo{display:none;}
+@media (max-width:860px){ .topbar-gauche .logo{display:flex;} }
+
+/* Intitulé réservé aux lecteurs d'écran : les colonnes d'action étaient des
+   en-têtes vides, illisibles pour qui n'a pas l'icône sous les yeux. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
