@@ -29,6 +29,9 @@ func main() {
 	flag.Parse()
 
 	cfg := config.Load()
+	if err := cfg.Verifier(); err != nil {
+		log.Fatalf("configuration refusée : %v", err)
+	}
 	ctx := context.Background()
 
 	st, err := store.New(ctx, cfg.DatabaseURL)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -40,6 +41,34 @@ func envInt(key string, def int) int {
 		}
 	}
 	return def
+}
+
+// motsDePasseParDefaut liste les valeurs de remplissage publiées dans le dépôt.
+// Elles conviennent à un poste de développement, jamais à une installation
+// exposée : le dépôt étant public, elles sont connues de tous.
+var motsDePasseParDefaut = []string{"ibalya_dev", "changez-moi", "motdepasse"}
+
+// Verifier refuse une configuration dangereuse sur une installation publique.
+//
+// La base de production a tourné avec « ibalya_dev », la valeur d'exemple du
+// dépôt. Un avertissement dans les journaux ne suffit pas, personne ne les lit :
+// le service refuse de démarrer plutôt que de servir avec un identifiant connu.
+// Le développement local n'est pas concerné, la règle ne s'applique qu'à une
+// adresse publique en https.
+func (c Config) Verifier() error {
+	publique := strings.HasPrefix(c.PublicBaseURL, "https://")
+	if !publique {
+		return nil
+	}
+	for _, faible := range motsDePasseParDefaut {
+		if strings.Contains(c.DatabaseURL, ":"+faible+"@") {
+			return fmt.Errorf("la base utilise le mot de passe d'exemple %q, publié dans le dépôt : changez DB_PASSWORD et DATABASE_URL", faible)
+		}
+	}
+	if c.AdminToken != "" && len(c.AdminToken) < 32 {
+		return fmt.Errorf("ADMIN_TOKEN fait %d caractères, 32 au minimum sur une installation publique", len(c.AdminToken))
+	}
+	return nil
 }
 
 func Load() Config {
