@@ -5,6 +5,7 @@ import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
 import Onboarding from '../components/Onboarding'
 import { SqueletteKpi, SqueletteLignes } from '../components/Squelette'
+import { libelleCycle, useEtatAgent } from '../etatAgent'
 
 const CAT_META = {
   encours: { dot: 'blue', titre: 'Engagements en cours' },
@@ -23,14 +24,27 @@ export default function Synthese() {
 
   const d = useDraft(load)
   const [sourceId, setSourceId] = useState(null)
+  const { cycle, finiA, rafraichir } = useEtatAgent()
+  const enCours = !!cycle?.en_cours
+
+  // Les données se rechargent dès qu'un cycle se termine, y compris celui que
+  // le scheduler a lancé sans que le dirigeant ait rien demandé.
+  useEffect(() => { if (finiA) load() }, [finiA, load])
 
   const runCycle = async () => {
-    toast('Analyse en cours…')
+    if (enCours) return
+    rafraichir() // le bouton se verrouille sans attendre le prochain sondage
     try {
       const r = await api('/cycle/run', { method: 'POST', body: JSON.stringify({ since_days: 2 }) })
-      toast(r.erreur ? 'Terminé avec erreur : ' + r.erreur : `Analyse terminée (${r.duree})`, !!r.erreur)
+      toast(r.erreur ? 'Terminé avec erreur : ' + r.erreur : `Analyse terminée en ${r.duree}`, !!r.erreur)
       load()
-    } catch (e) { toast(e.message, true) }
+    } catch (e) {
+      // Un cycle long dépasse le délai du relais : la requête échoue alors que
+      // l'analyse se poursuit côté serveur. Le sondage prend le relais et
+      // rechargera la page à la fin ; inutile d'alarmer sur un faux échec.
+      const st = await rafraichir()
+      if (!st?.cycle?.en_cours) toast(e.message, true)
+    } finally { rafraichir() }
   }
 
   const marquerLivre = async (id) => {
@@ -51,11 +65,29 @@ export default function Synthese() {
           <p>L'essentiel de votre activité en un coup d'œil : ce qui bloque, ce qui arrive, ce que vous pouvez traiter sans quitter cette page.</p>
         </div>
         <div className="page-actions">
-          <button className="btn" onClick={runCycle}>⟳ Analyser</button>
+          <button className="btn" onClick={runCycle} disabled={enCours}
+            title={enCours ? libelleCycle(cycle) : 'Lire les nouveaux messages et mettre à jour le suivi'}>
+            {enCours ? <><span className="rotor" aria-hidden="true" />Analyse en cours…</> : '⟳ Analyser'}
+          </button>
         </div>
       </div>
 
       <Onboarding />
+
+      {enCours && (
+        <div className="bandeau-cycle" role="status" aria-live="polite">
+          <span className="rotor" aria-hidden="true" />
+          <div>
+            <b>{cycle.phase || 'Analyse en cours'}</b>
+            <span className="sub">
+              {cycle.origine === 'dirigeant'
+                ? "Analyse que vous avez lancée"
+                : "Analyse automatique, l'agent relit votre boîte toutes les 15 minutes"}
+              {' · '}{libelleCycle(cycle).split(' · ')[1]}
+            </span>
+          </div>
+        </div>
+      )}
 
       {!syn && <SqueletteKpi />}
       {syn && <div className="kpi-row">

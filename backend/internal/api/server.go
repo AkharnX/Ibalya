@@ -277,6 +277,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		"dernier_cycle":     s.Store.GetSetting(ctx, "dernier_cycle", ""),
 		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
 		"compteurs":         counts,
+		"cycle":             s.Engine.Etat(),
 	})
 }
 
@@ -288,9 +289,9 @@ func (s *Server) runCycle(w http.ResponseWriter, r *http.Request) {
 	if body.SinceDays <= 0 {
 		body.SinceDays = 2
 	}
-	res := s.Engine.RunCycle(r.Context(), func(ctx context.Context) (any, error) {
+	res := s.Engine.RunCycleOrigine(r.Context(), func(ctx context.Context) (any, error) {
 		return s.Ingester.Run(ctx, time.Now().AddDate(0, 0, -body.SinceDays), 500)
-	})
+	}, "dirigeant")
 	writeJSON(w, res)
 }
 
