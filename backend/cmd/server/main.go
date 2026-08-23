@@ -137,9 +137,12 @@ func maybeDailyDigest(ctx context.Context, cfg config.Config, st *store.Store, e
 // creerCompte crée un compte depuis la ligne de commande. Le mot de passe est
 // saisi sans écho et n'apparaît donc ni à l'écran ni dans l'historique du shell.
 func creerCompte(ctx context.Context, st *store.Store, email, nom string) error {
+	// Un seul lecteur pour toute l'entrée standard : deux bufio.NewReader
+	// successifs se disputaient le tampon, le premier avalait la ligne du mot
+	// de passe et la création échouait dès que -nom n'était pas fourni.
+	lecteur := bufio.NewReader(os.Stdin)
 	if nom == "" {
 		fmt.Print("Nom affiché : ")
-		lecteur := bufio.NewReader(os.Stdin)
 		ligne, _ := lecteur.ReadString('\n')
 		nom = strings.TrimSpace(ligne)
 	}
@@ -164,7 +167,7 @@ func creerCompte(ctx context.Context, st *store.Store, email, nom string) error 
 		}
 		mdp = string(a)
 	} else {
-		ligne, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		ligne, err := lecteur.ReadString('\n')
 		if err != nil && ligne == "" {
 			return fmt.Errorf("mot de passe absent sur l'entrée standard")
 		}

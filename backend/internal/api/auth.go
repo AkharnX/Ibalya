@@ -63,6 +63,41 @@ func estLocal(r *http.Request) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
+// proprietaire retourne l'adresse du dirigeant : celle du canal connecté.
+//
+// Le MVP est mono-utilisateur, le CDC est écrit au singulier — « l'agent
+// restitue au dirigeant ». Les données ne sont donc rattachées à personne :
+// tout compte qui ouvre une session voit la boîte du dirigeant, y compris ses
+// messages privés. Tant que le cloisonnement n'existe pas (voir
+// docs/CONCEPTION_MULTI_UTILISATEUR.md), on refuse la session à quiconque
+// n'est pas le titulaire du canal, plutôt que de compter sur le fait que
+// personne d'autre n'a de compte actif.
+//
+// Retourne la chaîne vide tant qu'aucun canal n'est raccordé : sans cela,
+// personne ne pourrait ouvrir la session nécessaire pour en raccorder un.
+func (s *Server) proprietaire(ctx context.Context) string {
+	_, email, err := s.Store.GetOAuthToken(ctx, "google")
+	if err != nil {
+		return ""
+	}
+	return normaliserEmail(email)
+}
+
+// sessionAutorisee dit si ce compte peut ouvrir une session, et pourquoi non.
+func (s *Server) sessionAutorisee(ctx context.Context, email string) (bool, string) {
+	return autoriserSession(s.proprietaire(ctx), email)
+}
+
+// autoriserSession porte la règle seule, sans base : un propriétaire vide vaut
+// autorisation (aucun canal raccordé), sinon seul le titulaire entre.
+func autoriserSession(proprietaire, email string) (bool, string) {
+	if proprietaire == "" || normaliserEmail(email) == normaliserEmail(proprietaire) {
+		return true, ""
+	}
+	return false, "Cet espace est celui de " + proprietaire + ". Ibalya ne gère pour l'instant " +
+		"qu'un seul utilisateur : les données appartiennent au titulaire de la boîte connectée."
+}
+
 func (s *Server) poserCookie(w http.ResponseWriter, token string, expire time.Time) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieSession,
@@ -110,6 +145,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.limiteConnexion.Succes("ip:"+ip, cleCompte)
+	if ok, motif := s.sessionAutorisee(r.Context(), u.Email); !ok {
+		s.Store.Audit(r.Context(), u.Email, "session_refusee_non_proprietaire", nil)
+		httpError(w, 403, motif)
+		return
+	}
 	token, expire, err := s.Store.CreateSession(r.Context(), u.ID)
 	if err != nil {
 		httpError(w, 500, err.Error())
@@ -260,6 +300,11 @@ func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil || u == nil || !u.Actif {
 		s.Store.Audit(ctx, "anonyme", "connexion_google_refusee", map[string]string{"email": email})
 		echec("Aucun compte Ibalya n'est associé à " + email + ".")
+		return
+	}
+	if ok, motif := s.sessionAutorisee(ctx, u.Email); !ok {
+		s.Store.Audit(ctx, u.Email, "session_refusee_non_proprietaire", map[string]string{"methode": "google"})
+		echec(motif)
 		return
 	}
 	token, expire, err := s.Store.CreateSession(ctx, u.ID)
