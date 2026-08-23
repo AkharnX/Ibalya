@@ -672,3 +672,37 @@ label{
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
+
+/* ── activité de l'agent ── */
+
+/* Rotor : la seule pièce animée de l'interface, réservée à ce qui tourne
+   réellement. Un cycle dure de trente secondes à deux minutes, il faut voir
+   que quelque chose progresse. */
+.rotor{
+  width:13px;height:13px;flex:0 0 auto;border-radius:50%;
+  border:2px solid var(--border);border-top-color:var(--primary);
+  animation:rotor .8s linear infinite;
+}
+@keyframes rotor{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){
+  .rotor{animation:none;border-top-color:var(--primary);border-right-color:var(--primary);}
+}
+
+.agent-live.travaille{color:var(--primary);}
+.agent-live.travaille .rotor{border-color:var(--border);border-top-color:var(--primary);}
+
+/* Bandeau de la page Synthèse : dit ce que l'agent fait, et surtout s'il
+   travaille de lui-même — le scheduler lance un cycle toutes les quinze
+   minutes, ce que rien n'indiquait. */
+.bandeau-cycle{
+  display:flex;align-items:center;gap:14px;
+  margin:0 0 20px;padding:13px 16px;
+  border:1px solid var(--primary);background:var(--secondary);
+}
+.bandeau-cycle b{display:block;font-size:13.5px;font-weight:600;}
+.bandeau-cycle .sub{display:block;font-size:12px;color:var(--muted-foreground);margin-top:2px;}
+
+/* Un bouton verrouillé doit se voir : sans cela on reclique, et le serveur
+   répond « un cycle est déjà en cours ». */
+.btn:disabled,button:disabled{opacity:.55;cursor:not-allowed;}
+.btn:disabled .rotor{margin-right:7px;}

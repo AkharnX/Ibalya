@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
+import { FournisseurEtatAgent, libelleCycle, useEtatAgent } from './etatAgent'
 import Synthese from './pages/Synthese'
 import Miroir from './pages/Miroir'
 import Digest from './pages/Digest'
@@ -129,12 +130,47 @@ const TITRES = {
   '/interlocuteurs': 'Interlocuteurs', '/reglages': 'Réglages',
 }
 
+// Indicateur d'activité de la barre du haut. Il annonçait seulement que
+// l'agent était joignable ; il montre maintenant ce qu'il fait, y compris
+// quand le cycle a été lancé par le scheduler et non par le dirigeant.
+function IndicateurAgent() {
+  const { statut, cycle } = useEtatAgent()
+  const ok = statut?.canal_connecte && statut?.service_llm_ok
+
+  if (cycle?.en_cours) {
+    return (
+      <div className="agent-live travaille" title={cycle.origine === 'dirigeant'
+        ? 'Analyse que vous avez lancée' : 'Analyse automatique, toutes les 15 minutes'}>
+        <span className="rotor" aria-hidden="true" />
+        <span>{libelleCycle(cycle)}</span>
+      </div>
+    )
+  }
+  return (
+    <div className={'agent-live' + (ok ? '' : ' off')}>
+      <i />{ok ? 'Agent actif' : (statut?.canal_connecte ? 'LLM injoignable' : 'Canal non connecté')}
+    </div>
+  )
+}
+
+// Pastille de la navigation. Elle lit le sondage partagé plutôt que de
+// déclencher sa propre requête à chaque changement de page.
+function PastilleNav({ cle }) {
+  const { statut } = useEtatAgent()
+  const c = statut?.compteurs || {}
+  const valeurs = {
+    messages_a_valider: c.brouillons_proposes || 0,
+    alertes: c.detections_actives || 0,
+    liens_a_confirmer: c.liens_a_confirmer || 0,
+  }
+  const n = valeurs[cle] || 0
+  return n > 0 ? <span className="nav-count">{n}</span> : null
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')
   const [user, setUser] = useState(null)
-  const [status, setStatus] = useState(null)
-  const [counts, setCounts] = useState({})
   const [dark, setDark] = useState(() => localStorage.getItem('ibalya_theme') !== 'light')
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
@@ -154,18 +190,6 @@ export default function App() {
   }, [])
   useEffect(() => { check() }, [check])
 
-  // compteurs de la navigation, rafraîchis à chaque changement de page
-  const refreshCounts = useCallback(() => {
-    api('/status').then((st) => {
-      setStatus(st)
-      setCounts({
-        messages_a_valider: st.compteurs?.brouillons_proposes || 0,
-        alertes: st.compteurs?.detections_actives || 0,
-        liens_a_confirmer: st.compteurs?.liens_a_confirmer || 0,
-      })
-    }).catch(() => {})
-  }, [])
-  useEffect(() => { if (authed) refreshCounts() }, [authed, pathname, refreshCounts])
   useEffect(() => {
     document.title = TITRES[pathname] ? `${TITRES[pathname]} · Ibalya` : 'Ibalya'
   }, [pathname])
@@ -174,9 +198,8 @@ export default function App() {
   if (authed === null) return null
   if (!authed) return <Login onConnecte={(u) => { setUser(u); setLoginError(''); setAuthed(true) }} />
 
-  const agentOk = status?.canal_connecte && status?.service_llm_ok
-
   return (
+    <FournisseurEtatAgent actif={authed}>
     <div className="shell">
       <aside className={'sidebar' + (menuOpen ? ' open' : '')}>
         <div className="sidebar-head"><Logo /></div>
@@ -188,7 +211,7 @@ export default function App() {
                 <NavLink key={path} to={path} end={path === '/'}
                   className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
                   <span>{label}</span>
-                  {countKey && counts[countKey] > 0 && <span className="nav-count">{counts[countKey]}</span>}
+                  {countKey && <PastilleNav cle={countKey} />}
                 </NavLink>
               ))}
             </div>
@@ -218,9 +241,7 @@ export default function App() {
                 latérale est escamotée : sur grand écran le logo y est déjà. */}
             <Logo />
           </div>
-          <div className={'agent-live' + (agentOk ? '' : ' off')}>
-            <i />{agentOk ? 'Agent actif' : (status?.canal_connecte ? 'LLM injoignable' : 'Canal non connecté')}
-          </div>
+          <IndicateurAgent />
         </header>
         <main>
           <Routes>
@@ -240,5 +261,6 @@ export default function App() {
       </div>
       <Toaster />
     </div>
+    </FournisseurEtatAgent>
   )
 }
