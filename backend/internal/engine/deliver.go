@@ -181,12 +181,18 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
 		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
 			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
-			// Le digest part d'une adresse dédiée quand elle est configurée :
-			// il se distingue ainsi des messages que le dirigeant envoie
-			// lui-même, et se filtre dans sa boîte. L'adresse doit être
-			// vérifiée dans Gmail, sinon Google refuse l'envoi.
-			exp := e.Store.GetSetting(ctx, "digest_expediteur", "")
-			if err := e.Channel.SendFrom(ctx, exp, "Digest Ibalya", to, subject, e.renderDigestText(dc)); err != nil {
+			// Le digest vient d'Ibalya, pas du dirigeant : il part par
+			// l'expéditeur de service quand il est configuré. Passer par sa
+			// boîte le fait apparaître dans ses messages envoyés, et Gmail y
+			// remplace en silence toute adresse qui n'est pas un alias vérifié.
+			var err error
+			if e.Courrier.Configure() {
+				err = e.Courrier.Envoyer(ctx, to, subject, e.renderDigestText(dc))
+			} else {
+				exp := e.Store.GetSetting(ctx, "digest_expediteur", "")
+				err = e.Channel.SendFrom(ctx, exp, "Digest Ibalya", to, subject, e.renderDigestText(dc))
+			}
+			if err != nil {
 				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
 			} else {
 				e.Store.Audit(ctx, "agent", "digest_email_envoye", map[string]string{"to": to})

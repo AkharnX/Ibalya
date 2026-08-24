@@ -28,12 +28,19 @@ type Config struct {
 	MicrosoftClientID     string
 	MicrosoftClientSecret string
 	MicrosoftTenant       string
-	FixturePath           string
-	FrontendDir           string
-	LandingDir            string
-	IngestInterval        int // minutes
-	DetectInterval        int // minutes
-	DigestHour            int
+	// Expéditeur de service : le digest part de là, pas de la boîte du dirigeant.
+	ServiceSMTPHote  string
+	ServiceSMTPPort  int
+	ServiceSMTPLogin string
+	ServiceSMTPCle   string
+	ServiceMailDe    string
+	ServiceMailNom   string
+	FixturePath      string
+	FrontendDir      string
+	LandingDir       string
+	IngestInterval   int // minutes
+	DetectInterval   int // minutes
+	DigestHour       int
 }
 
 // env lit une variable d'environnement en retirant les espaces parasites :
@@ -109,12 +116,18 @@ func Load() Config {
 		MicrosoftClientSecret: env("MICROSOFT_CLIENT_SECRET", ""),
 		// « common » accepte comptes professionnels et personnels ; un
 		// identifiant de locataire restreint à une seule organisation.
-		MicrosoftTenant: env("MICROSOFT_TENANT", "common"),
-		FixturePath:     env("FIXTURE_PATH", ""),
-		FrontendDir:     env("FRONTEND_DIR", "frontend/dist"),
-		LandingDir:      env("LANDING_DIR", "landing"),
-		IngestInterval:  envInt("INGEST_INTERVAL_MINUTES", 15),
-		DetectInterval:  envInt("DETECT_INTERVAL_MINUTES", 30),
-		DigestHour:      envInt("DIGEST_HOUR", 7),
+		MicrosoftTenant:  env("MICROSOFT_TENANT", "common"),
+		ServiceSMTPHote:  env("SERVICE_SMTP_HOST", "smtp-relay.brevo.com"),
+		ServiceSMTPPort:  envInt("SERVICE_SMTP_PORT", 587),
+		ServiceSMTPLogin: env("SERVICE_SMTP_LOGIN", ""),
+		ServiceSMTPCle:   env("SERVICE_SMTP_KEY", ""),
+		ServiceMailDe:    env("SERVICE_MAIL_FROM", ""),
+		ServiceMailNom:   env("SERVICE_MAIL_NAME", "Ibalya"),
+		FixturePath:      env("FIXTURE_PATH", ""),
+		FrontendDir:      env("FRONTEND_DIR", "frontend/dist"),
+		LandingDir:       env("LANDING_DIR", "landing"),
+		IngestInterval:   envInt("INGEST_INTERVAL_MINUTES", 15),
+		DetectInterval:   envInt("DETECT_INTERVAL_MINUTES", 30),
+		DigestHour:       envInt("DIGEST_HOUR", 7),
 	}
 }

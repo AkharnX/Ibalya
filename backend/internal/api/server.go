@@ -119,6 +119,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rules", s.auth(s.listRules))
 	mux.HandleFunc("POST /api/rules", s.auth(s.createRule))
 	mux.HandleFunc("DELETE /api/rules/{id}", s.auth(s.deleteRule))
+	// Déclencher un digest sans attendre l'heure du scheduler : sert à
+	// vérifier l'expéditeur et le contenu après un changement de réglage.
+	mux.HandleFunc("POST /api/digest/envoyer", s.auth(s.envoyerDigest))
 	mux.HandleFunc("GET /api/canal", s.auth(s.getCanal))
 	mux.HandleFunc("POST /api/canal/tester", s.auth(s.testerCanal))
 	mux.HandleFunc("PUT /api/canal", s.auth(s.putCanal))
@@ -350,6 +353,33 @@ func (s *Server) runCycle(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- miroir & capsule ---
+
+// POST /api/digest/envoyer — produit un digest et l'envoie immédiatement.
+//
+// Le scheduler ne le fait qu'à l'heure dite : sans déclenchement manuel, la
+// moindre vérification d'expéditeur ou de contenu demande d'attendre le
+// lendemain matin.
+func (s *Server) envoyerDigest(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Type string `json:"type"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+	if body.Type != "hebdo" {
+		body.Type = "quotidien"
+	}
+	dc, err := s.Engine.GenerateDigest(r.Context(), body.Type)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, map[string]any{
+		"type":        body.Type,
+		"alertes":     len(dc.Detections),
+		"engagements": len(dc.Engagements),
+		"messages":    len(dc.Brouillons),
+		"expediteur":  s.Engine.Courrier.Expediteur(),
+	})
+}
 
 func (s *Server) getMiroir(w http.ResponseWriter, r *http.Request) {
 	rep, err := s.Store.LatestReport(r.Context(), "miroir")
