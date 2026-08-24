@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
-import { TYPE_LABELS, fmtDT, fmtDate } from '../components/ui'
+import { Reli, TYPE_LABELS, fmtDT, fmtDate } from '../components/ui'
 import SourcePanel from '../components/SourcePanel'
 import { SqueletteKpi, SqueletteLignes } from '../components/Squelette'
 
@@ -27,7 +27,7 @@ function Liste({ titre, aide, rows, onSource }) {
                     <p className="eng-flow">{e.emetteur_email || '?'} → {e.destinataire_email || '?'}</p>
                   </td>
                   <td>{e.echeance ? fmtDate(e.echeance) : <span className="mono">—</span>}</td>
-                  <td><div className="reli"><span style={{ width: `${Math.round(e.confiance * 100)}%` }} /></div></td>
+                  <td><Reli value={e.confiance} /></td>
                 </tr>
               ))}
             </tbody>

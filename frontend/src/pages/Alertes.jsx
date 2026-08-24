@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, toast } from '../api'
-import { DET_LABELS, Empty, Reli, fmtDT } from '../components/ui'
+import { DET_LABELS, Empty, FiltreFiabilite, Reli, fmtDT, niveauFiabilite } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
 
 export default function Alertes() {
   const [dets, setDets] = useState(null)
   const [enAttente, setEnAttente] = useState(0)
+  const [fiabilite, setFiabilite] = useState('')
 
   const load = useCallback(() => {
     api('/detections').then((r) => setDets(r || [])).catch((e) => toast(e.message, true))
@@ -15,6 +16,8 @@ export default function Alertes() {
     api('/drafts?statut=propose').then((r) => setEnAttente((r || []).length)).catch(() => {})
   }, [])
   useEffect(load, [load])
+
+  const visibles = (dets || []).filter((d) => !fiabilite || niveauFiabilite(d.score) === fiabilite)
 
   const dismiss = async (id) => {
     try { await api(`/detections/${id}/dismiss`, { method: 'POST' }); toast('Alerte écartée'); load() }
@@ -40,14 +43,20 @@ export default function Alertes() {
         </ul>
       </details>
 
-      {dets === null ? <SqueletteTable lignes={4} colonnes={5} /> : !dets.length ? <Empty>Aucune alerte active.</Empty> : (
+      {dets !== null && dets.length > 0 && (
+        <FiltreFiabilite valeur={fiabilite} onChange={setFiabilite} champ="score" rows={dets} />
+      )}
+
+      {dets === null ? <SqueletteTable lignes={4} colonnes={5} /> : !visibles.length ? (
+        <Empty>{dets.length ? 'Aucune alerte à ce niveau de fiabilité.' : 'Aucune alerte active.'}</Empty>
+      ) : (
         <div className="tbl-wrap">
           <table>
             <thead>
               <tr><th>Alerte</th><th>Détail</th><th>Fiabilité</th><th>Date</th><th><span className="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
-              {dets.map((d) => (
+              {visibles.map((d) => (
                 <tr key={d.id}>
                   <td><b>{d.critique ? '⚠ ' : ''}{DET_LABELS[d.type] || d.type}</b></td>
                   <td className="obj">{d.titre}<div className="sub">{d.detail}</div></td>
