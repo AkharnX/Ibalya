@@ -47,34 +47,6 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
             <>
               {data.objet && <p className="context">Engagement extrait : {data.objet}</p>}
 
-              {/* L'action suggérée s'affichait sur chaque ligne du tableau, ce qui
-                  répétait la même phrase à l'identique sur tous les engagements.
-                  Elle a sa place ici, où le fil donne le contexte qui la justifie. */}
-              {action && onAction && (
-                <div className="suggestion">
-                  <div>
-                    <b>{action.label}</b>
-                    {action.hint && <span className="sub">{action.hint}</span>}
-                  </div>
-                  <button className="btn primary" onClick={() => onAction(action)}>
-                    Préparer le message
-                  </button>
-                </div>
-              )}
-
-              {events.length > 0 && (
-                <details className="journal">
-                  <summary>Journal de l'engagement <span className="n">{events.length}</span></summary>
-                  <ol className="journal-liste">
-                    {events.map((ev) => (
-                      <li key={ev.id}>
-                        <span className="journal-date">{fmtDT(ev.horodatage)}</span>
-                        <span className="journal-type">{EVT_LABELS[ev.type] || ev.type}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
-              )}
               {data.messages.map((m) => (
                 <div className={'msg' + (m.est_source ? ' msg-source' : '')} key={m.id}>
                   <div className="msg-head">
@@ -97,6 +69,37 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
                   )}
                 </div>
               ))}
+
+              {/* Le fil d'abord : c'est ce qu'on vient lire. L'historique et
+                  l'action viennent après, dans l'ordre où on s'en sert. */}
+              {events.length > 0 && (
+                <details className="journal">
+                  <summary>Journal de l'engagement <span className="n">{events.length}</span></summary>
+                  <ol className="journal-liste">
+                    {events.map((ev) => (
+                      <li key={ev.id}>
+                        <span className="journal-date">{fmtDT(ev.horodatage)}</span>
+                        <span className="journal-type">{EVT_LABELS[ev.type] || ev.type}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+
+              {/* L'action suggérée s'affichait sur chaque ligne du tableau, ce qui
+                  répétait la même phrase à l'identique sur tous les engagements.
+                  Elle a sa place ici, où le fil donne le contexte qui la justifie. */}
+              {action && onAction && (
+                <div className="suggestion">
+                  <div>
+                    <b>{action.label}</b>
+                    {action.hint && <span className="sub">{action.hint}</span>}
+                  </div>
+                  <button className="btn primary" onClick={() => onAction(action)}>
+                    Préparer le message
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
