@@ -45,3 +45,23 @@ func TestRetirerSignatureModele(t *testing.T) {
 		})
 	}
 }
+
+// La signature libre prime sur les quatre champs : ils ne couvrent pas une
+// mention légale, un téléphone ou une seconde ligne d'adresse.
+func TestSignatureComposee(t *testing.T) {
+	cas := []struct{ nom, prenom, patronyme, fonction, societe, attendu string }{
+		{"tout renseigné", "Ibrahim", "Kebe", "CTO", "Kebe Agency", "Ibrahim Kebe\nCTO — Kebe Agency"},
+		{"sans fonction", "Ibrahim", "Kebe", "", "Kebe Agency", "Ibrahim Kebe\nKebe Agency"},
+		{"sans société", "Ibrahim", "Kebe", "CTO", "", "Ibrahim Kebe\nCTO"},
+		{"nom seul", "Ibrahim", "", "", "", "Ibrahim"},
+		{"rien : pas de signature", "", "", "CTO", "Kebe Agency", ""},
+		{"espaces parasites", "  Ibrahim ", " Kebe ", "", "", "Ibrahim Kebe"},
+	}
+	for _, c := range cas {
+		t.Run(c.nom, func(t *testing.T) {
+			if got := SignatureComposee(c.prenom, c.patronyme, c.fonction, c.societe); got != c.attendu {
+				t.Fatalf("obtenu %q, attendu %q", got, c.attendu)
+			}
+		})
+	}
+}

@@ -170,6 +170,17 @@ function PastilleNav({ cle }) {
 // Fraîcheur des données : depuis quand l'agent a-t-il lu la boîte, et
 // laquelle. C'est la question de confiance centrale du produit, et elle
 // n'était visible que dans Réglages.
+// Nom de l'organisation dont c'est l'espace de travail. Renseigné dans
+// Réglages, il sert aussi à signer les messages.
+function Societe() {
+  const [nom, setNom] = useState('')
+  useEffect(() => {
+    api('/settings').then((s) => setNom((s.identite_societe || '').trim())).catch(() => {})
+  }, [])
+  if (!nom) return null
+  return <div className="topbar-societe" title="Espace de travail">{nom}</div>
+}
+
 function Fraicheur() {
   const { statut, cycle } = useEtatAgent()
   if (cycle?.en_cours || !statut?.dernier_cycle) return null
@@ -261,6 +272,7 @@ export default function App() {
               onClick={() => setMenuOpen(!menuOpen)}><Icone nom="action-menu" /></button>
             <Recherche />
           </div>
+          <Societe />
           <div className="topbar-droite">
             <Fraicheur />
             <IndicateurAgent />

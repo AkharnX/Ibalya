@@ -707,14 +707,15 @@ func (s *Server) listAudit(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	writeJSON(w, map[string]string{
-		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
-		"digest_type":       s.Store.GetSetting(ctx, "digest_type", "quotidien"),
-		"digest_email":      s.Store.GetSetting(ctx, "digest_email", "0"),
-		"digest_expediteur": s.Store.GetSetting(ctx, "digest_expediteur", ""),
-		"identite_prenom":   s.Store.GetSetting(ctx, "identite_prenom", ""),
-		"identite_nom":      s.Store.GetSetting(ctx, "identite_nom", ""),
-		"identite_fonction": s.Store.GetSetting(ctx, "identite_fonction", ""),
-		"identite_societe":  s.Store.GetSetting(ctx, "identite_societe", ""),
+		"seuil_publication":  s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
+		"digest_type":        s.Store.GetSetting(ctx, "digest_type", "quotidien"),
+		"digest_email":       s.Store.GetSetting(ctx, "digest_email", "0"),
+		"digest_expediteur":  s.Store.GetSetting(ctx, "digest_expediteur", ""),
+		"identite_prenom":    s.Store.GetSetting(ctx, "identite_prenom", ""),
+		"identite_nom":       s.Store.GetSetting(ctx, "identite_nom", ""),
+		"identite_fonction":  s.Store.GetSetting(ctx, "identite_fonction", ""),
+		"identite_societe":   s.Store.GetSetting(ctx, "identite_societe", ""),
+		"identite_signature": s.Store.GetSetting(ctx, "identite_signature", ""),
 	})
 }
 
@@ -754,6 +755,13 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.Store.SetSetting(r.Context(), k, strings.TrimSpace(v))
+		// Signature rédigée à la main : elle prime sur les quatre champs.
+		case "identite_signature":
+			if len(v) > 600 {
+				httpError(w, 400, "la signature est limitée à 600 caractères")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, strings.TrimRight(v, " \n\t"))
 		// Expéditeur du digest. Doit être une adresse vérifiée dans Gmail,
 		// sans quoi l'envoi est refusé par Google.
 		case "digest_expediteur":
