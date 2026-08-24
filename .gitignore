@@ -11,3 +11,4 @@ logs/
 # archives de données (peuvent contenir des données réelles)
 archives/
 .deploy-stamp
+sauvegardes/

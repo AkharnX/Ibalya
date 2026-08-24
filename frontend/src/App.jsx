@@ -178,7 +178,12 @@ function Societe() {
     api('/settings').then((s) => setNom((s.identite_societe || '').trim())).catch(() => {})
   }, [])
   if (!nom) return null
-  return <div className="topbar-societe" title="Espace de travail">{nom}</div>
+  return (
+    <div className="topbar-societe">
+      <span className="topbar-societe-sur">Espace de travail</span>
+      <span className="topbar-societe-nom">{nom}</span>
+    </div>
+  )
 }
 
 function Fraicheur() {
