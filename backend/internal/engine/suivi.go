@@ -116,47 +116,107 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 	return out, nil
 }
 
-// suggestAction déduit l'action la plus utile selon la catégorie, le type,
-// le sens de l'engagement et la cause de blocage éventuelle.
+// suggestAction déduit l'action la plus utile.
+//
+// L'ancienne version se réglait d'abord sur le TYPE d'engagement, le signal le
+// plus pauvre : sur les huit engagements affichés, sept portaient la même
+// phrase, « Envoyer un point d'avancement ». Deux causes. Les types "relance"
+// et "autre" n'avaient aucune branche et tombaient dans le cas par défaut,
+// alors qu'ils représentaient sept engagements sur huit. Et la branche « en
+// cours » ignorait l'échéance, sauf pour les livraisons : une promesse due
+// demain et une due dans trois mois recevaient la même suggestion.
+//
+// L'ordre est désormais celui de l'urgence : ce qui bloque, ce qui est en
+// retard, ce qui arrive à échéance, puis seulement la nature de l'engagement.
+// Et chaque branche distingue le sens — on n'écrit pas la même chose selon
+// qu'on doit quelque chose ou qu'on attend quelque chose.
 func suggestAction(s EngagementSuivi) *ActionSuggeree {
-	// Un engagement bloqué par un amont en retard : l'action utile est de
-	// relancer la CAUSE, pas d'écrire au client qui subit.
+	return suggestActionA(s, time.Now())
+}
+
+// suggestActionA prend l'instant de référence en paramètre : sans cela, les
+// branches qui dépendent de l'échéance ne sont pas testables.
+func suggestActionA(s EngagementSuivi, maintenant time.Time) *ActionSuggeree {
+	vers := func(label, intent, dest string) *ActionSuggeree {
+		return &ActionSuggeree{Label: label, Intent: intent, ToEmail: dest}
+	}
+
+	// 1. Bloqué par un amont en retard : l'action utile vise la CAUSE, pas le
+	//    client qui la subit.
 	if s.Categorie == CatRisque && s.Blocage != nil {
 		if s.Type == "rendez_vous" {
-			return &ActionSuggeree{Label: "Proposer un nouveau créneau", Intent: "reporter_rdv", ToEmail: s.Contact}
+			return vers("Proposer un nouveau créneau", "reporter_rdv", s.Contact)
 		}
-		return &ActionSuggeree{
-			Label:   "Relancer le fournisseur (cause du blocage)",
-			Intent:  "relance_cause",
-			ToEmail: s.Blocage.AmontEmetteur,
-		}
+		return vers("Relancer la cause du blocage", "relance_cause", s.Blocage.AmontEmetteur)
 	}
+
+	// 2. En retard.
 	if s.Categorie == CatRetard {
 		if s.Sortant {
-			return &ActionSuggeree{Label: "Informer le client du retard", Intent: "info_retard", ToEmail: s.Contact}
+			if s.Type == "rendez_vous" {
+				return vers("Proposer un nouveau créneau", "reporter_rdv", s.Contact)
+			}
+			return vers("Prévenir du retard et donner une nouvelle date", "info_retard", s.Contact)
 		}
-		return &ActionSuggeree{Label: "Relancer le fournisseur", Intent: "relance_fournisseur", ToEmail: s.Contact}
+		return vers("Relancer, l'échéance est passée", "relance_retard", s.Contact)
 	}
-	// en cours : l'action dépend du type d'engagement
+
+	// 3. L'échéance approche. Le CDC fait de ce signal le premier détecteur ;
+	//    il vaut pour tous les types, pas seulement les livraisons.
+	if s.Echeance != nil && s.EcheanceConfirmee {
+		restant := s.Echeance.Sub(maintenant)
+		if restant >= 0 && restant < 72*time.Hour {
+			if s.Sortant {
+				switch s.Type {
+				case "devis":
+					return vers("Envoyer le devis avant l'échéance", "envoi_devis", s.Contact)
+				case "facturation":
+					return vers("Envoyer la facture avant l'échéance", "envoi_facture", s.Contact)
+				case "rendez_vous":
+					return vers("Confirmer le rendez-vous", "confirmer_rdv", s.Contact)
+				}
+				return vers("Confirmer que vous serez à temps", "confirmer_date", s.Contact)
+			}
+			return vers("Demander confirmation avant l'échéance", "demande_confirmation", s.Contact)
+		}
+	}
+
+	// 4. Nature de l'engagement, toujours selon le sens.
 	switch s.Type {
 	case "devis":
 		if s.Sortant {
-			return &ActionSuggeree{Label: "Envoyer le devis promis", Intent: "envoi_devis", ToEmail: s.Contact}
+			return vers("Envoyer le devis promis", "envoi_devis", s.Contact)
 		}
-		return &ActionSuggeree{Label: "Relancer pour validation du devis", Intent: "relance_devis", ToEmail: s.Contact}
+		return vers("Relancer pour recevoir le devis", "relance_devis", s.Contact)
 	case "facturation":
-		return &ActionSuggeree{Label: "Envoyer la facture", Intent: "envoi_facture", ToEmail: s.Contact}
-	case "rendez_vous":
-		return &ActionSuggeree{Label: "Confirmer le rendez-vous", Intent: "confirmer_rdv", ToEmail: s.Contact}
-	case "prise_de_contact":
-		return &ActionSuggeree{Label: "Relancer le prospect", Intent: "relance_prospect", ToEmail: s.Contact}
-	case "livraison":
-		if s.Echeance != nil && time.Until(*s.Echeance) < 72*time.Hour {
-			return &ActionSuggeree{Label: "Confirmer la date d'intervention", Intent: "confirmer_date", ToEmail: s.Contact}
+		if s.Sortant {
+			return vers("Envoyer la facture", "envoi_facture", s.Contact)
 		}
-		return &ActionSuggeree{Label: "Envoyer un point d'avancement", Intent: "point_avancement", ToEmail: s.Contact}
+		return vers("Réclamer la facture", "demande_facture", s.Contact)
+	case "rendez_vous":
+		return vers("Confirmer le rendez-vous", "confirmer_rdv", s.Contact)
+	case "prise_de_contact":
+		if s.Sortant {
+			return vers("Faire le premier pas", "prise_contact", s.Contact)
+		}
+		return vers("Relancer le prospect", "relance_prospect", s.Contact)
+	case "livraison":
+		if s.Sortant {
+			return vers("Envoyer un point d'avancement", "point_avancement", s.Contact)
+		}
+		return vers("Demander où en est la livraison", "demande_avancement", s.Contact)
+	case "relance":
+		if s.Sortant {
+			return vers("Donner suite comme promis", "suite_promise", s.Contact)
+		}
+		return vers("Relancer, la réponse promise n'est pas venue", "relance_reponse", s.Contact)
 	}
-	return &ActionSuggeree{Label: "Envoyer un point d'avancement", Intent: "point_avancement", ToEmail: s.Contact}
+
+	// 5. Type indéterminé : le sens reste un signal exploitable.
+	if s.Sortant {
+		return vers("Donner des nouvelles", "point_avancement", s.Contact)
+	}
+	return vers("Demander où cela en est", "demande_avancement", s.Contact)
 }
 
 // --- Synthèse (vue direction) ---
