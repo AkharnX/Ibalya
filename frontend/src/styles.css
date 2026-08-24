@@ -835,3 +835,29 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   .recherche input{width:100%;max-width:none;}
   .fraicheur{display:none;}
 }
+
+/* Nom de l'espace de travail, au centre de la barre du haut. */
+.topbar-societe{
+  font-size:13px;font-weight:600;letter-spacing:-.1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  padding:0 20px;
+}
+
+/* Réglages : l'identité occupe toute la largeur, les deux autres panneaux se
+   partagent la ligne suivante. Une grille à deux colonnes pour trois panneaux
+   laissait une demi-ligne vide. */
+.reglages-grille{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;
+}
+.reglages-grille .panel-large{grid-column:1 / -1;}
+@media (max-width:1000px){ .reglages-grille{grid-template-columns:1fr;} }
+
+/* Éditeur de signature. */
+.signature-bloc{margin-top:16px;}
+.signature-bloc label{display:block;margin-bottom:6px;}
+.signature-bloc textarea{font-family:var(--font-sans);font-size:13px;line-height:1.5;}
+.signature-pied{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;margin-top:6px;
+}
+@media (max-width:900px){ .topbar-societe{display:none;} }

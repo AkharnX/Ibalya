@@ -2,15 +2,45 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { fmtDT } from '../components/ui'
 
-// Aperçu de la signature réellement apposée par le serveur.
-function Apercu({ s }) {
-  const nom = [s.identite_prenom, s.identite_nom].filter(Boolean).join(' ').trim()
-  if (!nom) return null
-  const role = [s.identite_fonction, s.identite_societe].filter(Boolean).join(' — ')
+// Signature composée depuis les quatre champs. Doit reproduire exactement la
+// règle du serveur (engine.SignatureComposee), sans quoi l'aperçu mentirait.
+export function signatureComposee(s) {
+  const nom = [s.identite_prenom, s.identite_nom].map((x) => (x || '').trim()).filter(Boolean).join(' ')
+  if (!nom) return ''
+  const role = [s.identite_fonction, s.identite_societe].map((x) => (x || '').trim()).filter(Boolean).join(' — ')
+  return [nom, role].filter(Boolean).join('\n')
+}
+
+// Éditeur de signature. Les quatre champs donnent un point de départ, mais ils
+// ne couvrent pas une mention légale, un téléphone ou une seconde adresse :
+// le texte reste modifiable, et prime alors sur les champs.
+function EditeurSignature({ s, onChange }) {
+  const composee = signatureComposee(s)
+  const libre = s.identite_signature || ''
+  const effective = libre || composee
   return (
-    <div className="apercu-signature">
-      <span className="sub">Signature apposée aux messages :</span>
-      <pre>{['Cordialement,', nom, role].filter(Boolean).join('\n')}</pre>
+    <div className="signature-bloc">
+      <label htmlFor="signature">Signature apposée aux messages</label>
+      <textarea id="signature" rows={4} value={libre} placeholder={composee || 'Renseignez au moins un prénom'}
+        onChange={(e) => onChange(e.target.value)} />
+      <div className="signature-pied">
+        <span className="sub">
+          {libre
+            ? 'Texte personnalisé : il remplace les champs ci-dessus.'
+            : 'Composée depuis les champs ci-dessus. Écrivez ici pour la remplacer.'}
+        </span>
+        {libre && (
+          <button className="ghost" type="button" onClick={() => onChange('')}>
+            Repartir des champs
+          </button>
+        )}
+      </div>
+      {effective && (
+        <div className="apercu-signature">
+          <span className="sub">Aperçu en fin de message</span>
+          <pre>{'Cordialement,\n\n' + effective}</pre>
+        </div>
+      )}
     </div>
   )
 }
@@ -18,6 +48,7 @@ function Apercu({ s }) {
 export default function Reglages() {
   const [settings, setSettings] = useState({
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
+    identite_signature: '',
     identite_prenom: '', identite_nom: '', identite_fonction: '', identite_societe: '',
   })
   const [status, setStatus] = useState(null)
@@ -70,7 +101,7 @@ export default function Reglages() {
           <p>La connexion au canal, le seuil à partir duquel l'agent vous parle, et la trace de tout ce qu'il a fait.</p>
         </div>
       </div>
-      <div className="grid-2">
+      <div className="reglages-grille">
         <div className="panel">
           <h3>Connexion</h3>
           <div className="setting">
@@ -83,7 +114,7 @@ export default function Reglages() {
             <button onClick={onboard}>Relancer l'onboarding</button>
           </div>
         </div>
-        <div className="panel">
+        <div className="panel panel-large">
           <h3>Votre identité</h3>
           <p className="help">
             Elle signe les messages que l'agent prépare pour vous. Sans elle, le modèle
@@ -108,7 +139,7 @@ export default function Reglages() {
               <input id="societe" value={settings.identite_societe} onChange={set('identite_societe')} />
             </div>
           </div>
-          <Apercu s={settings} />
+          <EditeurSignature s={settings} onChange={(v) => setSettings((p) => ({ ...p, identite_signature: v }))} />
           <button className="primary" onClick={save}>Enregistrer</button>
         </div>
         <div className="panel">

@@ -14,12 +14,25 @@ import (
 // il faut retirer au modèle la possibilité de se tromper.
 func (e *Engine) signature(ctx context.Context) string {
 	get := func(c string) string { return strings.TrimSpace(e.Store.GetSetting(ctx, c, "")) }
-	nom := strings.TrimSpace(get("identite_prenom") + " " + get("identite_nom"))
-	if nom == "" {
+	// Une signature rédigée à la main prime : les quatre champs ne couvrent pas
+	// une mention légale, un numéro de téléphone ou une seconde ligne d'adresse.
+	if libre := get("identite_signature"); libre != "" {
+		return libre
+	}
+	return SignatureComposee(get("identite_prenom"), get("identite_nom"),
+		get("identite_fonction"), get("identite_societe"))
+}
+
+// SignatureComposee assemble la signature par défaut à partir des champs
+// d'identité. Exportée pour que l'interface montre exactement ce que le
+// serveur apposera, sans réimplémenter la règle de son côté.
+func SignatureComposee(prenom, nom, fonction, societe string) string {
+	complet := strings.TrimSpace(strings.TrimSpace(prenom) + " " + strings.TrimSpace(nom))
+	if complet == "" {
 		return ""
 	}
-	lignes := []string{nom}
-	if r := strings.TrimSpace(strings.Trim(get("identite_fonction")+" — "+get("identite_societe"), " —")); r != "" {
+	lignes := []string{complet}
+	if r := strings.Trim(strings.TrimSpace(fonction)+" — "+strings.TrimSpace(societe), " —"); r != "" {
 		lignes = append(lignes, r)
 	}
 	return strings.Join(lignes, "\n")
