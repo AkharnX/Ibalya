@@ -286,8 +286,31 @@ tbody tr:hover{background:var(--secondary);}
 .status.late{color:var(--risk);font-weight:500;} .status.late .dot{background:var(--risk);}
 .status.risk{color:var(--delay);font-weight:500;} .status.risk .dot{background:var(--delay);}
 
-.reli{width:64px;height:4px;background:var(--secondary);overflow:hidden;}
+/* Jauge de fiabilité. La barre seule ne disait pas combien : le pourcentage
+   s'affiche au survol et au focus clavier. L'attribut title du navigateur
+   mettait une seconde à apparaître et ne se déclenchait jamais au clavier. */
+.reli{
+  width:64px;height:4px;background:var(--secondary);
+  position:relative;cursor:default;
+}
 .reli span{display:block;height:100%;background:var(--primary);}
+.reli.moyenne span{background:var(--delay);}
+.reli.faible span{background:var(--risk);}
+.reli::after{
+  content:attr(data-pct);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  padding:3px 7px;background:var(--foreground);color:var(--background);
+  font-family:var(--font-mono);font-size:11px;line-height:1.2;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .12s;
+}
+.reli:hover::after,.reli:focus-visible::after{opacity:1;}
+.reli:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
+
+/* Pastilles du filtre : la teinte reprend celle de la jauge, pour qu'un niveau
+   se reconnaisse au même coup d'œil dans le filtre et dans le tableau. */
+.chip-elevee.active{border-color:var(--primary);}
+.chip-moyenne.active{border-color:var(--delay);}
+.chip-faible.active{border-color:var(--risk);}
 
 .tag{
   font-family:var(--font-mono);font-size:10px;padding:2px 7px;background:var(--secondary);
@@ -706,3 +729,9 @@ label{
    répond « un cycle est déjà en cours ». */
 .btn:disabled,button:disabled{opacity:.55;cursor:not-allowed;}
 .btn:disabled .rotor{margin-right:7px;}
+
+/* Liens dans le corps du texte. Aucune règle n'existait : un <a> tombait sur
+   le bleu du navigateur, hors de la palette et illisible sur le thème sombre. */
+a{color:var(--primary);text-decoration:none;border-bottom:1px solid transparent;}
+a:hover{border-bottom-color:currentColor;}
+a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}

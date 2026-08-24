@@ -3,6 +3,7 @@
 // des compteurs réels plutôt qu'une animation, parce qu'un chiffre qui monte
 // prouve que le travail avance.
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 
 const ETAPES = ['lecture', 'analyse', 'miroir', 'capsule']
@@ -46,7 +47,7 @@ export default function Onboarding() {
           <b>{erreur ? 'Analyse interrompue' : fini ? 'Votre agent est prêt' : etat.libelle}</b>
           <p>
             {erreur ? etat.erreur
-              : fini ? 'Vos engagements sont extraits. Le miroir d’activité vous attend.'
+              : fini ? <>Vos engagements sont extraits. <Link to="/miroir">Le miroir d’activité</Link> vous attend.</>
               : 'Première lecture de vos trente derniers jours. Vous pouvez continuer à naviguer.'}
           </p>
         </div>

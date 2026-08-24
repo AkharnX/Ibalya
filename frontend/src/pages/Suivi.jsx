@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
-import { TYPE_LABELS, fmtDate } from '../components/ui'
+import { FiltreFiabilite, Reli, TYPE_LABELS, fmtDate, niveauFiabilite } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
 
 const CATEGORIES = [
@@ -28,6 +28,7 @@ export default function Suivi() {
   const [params, setParams] = useSearchParams()
   const [type, setType] = useState('all')
   const [search, setSearch] = useState('')
+  const [fiabilite, setFiabilite] = useState('')
   const cat = params.get('cat') || 'all'
 
   const load = useCallback(() => {
@@ -80,7 +81,8 @@ export default function Suivi() {
     const q = search.trim().toLowerCase()
     const okSearch = !q || [r.objet, r.contact, r.emetteur_email, r.destinataire_email]
       .filter(Boolean).some((v) => v.toLowerCase().includes(q))
-    return okCat && okType && okSearch
+    const okFiab = !fiabilite || niveauFiabilite(r.confiance) === fiabilite
+    return okCat && okType && okSearch && okFiab
   })
 
   const patch = async (id, body, msg) => {
@@ -130,6 +132,9 @@ export default function Suivi() {
           </div>
         ))}
       </div>
+
+      <FiltreFiabilite valeur={fiabilite} onChange={setFiabilite} champ="confiance"
+        rows={(rows || []).filter((r) => (cat === 'all' || r.categorie === cat) && (type === 'all' || r.type === type))} />
 
       <div className="filter-bar">
         {TYPES.map((t) => (
@@ -186,7 +191,7 @@ export default function Suivi() {
                       ) : fmtDate(r.echeance)
                     ) : <span className="mono">—</span>}
                   </td>
-                  <td><div className="reli"><span style={{ width: `${Math.round(r.confiance * 100)}%` }} /></div></td>
+                  <td><Reli value={r.confiance} /></td>
                   <td><div className={'status ' + statusClass(r)}><span className="dot" />{statusLabel(r)}</div></td>
                   <td>
                     <div className="row-actions">
