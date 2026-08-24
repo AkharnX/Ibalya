@@ -87,7 +87,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/capsule/infer", s.auth(s.inferCapsule))
 
 	// engagements
-	mux.HandleFunc("GET /api/engagements", s.auth(s.listEngagements))
 	mux.HandleFunc("GET /api/engagements/{id}/events", s.auth(s.listEvents))
 	mux.HandleFunc("GET /api/engagements/{id}/source", s.auth(s.engagementSource))
 	mux.HandleFunc("GET /api/threads/{id}/source", s.auth(s.threadSource))
@@ -104,10 +103,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/links/{id}/reject", s.auth(s.linkStatus("rejete")))
 
 	// digest & brouillons
-	mux.HandleFunc("GET /api/digest/latest", s.auth(s.latestDigest))
-	mux.HandleFunc("GET /api/digest/editions", s.auth(s.digestEditions))
-	mux.HandleFunc("GET /api/digest/{id}", s.auth(s.digestEdition))
-	mux.HandleFunc("POST /api/digest/generate", s.auth(s.generateDigest))
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
 	mux.HandleFunc("PATCH /api/drafts/{id}", s.auth(s.patchDraft))
 	mux.HandleFunc("POST /api/drafts/{id}/review", s.auth(s.reviewDraft))
@@ -426,19 +421,6 @@ func (s *Server) inferCapsule(w http.ResponseWriter, r *http.Request) {
 
 // --- engagements ---
 
-func (s *Server) listEngagements(w http.ResponseWriter, r *http.Request) {
-	var statuts []string
-	if q := r.URL.Query().Get("statut"); q != "" {
-		statuts = strings.Split(q, ",")
-	}
-	engs, err := s.Store.ListEngagements(r.Context(), statuts)
-	if err != nil {
-		httpError(w, 500, err.Error())
-		return
-	}
-	writeJSON(w, engs)
-}
-
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r)
 	evs, err := s.Store.ListEvents(r.Context(), id)
@@ -593,65 +575,6 @@ func (s *Server) linkStatus(statut string) http.HandlerFunc {
 }
 
 // --- digest & brouillons ---
-
-func (s *Server) latestDigest(w http.ResponseWriter, r *http.Request) {
-	dtype := r.URL.Query().Get("type")
-	if dtype == "" {
-		dtype = "quotidien"
-	}
-	rep, err := s.Store.LatestReport(r.Context(), "digest_"+dtype)
-	if err != nil {
-		httpError(w, 500, err.Error())
-		return
-	}
-	if rep == nil {
-		httpError(w, 404, "aucun digest généré")
-		return
-	}
-	writeJSON(w, rep)
-}
-
-// digestEditions liste les éditions passées, sans leur contenu : la page
-// d'archive n'a besoin que des dates pour construire son sélecteur.
-func (s *Server) digestEditions(w http.ResponseWriter, r *http.Request) {
-	reps, err := s.Store.ListReports(r.Context(), "digest_", 60)
-	if err != nil {
-		httpError(w, 500, err.Error())
-		return
-	}
-	writeJSON(w, reps)
-}
-
-// digestEdition retourne une édition précise, telle qu'elle a été produite.
-// Un digest est un document figé : on ne le recalcule jamais à la lecture.
-func (s *Server) digestEdition(w http.ResponseWriter, r *http.Request) {
-	rep, err := s.Store.GetReport(r.Context(), pathID(r))
-	if err != nil {
-		httpError(w, 500, err.Error())
-		return
-	}
-	if rep == nil || !strings.HasPrefix(rep.Type, "digest_") {
-		httpError(w, 404, "édition introuvable")
-		return
-	}
-	writeJSON(w, rep)
-}
-
-func (s *Server) generateDigest(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Type string `json:"type"`
-	}
-	json.NewDecoder(r.Body).Decode(&body)
-	if body.Type == "" {
-		body.Type = "quotidien"
-	}
-	d, err := s.Engine.GenerateDigest(r.Context(), body.Type)
-	if err != nil {
-		httpError(w, 500, err.Error())
-		return
-	}
-	writeJSON(w, d)
-}
 
 func (s *Server) listDrafts(w http.ResponseWriter, r *http.Request) {
 	drafts, err := s.Store.ListDrafts(r.Context(), r.URL.Query().Get("statut"))

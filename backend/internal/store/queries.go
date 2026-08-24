@@ -708,44 +708,6 @@ func (s *Store) SaveReport(ctx context.Context, rtype string, content any) (int6
 	return id, err
 }
 
-// ListReports énumère les éditions d'un rapport, de la plus récente à la plus
-// ancienne, sans leur contenu : la page d'archive n'affiche qu'un sommaire tant
-// qu'aucune édition n'est ouverte, et un digest pèse une quinzaine de kilo-octets.
-func (s *Store) ListReports(ctx context.Context, prefixe string, limite int) ([]Report, error) {
-	if limite <= 0 || limite > 200 {
-		limite = 60
-	}
-	rows, err := s.Pool.Query(ctx, `SELECT id, type, created_at FROM reports
-		WHERE type LIKE $1 || '%' ORDER BY id DESC LIMIT $2`, prefixe, limite)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []Report{}
-	for rows.Next() {
-		var r Report
-		if err := rows.Scan(&r.ID, &r.Type, &r.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, r)
-	}
-	return out, rows.Err()
-}
-
-// GetReport retourne une édition précise, contenu compris.
-func (s *Store) GetReport(ctx context.Context, id int64) (*Report, error) {
-	var r Report
-	err := s.Pool.QueryRow(ctx, `SELECT id, type, content, created_at FROM reports WHERE id=$1`, id).
-		Scan(&r.ID, &r.Type, &r.Content, &r.CreatedAt)
-	if err == pgx.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &r, nil
-}
-
 func (s *Store) LatestReport(ctx context.Context, rtype string) (*Report, error) {
 	var r Report
 	err := s.Pool.QueryRow(ctx, `SELECT id, type, content, created_at FROM reports WHERE type=$1 ORDER BY id DESC LIMIT 1`, rtype).

@@ -11,6 +11,10 @@ import (
 
 type Store struct {
 	Pool *pgxpool.Pool
+	// Coffre chiffre les jetons OAuth au repos. Nil tant qu'aucune clé n'est
+	// configurée : les jetons restent alors lisibles, ce que Verifier interdit
+	// sur une installation publique.
+	Coffre *Coffre
 }
 
 func New(ctx context.Context, url string) (*Store, error) {
@@ -46,8 +50,50 @@ func (s *Store) SetSetting(ctx context.Context, key, value string) error {
 
 // --- OAuth tokens ---
 
+// Les jetons OAuth donnent accès à toute la correspondance : une sauvegarde
+// qui fuite ne doit pas les livrer. Ils sont chiffrés au repos avec la clé de
+// l'environnement, qui n'est donc pas dans la même sauvegarde qu'eux.
+func (s *Store) chiffrerJeton(token []byte) ([]byte, error) {
+	if s.Coffre == nil {
+		return token, nil
+	}
+	c, err := s.Coffre.Chiffrer(string(token))
+	if err != nil {
+		return nil, err
+	}
+	// Enveloppé en JSON : la colonne est de type jsonb.
+	return json.Marshal(map[string]string{"chiffre": c})
+}
+
+// dechiffrerJeton accepte aussi un jeton en clair : les installations
+// antérieures au chiffrement en contiennent, et il serait absurde de perdre un
+// raccordement fonctionnel au moment de la mise à jour.
+func (s *Store) dechiffrerJeton(brut []byte) ([]byte, error) {
+	if len(brut) == 0 {
+		return brut, nil
+	}
+	var enveloppe struct {
+		Chiffre string `json:"chiffre"`
+	}
+	if err := json.Unmarshal(brut, &enveloppe); err != nil || enveloppe.Chiffre == "" {
+		return brut, nil // ancien format, en clair
+	}
+	if s.Coffre == nil {
+		return nil, fmt.Errorf("jeton chiffré mais aucune clé de chiffrement configurée")
+	}
+	clair, err := s.Coffre.Dechiffrer(enveloppe.Chiffre)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(clair), nil
+}
+
 func (s *Store) SaveOAuthToken(ctx context.Context, provider string, token []byte, email string) error {
-	_, err := s.Pool.Exec(ctx, `INSERT INTO oauth_tokens (provider, token, account_email, updated_at)
+	token, err := s.chiffrerJeton(token)
+	if err != nil {
+		return err
+	}
+	_, err = s.Pool.Exec(ctx, `INSERT INTO oauth_tokens (provider, token, account_email, updated_at)
 		VALUES ($1,$2,$3,now())
 		ON CONFLICT (provider) DO UPDATE SET token=EXCLUDED.token, account_email=EXCLUDED.account_email, updated_at=now()`,
 		provider, token, email)
@@ -62,7 +108,58 @@ func (s *Store) GetOAuthToken(ctx context.Context, provider string) ([]byte, str
 	if err == pgx.ErrNoRows {
 		return nil, "", nil
 	}
-	return token, email, err
+	if err != nil {
+		return nil, "", err
+	}
+	clair, err := s.dechiffrerJeton(token)
+	return clair, email, err
+}
+
+// ChiffrerJetonsExistants rechiffre les jetons restés en clair.
+//
+// Sans cette reprise, un jeton n'est chiffré qu'au premier rafraîchissement :
+// celui d'un canal inactif resterait lisible indéfiniment dans la base et dans
+// toutes les sauvegardes.
+func (s *Store) ChiffrerJetonsExistants(ctx context.Context) (int, error) {
+	if s.Coffre == nil {
+		return 0, nil
+	}
+	rows, err := s.Pool.Query(ctx, `SELECT provider, token FROM oauth_tokens`)
+	if err != nil {
+		return 0, err
+	}
+	type entree struct {
+		provider string
+		token    []byte
+	}
+	var aReprendre []entree
+	for rows.Next() {
+		var e entree
+		if err := rows.Scan(&e.provider, &e.token); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		var enveloppe struct {
+			Chiffre string `json:"chiffre"`
+		}
+		// Déjà chiffré : rien à faire.
+		if err := json.Unmarshal(e.token, &enveloppe); err == nil && enveloppe.Chiffre != "" {
+			continue
+		}
+		aReprendre = append(aReprendre, e)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, e := range aReprendre {
+		if err := s.UpdateOAuthTokenOnly(ctx, e.provider, e.token); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 // --- Audit ---
@@ -97,7 +194,11 @@ func (s *Store) ListAudit(ctx context.Context, limit int) ([]AuditEntry, error) 
 // UpdateOAuthTokenOnly met à jour le jeton SANS toucher à l'adresse du compte.
 // À utiliser lors d'un rafraîchissement : SaveOAuthToken écraserait l'email.
 func (s *Store) UpdateOAuthTokenOnly(ctx context.Context, provider string, token []byte) error {
-	_, err := s.Pool.Exec(ctx, `UPDATE oauth_tokens SET token=$2, updated_at=now() WHERE provider=$1`,
+	token, err := s.chiffrerJeton(token)
+	if err != nil {
+		return err
+	}
+	_, err = s.Pool.Exec(ctx, `UPDATE oauth_tokens SET token=$2, updated_at=now() WHERE provider=$1`,
 		provider, token)
 	return err
 }

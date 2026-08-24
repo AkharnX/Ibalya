@@ -356,7 +356,6 @@ button:hover,.btn:hover{border-color:var(--primary);}
 .ghost:hover{color:var(--foreground);border-color:var(--border);background:var(--secondary);}
 .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);}
 .btn.primary:hover{opacity:.9;}
-.btn:disabled{opacity:.5;cursor:default;}
 .btn-icon{
   width:28px;height:28px;border:1px solid var(--border);background:var(--card);
   color:var(--muted-foreground);display:flex;align-items:center;justify-content:center;
@@ -506,8 +505,7 @@ label{
 .login-box p{color:var(--muted-foreground);margin:0 0 22px;font-size:13px;text-align:center;}
 .login-box label{text-align:left;margin:0 0 5px;}
 .login-box input{width:100%;margin-bottom:14px;}
-.login-box .btn{margin-top:4px;}
-.login-box .btn{width:100%;}
+.login-box .btn{margin-top:4px;width:100%;}
 .login-box .error{margin-top:12px;font-size:12.5px;text-align:center;}
 
 /* ── séparateur et bouton Google sur l'écran de connexion ── */

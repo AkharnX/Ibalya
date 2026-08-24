@@ -39,6 +39,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("base de données: %v", err)
 	}
+	// Le coffre doit être en place avant toute lecture de jeton : les
+	// connecteurs sont construits juste après et déchiffrent au passage.
+	coffre, err := store.NouveauCoffre(cfg.CleChiffrement)
+	if err != nil {
+		log.Fatalf("clé de chiffrement : %v", err)
+	}
+	st.Coffre = coffre
+	if n, err := st.ChiffrerJetonsExistants(ctx); err != nil {
+		log.Printf("reprise du chiffrement des jetons : %v", err)
+	} else if n > 0 {
+		log.Printf("%d jeton(s) OAuth chiffré(s) au repos", n)
+	}
 	log.Println("base de données connectée, schéma appliqué")
 
 	if *creerUtilisateur != "" {
@@ -95,10 +107,6 @@ func main() {
 		}
 	}
 
-	coffre, err := store.NouveauCoffre(cfg.CleChiffrement)
-	if err != nil {
-		log.Fatalf("clé de chiffrement : %v", err)
-	}
 	commutateur := channel.NewCommutateur(reader)
 	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur, BaseURL: cfg.PublicBaseURL}
 	ing := &ingest.Ingester{Store: st, Channel: commutateur}

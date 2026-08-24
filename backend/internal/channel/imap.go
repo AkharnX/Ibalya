@@ -87,6 +87,10 @@ func (i *IMAP) connecter() (*imapclient.Client, error) {
 	// encore très répandus chez les hébergeurs français.
 	opts := &imapclient.Options{
 		WordDecoder: &mime.WordDecoder{CharsetReader: charset.Reader},
+		// Le dialer refuse les destinations internes : sans lui, le test de
+		// connexion sert de scanner du réseau. Le contournement TLS n'existe
+		// qu'en développement, où l'on veut justement joindre un serveur local.
+		Dialer: dialerRestreint(i.cfg.TLSSansVerification, 20*time.Second),
 	}
 	if i.cfg.TLSSansVerification {
 		opts.TLSConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 — refusé en production
