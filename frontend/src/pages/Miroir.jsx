@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { Reli, TYPE_LABELS, fmtDT, fmtDate } from '../components/ui'
 import SourcePanel from '../components/SourcePanel'
@@ -69,7 +70,7 @@ export default function Miroir() {
         </div>
         <div className="page-actions">
           <button className="btn" disabled={busy} onClick={generer}>
-            {busy ? 'Lecture…' : '⟳ Régénérer'}
+            {busy ? 'Lecture…' : <><Icone nom="action-analyser" /> Régénérer</>}
           </button>
         </div>
       </div>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+  <title>En retard</title>
+<circle cx="10" cy="11" r="6.5"/>
+  <path d="M10 7.5V11L13 13"/>
+  <path d="M14.5 15.5L19.5 20.5M19.5 15.5L14.5 20.5"/>
+</svg>

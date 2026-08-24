@@ -63,7 +63,7 @@ func main() {
 		log.Println("connecteur gmail (OAuth)")
 	}
 
-	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: reader}
+	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: reader, BaseURL: cfg.PublicBaseURL}
 	ing := &ingest.Ingester{Store: st, Channel: reader}
 	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg}
 

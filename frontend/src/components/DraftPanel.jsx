@@ -1,6 +1,7 @@
 // Panneau latéral de proposition de message : aperçu → modification → envoi.
 // Aucun message ne part sans validation explicite (marche 3 du CDC).
 import { useEffect, useState } from 'react'
+import Icone from './Icone'
 import { api, toast } from '../api'
 
 const REMARQUE_LABEL = { factuel: 'Fait à vérifier', manque: 'Élément manquant', risque: 'Risque', ton: 'Ton' }
@@ -79,7 +80,7 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
             <h3>{title || 'Proposition de message'}</h3>
             <p>{hint || "Générée par l'agent à partir du contexte de l'engagement"}</p>
           </div>
-          <button className="draft-close" onClick={onClose}>✕</button>
+          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
         <div className="draft-body">
           {loading && <p className="draft-loading">L'agent rédige le message…</p>}
@@ -108,7 +109,7 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
                 <div className={'review ' + (review.verdict === 'pret_a_envoyer' ? 'ok' : 'todo')}>
                   <p className="review-verdict">
                     {review.verdict === 'pret_a_envoyer'
-                      ? '✓ Rien à signaler — le message peut partir.'
+                      ? 'Rien à signaler — le message peut partir.'
                       : `${review.remarques.length} point(s) à regarder avant d'envoyer`}
                   </p>
                   {review.remarques.map((r, i) => (
@@ -150,7 +151,7 @@ export function QueuePanel({ open, drafts, onPick, onClose }) {
             <h3>Messages à valider</h3>
             <p>{drafts.length} brouillon(s) en attente de votre validation</p>
           </div>
-          <button className="draft-close" onClick={onClose}>✕</button>
+          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
         <div className="draft-body">
           {!drafts.length && <p className="draft-loading">Aucun message en attente.</p>}

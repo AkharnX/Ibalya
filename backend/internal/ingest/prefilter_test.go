@@ -65,3 +65,33 @@ func TestExclusionInsensibleALaCasse(t *testing.T) {
 		t.Errorf("une adresse en majuscules doit être filtrée, obtenu %q", got)
 	}
 }
+
+// Le motif ne reconnaissait pas le tiret bas : « no_reply@ », la forme d'Apple,
+// passait le pré-filtre. Quatre reçus ont ainsi atteint le modèle et produit
+// deux engagements sur des renouvellements d'abonnement.
+func TestExpediteursAutomatiquesToutesFormes(t *testing.T) {
+	automatiques := []string{
+		"no_reply@email.apple.com",
+		"noreply@service.fr",
+		"no-reply@service.fr",
+		"no.reply@service.fr",
+		"donotreply@service.fr",
+		"do-not-reply@service.fr",
+		"ne-pas-repondre@service.fr",
+		"nepasrepondre@service.fr",
+		"mailer-daemon@service.fr",
+		"postmaster@service.fr",
+	}
+	for _, a := range automatiques {
+		m := store.Message{Sender: a}
+		if r := ExclusionReason(m, false, nil); r != "expediteur_automatique" {
+			t.Errorf("%s aurait dû être écarté, obtenu %q", a, r)
+		}
+	}
+	// Une adresse humaine qui contient « reply » ne doit pas être écartée.
+	for _, a := range []string{"marie.replyat@client.fr", "paul@replay-studio.fr"} {
+		if r := ExclusionReason(store.Message{Sender: a}, false, nil); r == "expediteur_automatique" {
+			t.Errorf("%s est une adresse humaine, elle ne doit pas être écartée", a)
+		}
+	}
+}

@@ -2,6 +2,7 @@
 // Affiche la conversation complète, message d'origine mis en évidence, avec
 // un lien direct vers Gmail pour répondre dans le fil réel.
 import { useEffect, useState } from 'react'
+import Icone from './Icone'
 import { api } from '../api'
 import { EVT_LABELS, fmtDT } from './ui'
 
@@ -38,7 +39,7 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
             <h3>{data?.sujet || 'Conversation d’origine'}</h3>
             <p>{data ? `${data.messages.length} message(s) dans ce fil` : 'Chargement…'}</p>
           </div>
-          <button className="draft-close" onClick={onClose}>✕</button>
+          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
 
         <div className="draft-body">
@@ -64,7 +65,7 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
                   <pre className="msg-body">{m.body || '(corps vide)'}</pre>
                   {m.url_gmail && (
                     <a className="msg-lien" href={m.url_gmail} target="_blank" rel="noreferrer">
-                      Ouvrir ce message dans Gmail ↗
+                      Ouvrir ce message dans Gmail <Icone nom="action-ouvrir-gmail" taille={13} />
                     </a>
                   )}
                 </div>
@@ -107,7 +108,7 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
         {data?.url_gmail_fil && (
           <div className="draft-foot">
             <a className="btn primary" href={data.url_gmail_fil} target="_blank" rel="noreferrer">
-              Ouvrir le fil dans Gmail ↗
+              Ouvrir le fil dans Gmail <Icone nom="action-ouvrir-gmail" taille={14} />
             </a>
           </div>
         )}

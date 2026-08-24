@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+  <title>Analyse en cours</title>
+<path d="M8 4H4V8"/>
+  <path d="M16 4H20V8"/>
+  <path d="M20 16V20H16"/>
+  <path d="M8 20H4V16"/>
+  <path d="M4 8L8 4M16 4L20 8M20 16L16 20M8 20L4 16"/>
+</svg>

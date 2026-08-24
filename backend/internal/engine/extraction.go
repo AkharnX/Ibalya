@@ -20,6 +20,9 @@ type Engine struct {
 	Store   *store.Store
 	LLM     *llm.Client
 	Channel channel.Reader
+	// BaseURL sert à renvoyer vers le tableau de bord depuis le digest envoyé
+	// par email : sans lien, le dirigeant lit un constat sans pouvoir agir.
+	BaseURL string
 }
 
 // capsuleLLM assemble la capsule complète transmise au modèle : les faits

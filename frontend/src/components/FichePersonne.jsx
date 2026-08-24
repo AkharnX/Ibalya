@@ -5,6 +5,7 @@
 // est-on avec ce client » — dont la réponse était dispersée entre le suivi des
 // engagements et les conversations.
 import { useEffect, useState } from 'react'
+import Icone from './Icone'
 import { api } from '../api'
 import { Reli, STATUT_LABELS, TYPE_LABELS, fmtDate, fmtDT } from './ui'
 
@@ -31,7 +32,7 @@ export default function FichePersonne({ personneId, onClose, onEngagement, onFil
             <h3>{f?.name || f?.email || 'Interlocuteur'}</h3>
             <p>{f ? f.email : 'Chargement…'}</p>
           </div>
-          <button className="draft-close" onClick={onClose}>✕</button>
+          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
 
         <div className="draft-body">

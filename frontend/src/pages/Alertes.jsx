@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icone from '../components/Icone'
 import { Link } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DET_LABELS, Empty, FiltreFiabilite, Reli, fmtDT, niveauFiabilite } from '../components/ui'
@@ -62,7 +63,8 @@ export default function Alertes() {
                   <td className="obj">{d.titre}<div className="sub">{d.detail}</div></td>
                   <td><Reli value={d.score} /></td>
                   <td className="sub">{fmtDT(d.created_at)}</td>
-                  <td><button className="ghost" onClick={() => dismiss(d.id)}>✗ Écarter</button></td>
+                  <td><button className="ghost" onClick={() => dismiss(d.id)}>
+                    <Icone nom="action-rejeter" /> Écarter</button></td>
                 </tr>
               ))}
             </tbody>
@@ -73,7 +75,7 @@ export default function Alertes() {
       {enAttente > 0 && (
         <div className="renvoi">
           <span>
-            ✉ {enAttente} message{enAttente > 1 ? 's' : ''} pré-rédigé{enAttente > 1 ? 's' : ''} attend
+            <Icone nom="action-valider-envoyer" /> {enAttente} message{enAttente > 1 ? 's' : ''} pré-rédigé{enAttente > 1 ? 's' : ''} attend
             {enAttente > 1 ? 'ent' : ''} votre validation. Rien ne part sans votre clic.
           </span>
           <Link className="btn" to="/a-valider">Ouvrir « À valider »</Link>

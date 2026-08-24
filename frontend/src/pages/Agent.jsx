@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { Empty, fmtDate } from '../components/ui'
 import ListEditor from '../components/ListEditor'
@@ -66,7 +67,7 @@ export default function Agent() {
           <p>Ce que l'agent a compris de votre activité, et ce qu'il a appris de vos corrections. Tout est modifiable et réversible.</p>
         </div>
         <div className="page-actions">
-          <button onClick={infer}>⟳ Relire mes échanges</button>
+          <button onClick={infer}><Icone nom="action-analyser" /> Relire mes échanges</button>
         </div>
       </div>
 

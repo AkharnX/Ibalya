@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Icone from '../components/Icone'
 import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
@@ -176,8 +177,8 @@ export default function Suivi() {
                       <div className="echeance-edit">
                         <input type="date" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
                         <button className="btn-icon primary" title="Confirmer cette échéance"
-                          onClick={() => confirmerEcheance(r.id)}>✓</button>
-                        <button className="btn-icon" title="Annuler" onClick={() => setDateId(null)}>✕</button>
+                          onClick={() => confirmerEcheance(r.id)}><Icone nom="etat-livre" /></button>
+                        <button className="btn-icon" title="Annuler" onClick={() => setDateId(null)}><Icone nom="action-rejeter" /></button>
                       </div>
                     ) : r.echeance ? (
                       r.echeance_inferee && !r.echeance_confirmee ? (
@@ -192,9 +193,9 @@ export default function Suivi() {
                     <div className="row-actions">
                       {r.action && (
                         <button className="btn-icon primary" title={r.action.label}
-                          onClick={() => d.openForEngagement(r.id, r.action)}>✉</button>
+                          onClick={() => d.openForEngagement(r.id, r.action)}><Icone nom="action-valider-envoyer" /></button>
                       )}
-                      <button className="btn-icon" title="Marquer livré" onClick={() => patch(r.id, { statut: 'livre' }, 'Marqué comme livré')}>✓</button>
+                      <button className="btn-icon" title="Marquer livré" onClick={() => patch(r.id, { statut: 'livre' }, 'Marqué comme livré')}><Icone nom="etat-livre" /></button>
                       <div className="menu-wrap" ref={menuId === r.id ? zone : null}>
                         <button className="btn-icon" title="Corriger l’agent"
                           aria-haspopup="menu" aria-expanded={menuId === r.id}

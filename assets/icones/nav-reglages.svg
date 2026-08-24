@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+  <title>Réglages</title>
+<rect x="4" y="4" width="16" height="16"/>
+  <path d="M4 7H20"/>
+  <path d="M16.5 5.5H17.5M18.5 5.5H19.5"/>
+  <path d="M7 10.5H10"/>
+  <path d="M8 9.5L7 10.5L8 11.5"/>
+  <path d="M9 9.5L10 10.5L9 11.5"/>
+  <path d="M13 10.5H17"/>
+  <path d="M8.5 12.8L10.5 13.7V15.8C10.5 16.9 9.7 17.8 8.5 18.2C7.3 17.8 6.5 16.9 6.5 15.8V13.7L8.5 12.8Z"/>
+  <path d="M7.6 15.4L8.3 16.1L9.5 14.8"/>
+  <path d="M13 14.8H17"/>
+  <path d="M6.5 18.5V16.8M8.5 18.5V15.8M10.5 18.5V14.6"/>
+  <path d="M13 18H17"/>
+</svg>
