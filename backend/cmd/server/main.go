@@ -21,6 +21,7 @@ import (
 	"ibalya/backend/internal/ingest"
 	"ibalya/backend/internal/llm"
 	"ibalya/backend/internal/store"
+	"strconv"
 )
 
 func main() {
@@ -77,9 +78,26 @@ func main() {
 		log.Println("connecteur gmail (OAuth)")
 	}
 
-	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: reader, BaseURL: cfg.PublicBaseURL}
-	ing := &ingest.Ingester{Store: st, Channel: reader}
-	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg}
+	// Un canal raccordé depuis l'interface prime sur la variable d'environnement :
+	// c'est le dirigeant qui décide, pas le fichier de configuration.
+	if st.GetSetting(ctx, "canal_type", "") == "imap" {
+		if r, err := imapDepuisReglages(ctx, st, cfg); err == nil {
+			reader = r
+			log.Println("connecteur imap (raccordé depuis l'interface)")
+		} else {
+			log.Printf("canal IMAP enregistré mais inutilisable, repli sur %s : %v", reader.Name(), err)
+		}
+	}
+
+	coffre, err := store.NouveauCoffre(cfg.CleChiffrement)
+	if err != nil {
+		log.Fatalf("clé de chiffrement : %v", err)
+	}
+	commutateur := channel.NewCommutateur(reader)
+	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur, BaseURL: cfg.PublicBaseURL}
+	ing := &ingest.Ingester{Store: st, Channel: commutateur}
+	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg,
+		Commutateur: commutateur, Coffre: coffre}
 
 	if cfg.AdminToken == "" {
 		log.Fatal("ADMIN_TOKEN obligatoire (protection du tableau de bord)")
@@ -92,6 +110,32 @@ func main() {
 	if err := http.ListenAndServe(cfg.APIAddr, srv.Handler()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// imapDepuisReglages reconstruit le connecteur depuis ce que le dirigeant a
+// enregistré dans l'interface, mot de passe déchiffré au passage.
+func imapDepuisReglages(ctx context.Context, st *store.Store, cfg config.Config) (channel.Reader, error) {
+	coffre, err := store.NouveauCoffre(cfg.CleChiffrement)
+	if err != nil || coffre == nil {
+		return nil, fmt.Errorf("aucune clé de chiffrement : impossible de relire le mot de passe")
+	}
+	mdp, err := coffre.Dechiffrer(st.GetSetting(ctx, "imap_mot_de_passe", ""))
+	if err != nil {
+		return nil, err
+	}
+	nombre := func(c string, def int) int {
+		if v, e := strconv.Atoi(st.GetSetting(ctx, c, "")); e == nil && v > 0 {
+			return v
+		}
+		return def
+	}
+	return channel.NewIMAP(channel.IMAPConfig{
+		Hote: st.GetSetting(ctx, "imap_hote", ""), Port: nombre("imap_port", 993),
+		Utilisateur: st.GetSetting(ctx, "imap_utilisateur", ""), MotDePasse: mdp,
+		Dossier:  st.GetSetting(ctx, "imap_dossier", "INBOX"),
+		SMTPHote: st.GetSetting(ctx, "smtp_hote", ""), SMTPPort: nombre("smtp_port", 587),
+		TLSSansVerification: cfg.IMAPTLSSansVerif,
+	}), nil
 }
 
 func scheduler(ctx context.Context, cfg config.Config, st *store.Store, eng *engine.Engine, ing *ingest.Ingester) {

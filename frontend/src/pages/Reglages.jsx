@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { fmtDT } from '../components/ui'
+import Canal from '../components/Canal'
 
 // Signature composée depuis les quatre champs. Doit reproduire exactement la
 // règle du serveur (engine.SignatureComposee), sans quoi l'aperçu mentirait.
@@ -72,10 +73,6 @@ export default function Reglages() {
       toast('Réglages enregistrés')
     } catch (e) { toast(e.message, true) }
   }
-  const connectGmail = async () => {
-    try { const r = await api('/oauth/google/start', { method: 'POST' }); window.location.href = r.url }
-    catch (e) { toast(e.message, true) }
-  }
   const onboard = async () => {
     try { await api('/onboarding/run', { method: 'POST' }); toast('Onboarding lancé — le miroir sera prêt dans quelques minutes.') }
     catch (e) { toast(e.message, true) }
@@ -104,11 +101,7 @@ export default function Reglages() {
       <div className="reglages-grille">
         <div className="panel">
           <h3>Connexion</h3>
-          <div className="setting">
-            <label>Canal email</label>
-            <div className="muted">{status ? (status.canal_connecte ? `Connecté (${status.canal}${status.compte ? ' : ' + status.compte : ''})` : 'Non connecté') : '…'}</div>
-            <button onClick={connectGmail}>Connecter Gmail</button>
-          </div>
+          <Canal statut={status} onChange={load} />
           <div className="setting">
             <label>Onboarding (relire 30 jours + miroir + capsule)</label>
             <button onClick={onboard}>Relancer l'onboarding</button>

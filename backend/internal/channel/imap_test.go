@@ -142,3 +142,27 @@ func TestDestinatairesCollectes(t *testing.T) {
 		t.Fatalf("attendu 3 destinataires (To et Cc), obtenu %v", m.Recipients)
 	}
 }
+
+// Le commutateur doit être indiscernable du canal qu'il porte, sans quoi le
+// moteur et l'ingestion devraient savoir qu'un remplacement est possible.
+func TestCommutateurDelegue(t *testing.T) {
+	var _ Reader = (*Commutateur)(nil)
+
+	g := &Gmail{}
+	c := NewCommutateur(g)
+	if c.Name() != g.Name() {
+		t.Fatalf("le commutateur annonce %q au lieu de %q", c.Name(), g.Name())
+	}
+	if c.LienWeb("a@b.fr", "42") != g.LienWeb("a@b.fr", "42") {
+		t.Fatal("le lien web doit être celui du canal actif")
+	}
+
+	i := NewIMAP(IMAPConfig{Hote: "imap.ex.fr", Utilisateur: "a@b.fr"})
+	c.Remplacer(i)
+	if c.Name() != "imap" {
+		t.Fatalf("après remplacement, attendu imap, obtenu %q", c.Name())
+	}
+	if c.LienWeb("a@b.fr", "42") != "" {
+		t.Fatal("IMAP n'a pas de lien web : le commutateur doit refléter ce fait")
+	}
+}

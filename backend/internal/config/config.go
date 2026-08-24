@@ -24,6 +24,7 @@ type Config struct {
 	SMTPHote           string
 	SMTPPort           int
 	IMAPTLSSansVerif   bool
+	CleChiffrement     string
 	FixturePath        string
 	FrontendDir        string
 	LandingDir         string
@@ -100,6 +101,7 @@ func Load() Config {
 		SMTPHote:           env("SMTP_HOST", ""),
 		SMTPPort:           envInt("SMTP_PORT", 587),
 		IMAPTLSSansVerif:   env("IMAP_TLS_SKIP_VERIFY", "") == "1",
+		CleChiffrement:     env("ENCRYPTION_KEY", ""),
 		FixturePath:        env("FIXTURE_PATH", ""),
 		FrontendDir:        env("FRONTEND_DIR", "frontend/dist"),
 		LandingDir:         env("LANDING_DIR", "landing"),

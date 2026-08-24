@@ -30,6 +30,10 @@ type Server struct {
 	Engine   *engine.Engine
 	Ingester *ingest.Ingester
 	OAuth    *oauth2.Config
+	// Commutateur permet de raccorder une autre boîte sans redémarrer.
+	Commutateur *channel.Commutateur
+	// Coffre chiffre les secrets stockés en base, comme le mot de passe IMAP.
+	Coffre *store.Coffre
 
 	// Compteur d'échecs de connexion. Initialisé par Handler pour que les
 	// appelants gardent leur littéral de structure.
@@ -119,6 +123,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rules", s.auth(s.listRules))
 	mux.HandleFunc("POST /api/rules", s.auth(s.createRule))
 	mux.HandleFunc("DELETE /api/rules/{id}", s.auth(s.deleteRule))
+	mux.HandleFunc("GET /api/canal", s.auth(s.getCanal))
+	mux.HandleFunc("POST /api/canal/tester", s.auth(s.testerCanal))
+	mux.HandleFunc("PUT /api/canal", s.auth(s.putCanal))
 	mux.HandleFunc("GET /api/recherche", s.auth(s.recherche))
 	mux.HandleFunc("GET /api/persons", s.auth(s.listPersons))
 	mux.HandleFunc("GET /api/persons/{id}", s.auth(s.fichePersonne))
