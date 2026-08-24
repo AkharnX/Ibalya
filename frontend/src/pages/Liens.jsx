@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { fmtDate } from '../components/ui'
 import SourcePanel from '../components/SourcePanel'
@@ -93,9 +94,9 @@ export default function Liens() {
                     {l.statut === 'candidat' ? (
                       <div className="row-actions">
                         <button className="btn-icon primary" title="Confirmer ce lien"
-                          disabled={busy === l.id} onClick={() => decider(l.id, 'confirm')}>✓</button>
+                          disabled={busy === l.id} onClick={() => decider(l.id, 'confirm')}><Icone nom="etat-livre" /></button>
                         <button className="btn-icon" title="Ce lien n'existe pas"
-                          disabled={busy === l.id} onClick={() => decider(l.id, 'reject')}>✕</button>
+                          disabled={busy === l.id} onClick={() => decider(l.id, 'reject')}><Icone nom="action-rejeter" /></button>
                       </div>
                     ) : (
                       <div className={'status ' + (l.statut === 'confirme' ? 'open' : 'late')}>

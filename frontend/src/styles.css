@@ -780,3 +780,14 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 .fiche-liste li:first-child{border-top:none;}
 .fiche-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;}
 @media (max-width:520px){ .fiche-chiffres{grid-template-columns:repeat(2,1fr);} }
+
+/* Icônes : alignées sur la ligne de base du texte qu'elles accompagnent. */
+.ic{flex:0 0 auto;vertical-align:-.15em;}
+.nav-item .ic{opacity:.85;}
+.nav-item.active .ic,.nav-item:hover .ic{opacity:1;}
+.btn .ic,.btn-icon .ic{pointer-events:none;}
+
+/* Libellé de navigation : l'icône précède le texte, alignés sur la même ligne. */
+.nav-libelle{display:flex;align-items:center;gap:10px;min-width:0;}
+.nav-libelle .ic{opacity:.8;}
+.nav-item.active .nav-libelle .ic{opacity:1;}

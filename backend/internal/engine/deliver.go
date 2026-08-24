@@ -181,7 +181,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
 		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
 			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
-			if err := e.Channel.Send(ctx, to, subject, renderDigestText(dc)); err != nil {
+			if err := e.Channel.Send(ctx, to, subject, e.renderDigestText(dc)); err != nil {
 				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
 			} else {
 				e.Store.Audit(ctx, "agent", "digest_email_envoye", map[string]string{"to": to})
@@ -192,7 +192,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 }
 
 // renderDigestText met en forme le digest pour l'email (texte simple, lisible partout).
-func renderDigestText(dc *DigestContent) string {
+func (e *Engine) renderDigestText(dc *DigestContent) string {
 	var b strings.Builder
 	b.WriteString("Bonjour,\n\nVoici votre point du jour.\n")
 	if len(dc.Detections) > 0 {
@@ -216,10 +216,15 @@ func renderDigestText(dc *DigestContent) string {
 		}
 	}
 	if len(dc.Brouillons) > 0 {
-		fmt.Fprintf(&b, "\n— SUGGESTIONS —\n%d message(s) pré-rédigé(s) vous attendent : ouvrez le tableau de bord pour valider d'un clic.\n", len(dc.Brouillons))
+		fmt.Fprintf(&b, "\n— SUGGESTIONS —\n%d message(s) pré-rédigé(s) vous attendent.\n", len(dc.Brouillons))
 	}
 	if len(dc.Detections) == 0 && len(dc.Engagements) == 0 {
 		b.WriteString("\nRien à signaler au-dessus du seuil aujourd'hui.\n")
+	}
+	// Un digest sans lien de retour est un constat sans suite : c'est dans
+	// l'application que le dirigeant valide, corrige et relance.
+	if e.BaseURL != "" {
+		fmt.Fprintf(&b, "\nOuvrir Ibalya : %s/app/\n", strings.TrimSuffix(e.BaseURL, "/"))
 	}
 	b.WriteString("\n— Ibalya\n")
 	return b.String()

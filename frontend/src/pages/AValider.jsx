@@ -1,6 +1,7 @@
 // File d'attente des messages proposés par l'agent.
 // Marche 3 de l'escalier d'agentivité : rien ne part sans un clic du dirigeant.
 import { useCallback, useEffect, useState } from 'react'
+import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { DraftPanel } from '../components/DraftPanel'
 import { Empty, fmtDT } from '../components/ui'
@@ -54,8 +55,8 @@ export default function AValider() {
                   <td>
                     <div className="row-actions">
                       <button className="btn-icon primary" title="Relire et envoyer"
-                        onClick={() => setSelected(d)}>✉</button>
-                      <button className="btn-icon" title="Rejeter" onClick={() => reject(d.id)}>✕</button>
+                        onClick={() => setSelected(d)}><Icone nom="action-valider-envoyer" /></button>
+                      <button className="btn-icon" title="Rejeter" onClick={() => reject(d.id)}><Icone nom="action-rejeter" /></button>
                     </div>
                   </td>
                 </tr>

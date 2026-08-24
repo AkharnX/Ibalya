@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+  <title>Surcharge de la semaine</title>
+<rect x="3.5" y="5" width="17" height="15.5"/>
+  <path d="M7 3.5V7M17 3.5V7M3.5 9H20.5"/>
+  <path d="M7 17V14M10.5 17V12M14 17V10.5M17.5 17V8.5"/>
+</svg>

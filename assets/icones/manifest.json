@@ -1,0 +1,188 @@
+[
+  {
+    "name": "action-analyser",
+    "label": "Analyser",
+    "category": "Actions",
+    "file": "svg/action-analyser.svg"
+  },
+  {
+    "name": "action-fermer-panneau",
+    "label": "Fermer un panneau",
+    "category": "Actions",
+    "file": "svg/action-fermer-panneau.svg"
+  },
+  {
+    "name": "action-menu",
+    "label": "Menu d’actions",
+    "category": "Actions",
+    "file": "svg/action-menu.svg"
+  },
+  {
+    "name": "action-modifier",
+    "label": "Modifier",
+    "category": "Actions",
+    "file": "svg/action-modifier.svg"
+  },
+  {
+    "name": "action-ouvrir-gmail",
+    "label": "Ouvrir dans Gmail",
+    "category": "Actions",
+    "file": "svg/action-ouvrir-gmail.svg"
+  },
+  {
+    "name": "action-rechercher",
+    "label": "Rechercher",
+    "category": "Actions",
+    "file": "svg/action-rechercher.svg"
+  },
+  {
+    "name": "action-rejeter",
+    "label": "Rejeter",
+    "category": "Actions",
+    "file": "svg/action-rejeter.svg"
+  },
+  {
+    "name": "action-valider-envoyer",
+    "label": "Valider et envoyer",
+    "category": "Actions",
+    "file": "svg/action-valider-envoyer.svg"
+  },
+  {
+    "name": "detecteur-contradiction",
+    "label": "Contradiction entre engagements",
+    "category": "Détecteurs",
+    "file": "svg/detecteur-contradiction.svg"
+  },
+  {
+    "name": "detecteur-echeance-risque",
+    "label": "Échéance à risque",
+    "category": "Détecteurs",
+    "file": "svg/detecteur-echeance-risque.svg"
+  },
+  {
+    "name": "detecteur-engagement-orphelin",
+    "label": "Engagement orphelin",
+    "category": "Détecteurs",
+    "file": "svg/detecteur-engagement-orphelin.svg"
+  },
+  {
+    "name": "detecteur-silence-anormal",
+    "label": "Silence anormal",
+    "category": "Détecteurs",
+    "file": "svg/detecteur-silence-anormal.svg"
+  },
+  {
+    "name": "detecteur-surcharge-semaine",
+    "label": "Surcharge de la semaine",
+    "category": "Détecteurs",
+    "file": "svg/detecteur-surcharge-semaine.svg"
+  },
+  {
+    "name": "divers-analyse-en-cours",
+    "label": "Analyse en cours",
+    "category": "Divers",
+    "file": "svg/divers-analyse-en-cours.svg"
+  },
+  {
+    "name": "divers-deconnexion",
+    "label": "Déconnexion",
+    "category": "Divers",
+    "file": "svg/divers-deconnexion.svg"
+  },
+  {
+    "name": "divers-theme-clair",
+    "label": "Thème clair",
+    "category": "Divers",
+    "file": "svg/divers-theme-clair.svg"
+  },
+  {
+    "name": "divers-theme-sombre",
+    "label": "Thème sombre",
+    "category": "Divers",
+    "file": "svg/divers-theme-sombre.svg"
+  },
+  {
+    "name": "etat-a-risque",
+    "label": "À risque",
+    "category": "États",
+    "file": "svg/etat-a-risque.svg"
+  },
+  {
+    "name": "etat-en-retard",
+    "label": "En retard",
+    "category": "États",
+    "file": "svg/etat-en-retard.svg"
+  },
+  {
+    "name": "etat-livre",
+    "label": "Livré",
+    "category": "États",
+    "file": "svg/etat-livre.svg"
+  },
+  {
+    "name": "etat-ouvert",
+    "label": "Ouvert",
+    "category": "États",
+    "file": "svg/etat-ouvert.svg"
+  },
+  {
+    "name": "nav-a-valider",
+    "label": "À valider",
+    "category": "Navigation",
+    "file": "svg/nav-a-valider.svg"
+  },
+  {
+    "name": "nav-alertes",
+    "label": "Alertes",
+    "category": "Navigation",
+    "file": "svg/nav-alertes.svg"
+  },
+  {
+    "name": "nav-dependances",
+    "label": "Dépendances",
+    "category": "Navigation",
+    "file": "svg/nav-dependances.svg"
+  },
+  {
+    "name": "nav-digest",
+    "label": "Digest",
+    "category": "Navigation",
+    "file": "svg/nav-digest.svg"
+  },
+  {
+    "name": "nav-engagements",
+    "label": "Engagements",
+    "category": "Navigation",
+    "file": "svg/nav-engagements.svg"
+  },
+  {
+    "name": "nav-interlocuteurs",
+    "label": "Interlocuteurs",
+    "category": "Navigation",
+    "file": "svg/nav-interlocuteurs.svg"
+  },
+  {
+    "name": "nav-miroir-activite",
+    "label": "Miroir d’activité",
+    "category": "Navigation",
+    "file": "svg/nav-miroir-activite.svg"
+  },
+  {
+    "name": "nav-reglages",
+    "label": "Réglages",
+    "category": "Navigation",
+    "file": "svg/nav-reglages.svg"
+  },
+  {
+    "name": "nav-regles-metier",
+    "label": "Règles métier",
+    "category": "Navigation",
+    "file": "svg/nav-regles-metier.svg"
+  },
+  {
+    "name": "nav-synthese",
+    "label": "Synthèse",
+    "category": "Navigation",
+    "file": "svg/nav-synthese.svg"
+  }
+]

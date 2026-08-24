@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icone from '../components/Icone'
 import { useNavigate } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
@@ -67,7 +68,7 @@ export default function Synthese() {
         <div className="page-actions">
           <button className="btn" onClick={runCycle} disabled={enCours}
             title={enCours ? libelleCycle(cycle) : 'Lire les nouveaux messages et mettre à jour le suivi'}>
-            {enCours ? <><span className="rotor" aria-hidden="true" />Analyse en cours…</> : '⟳ Analyser'}
+            {enCours ? <><span className="rotor" aria-hidden="true" />Analyse en cours…</> : <><Icone nom="action-analyser" /> Analyser</>}
           </button>
         </div>
       </div>
@@ -123,10 +124,10 @@ export default function Synthese() {
               <p className="p-sub">{p.contexte}</p>
             </div>
             <div className="p-actions">
-              <button className="btn-icon" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}>✓</button>
+              <button className="btn-icon" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
               {p.action && (
                 <button className="btn-icon primary" title={p.action.label}
-                  onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}>✉</button>
+                  onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
               )}
             </div>
           </div>

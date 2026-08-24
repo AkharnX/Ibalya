@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icone from './components/Icone'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
 import { FournisseurEtatAgent, libelleCycle, useEtatAgent } from './etatAgent'
 import Synthese from './pages/Synthese'
 import Miroir from './pages/Miroir'
-import Digest from './pages/Digest'
 import Suivi from './pages/Suivi'
 import Liens from './pages/Liens'
 import Interlocuteurs from './pages/Interlocuteurs'
@@ -106,25 +106,24 @@ function Login({ onConnecte }) {
 // Navigation groupée, reprise du redesign : Opérations / Extraction / Système.
 const NAV = [
   ['Opérations', [
-    ['/', 'Synthèse', null],
-    ['/miroir', 'Miroir d’activité', null],
-    ['/digest', 'Digest', null],
-    ['/a-valider', 'À valider', 'messages_a_valider'],
+    ['/', 'Synthèse', null, 'nav-synthese'],
+    ['/miroir', 'Miroir d’activité', null, 'nav-miroir-activite'],
+    ['/a-valider', 'À valider', 'messages_a_valider', 'nav-a-valider'],
   ]],
   ['Extraction', [
-    ['/suivi', 'Engagements', null],
-    ['/alertes', 'Alertes', 'alertes'],
-    ['/liens', 'Dépendances', 'liens_a_confirmer'],
+    ['/suivi', 'Engagements', null, 'nav-engagements'],
+    ['/alertes', 'Alertes', 'alertes', 'nav-alertes'],
+    ['/liens', 'Dépendances', 'liens_a_confirmer', 'nav-dependances'],
   ]],
   ['Système', [
-    ['/agent', 'Règles métier', null],
-    ['/interlocuteurs', 'Interlocuteurs', null],
-    ['/reglages', 'Réglages', null],
+    ['/agent', 'Règles métier', null, 'nav-regles-metier'],
+    ['/interlocuteurs', 'Interlocuteurs', null, 'nav-interlocuteurs'],
+    ['/reglages', 'Réglages', null, 'nav-reglages'],
   ]],
 ]
 
 const TITRES = {
-  '/': 'Synthèse', '/miroir': 'Miroir d’activité', '/digest': 'Digest',
+  '/': 'Synthèse', '/miroir': 'Miroir d’activité',
   '/a-valider': 'À valider', '/suivi': 'Engagements', '/alertes': 'Alertes',
   '/liens': 'Dépendances', '/agent': 'Règles métier',
   '/interlocuteurs': 'Interlocuteurs', '/reglages': 'Réglages',
@@ -207,10 +206,10 @@ export default function App() {
           {NAV.map(([groupe, items]) => (
             <div key={groupe}>
               <div className="nav-group">{groupe}</div>
-              {items.map(([path, label, countKey]) => (
+              {items.map(([path, label, countKey, icone]) => (
                 <NavLink key={path} to={path} end={path === '/'}
                   className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-                  <span>{label}</span>
+                  <span className="nav-libelle"><Icone nom={icone} />{label}</span>
                   {countKey && <PastilleNav cle={countKey} />}
                 </NavLink>
               ))}
@@ -224,11 +223,13 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 2 }}>
             <button className="icon-btn" title={dark ? 'Thème clair' : 'Thème sombre'}
-              onClick={() => setDark(!dark)}>{dark ? '☀' : '☾'}</button>
+              onClick={() => setDark(!dark)}>
+              <Icone nom={dark ? 'divers-theme-clair' : 'divers-theme-sombre'} />
+            </button>
             <button className="icon-btn" title="Se déconnecter" onClick={async () => {
               try { await apiLogout() } catch { /* session déjà close */ }
               setAuthed(false); setUser(null)
-            }}>⏻</button>
+            }}><Icone nom="divers-deconnexion" /></button>
           </div>
         </div>
       </aside>
@@ -236,7 +237,8 @@ export default function App() {
       <div className="content">
         <header className="topbar">
           <div className="topbar-gauche">
-            <button className="icon-btn burger" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+            <button className="icon-btn burger" title="Menu"
+              onClick={() => setMenuOpen(!menuOpen)}><Icone nom="action-menu" /></button>
             {/* La marque n'apparaît ici qu'en petite largeur, là où la barre
                 latérale est escamotée : sur grand écran le logo y est déjà. */}
             <Logo />
@@ -247,7 +249,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Synthese />} />
             <Route path="/miroir" element={<Miroir />} />
-            <Route path="/digest" element={<Digest />} />
             <Route path="/a-valider" element={<AValider />} />
             <Route path="/suivi" element={<Suivi />} />
             <Route path="/liens" element={<Liens />} />
