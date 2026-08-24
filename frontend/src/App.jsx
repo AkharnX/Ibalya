@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Icone from './components/Icone'
+import Recherche from './components/Recherche'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
 import { FournisseurEtatAgent, libelleCycle, useEtatAgent } from './etatAgent'
@@ -166,6 +167,25 @@ function PastilleNav({ cle }) {
   return n > 0 ? <span className="nav-count">{n}</span> : null
 }
 
+// Fraîcheur des données : depuis quand l'agent a-t-il lu la boîte, et
+// laquelle. C'est la question de confiance centrale du produit, et elle
+// n'était visible que dans Réglages.
+function Fraicheur() {
+  const { statut, cycle } = useEtatAgent()
+  if (cycle?.en_cours || !statut?.dernier_cycle) return null
+  const ecoule = Math.max(0, Math.round((Date.now() - new Date(statut.dernier_cycle)) / 60000))
+  const quand = ecoule < 1 ? "à l'instant"
+    : ecoule < 60 ? `il y a ${ecoule} min`
+    : ecoule < 1440 ? `il y a ${Math.floor(ecoule / 60)} h`
+    : `il y a ${Math.floor(ecoule / 1440)} j`
+  return (
+    <div className="fraicheur" title={statut.compte ? `Boîte connectée : ${statut.compte}` : undefined}>
+      <span>Boîte lue {quand}</span>
+      {statut.compte && <span className="fraicheur-compte">{statut.compte}</span>}
+    </div>
+  )
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')
@@ -239,11 +259,12 @@ export default function App() {
           <div className="topbar-gauche">
             <button className="icon-btn burger" title="Menu"
               onClick={() => setMenuOpen(!menuOpen)}><Icone nom="action-menu" /></button>
-            {/* La marque n'apparaît ici qu'en petite largeur, là où la barre
-                latérale est escamotée : sur grand écran le logo y est déjà. */}
-            <Logo />
+            <Recherche />
           </div>
-          <IndicateurAgent />
+          <div className="topbar-droite">
+            <Fraicheur />
+            <IndicateurAgent />
+          </div>
         </header>
         <main>
           <Routes>

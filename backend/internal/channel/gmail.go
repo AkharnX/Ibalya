@@ -235,13 +235,24 @@ func cleanBody(body string) string {
 }
 
 func (g *Gmail) Send(ctx context.Context, to, subject, body string) error {
+	return g.SendFrom(ctx, "", "", to, subject, body)
+}
+
+func (g *Gmail) SendFrom(ctx context.Context, from, fromNom, to, subject, body string) error {
 	svc, err := g.service(ctx)
 	if err != nil {
 		return err
 	}
 	self, _ := g.AccountEmail(ctx)
+	expediteur := strings.TrimSpace(from)
+	if expediteur == "" {
+		expediteur = self
+	}
+	if n := strings.TrimSpace(fromNom); n != "" {
+		expediteur = fmt.Sprintf("%s <%s>", encodeSubject(n), expediteur)
+	}
 	raw := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
-		self, to, encodeSubject(subject), body)
+		expediteur, to, encodeSubject(subject), body)
 	msg := &gmail.Message{Raw: base64.URLEncoding.EncodeToString([]byte(raw))}
 	_, err = svc.Users.Messages.Send("me", msg).Context(ctx).Do()
 	return err

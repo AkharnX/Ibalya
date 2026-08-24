@@ -2,8 +2,24 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { fmtDT } from '../components/ui'
 
+// Aperçu de la signature réellement apposée par le serveur.
+function Apercu({ s }) {
+  const nom = [s.identite_prenom, s.identite_nom].filter(Boolean).join(' ').trim()
+  if (!nom) return null
+  const role = [s.identite_fonction, s.identite_societe].filter(Boolean).join(' — ')
+  return (
+    <div className="apercu-signature">
+      <span className="sub">Signature apposée aux messages :</span>
+      <pre>{['Cordialement,', nom, role].filter(Boolean).join('\n')}</pre>
+    </div>
+  )
+}
+
 export default function Reglages() {
-  const [settings, setSettings] = useState({ seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0' })
+  const [settings, setSettings] = useState({
+    seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
+    identite_prenom: '', identite_nom: '', identite_fonction: '', identite_societe: '',
+  })
   const [status, setStatus] = useState(null)
   const [kpis, setKpis] = useState(null)
   const [audit, setAudit] = useState([])
@@ -68,6 +84,34 @@ export default function Reglages() {
           </div>
         </div>
         <div className="panel">
+          <h3>Votre identité</h3>
+          <p className="help">
+            Elle signe les messages que l'agent prépare pour vous. Sans elle, le modèle
+            invente un nom : sur douze brouillons il en a produit cinq variantes, dont
+            deux qui n'étaient pas le bon prénom.
+          </p>
+          <div className="form-grid">
+            <div className="setting">
+              <label htmlFor="prenom">Prénom</label>
+              <input id="prenom" value={settings.identite_prenom} onChange={set('identite_prenom')} />
+            </div>
+            <div className="setting">
+              <label htmlFor="nom">Nom</label>
+              <input id="nom" value={settings.identite_nom} onChange={set('identite_nom')} />
+            </div>
+            <div className="setting">
+              <label htmlFor="fonction">Fonction</label>
+              <input id="fonction" placeholder="Gérant, CTO…" value={settings.identite_fonction} onChange={set('identite_fonction')} />
+            </div>
+            <div className="setting">
+              <label htmlFor="societe">Société</label>
+              <input id="societe" value={settings.identite_societe} onChange={set('identite_societe')} />
+            </div>
+          </div>
+          <Apercu s={settings} />
+          <button className="primary" onClick={save}>Enregistrer</button>
+        </div>
+        <div className="panel">
           <h3>Comportement</h3>
           <div className="setting">
             <label>Seuil de publication (0–1) — sous ce score, rien n'est présenté proactivement</label>
@@ -86,6 +130,12 @@ export default function Reglages() {
               <option value="0">Non — tableau de bord uniquement</option>
               <option value="1">Oui — sur ma boîte</option>
             </select>
+          </div>
+          <div className="setting">
+            <label htmlFor="expediteur">Adresse d'expédition du digest</label>
+            <input id="expediteur" type="email" placeholder="digest@ibalya.com"
+              value={settings.digest_expediteur} onChange={set('digest_expediteur')} />
+            <p className="help">Doit être vérifiée dans Gmail, sinon Google refuse l'envoi. Vide, le digest part de votre adresse.</p>
           </div>
           <button className="primary" onClick={save}>Enregistrer</button>
         </div>

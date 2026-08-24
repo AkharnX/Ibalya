@@ -18,7 +18,7 @@ export const ICONES = {
   "divers-analyse-en-cours": { titre: "Analyse en cours", corps: "<path d=\"M8 4H4V8\"/> <path d=\"M16 4H20V8\"/> <path d=\"M20 16V20H16\"/> <path d=\"M8 20H4V16\"/> <path d=\"M4 8L8 4M16 4L20 8M20 16L16 20M8 20L4 16\"/>" },
   "divers-deconnexion": { titre: "D\u00e9connexion", corps: "<path d=\"M11 4H5V20H11\"/> <path d=\"M13 8L17 12L13 16\"/> <path d=\"M8 12H17\"/>" },
   "divers-theme-clair": { titre: "Th\u00e8me clair", corps: "<rect x=\"8\" y=\"8\" width=\"8\" height=\"8\"/> <path d=\"M12 3V6M12 18V21M3 12H6M18 12H21M5 5L7 7M17 17L19 19M19 5L17 7M7 17L5 19\"/>" },
-  "divers-theme-sombre": { titre: "Th\u00e8me sombre", corps: "<rect x=\"5\" y=\"5\" width=\"12\" height=\"12\"/> <path d=\"M9 5V17H17\"/> <path d=\"M17 9H21V21H9V17\"/>" },
+  "divers-theme-sombre": { titre: "Th\u00e8me sombre", corps: "<path d=\"M20 15.2A8.6 8.6 0 0 1 8.8 4A8.6 8.6 0 1 0 20 15.2Z\"/>" },
   "etat-a-risque": { titre: "\u00c0 risque", corps: "<path d=\"M12 3.5L20.5 20.5H3.5Z\"/> <path d=\"M12 8V14\"/> <path d=\"M12 17V17.5\"/>" },
   "etat-en-retard": { titre: "En retard", corps: "<circle cx=\"10\" cy=\"11\" r=\"6.5\"/> <path d=\"M10 7.5V11L13 13\"/> <path d=\"M14.5 15.5L19.5 20.5M19.5 15.5L14.5 20.5\"/>" },
   "etat-livre": { titre: "Livr\u00e9", corps: "<rect x=\"4.5\" y=\"4.5\" width=\"15\" height=\"15\"/> <path d=\"M8 12.5L11 15.5L16 9.5\"/>" },
