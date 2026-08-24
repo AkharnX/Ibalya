@@ -181,7 +181,12 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
 		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
 			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
-			if err := e.Channel.Send(ctx, to, subject, e.renderDigestText(dc)); err != nil {
+			// Le digest part d'une adresse dédiée quand elle est configurée :
+			// il se distingue ainsi des messages que le dirigeant envoie
+			// lui-même, et se filtre dans sa boîte. L'adresse doit être
+			// vérifiée dans Gmail, sinon Google refuse l'envoi.
+			exp := e.Store.GetSetting(ctx, "digest_expediteur", "")
+			if err := e.Channel.SendFrom(ctx, exp, "Digest Ibalya", to, subject, e.renderDigestText(dc)); err != nil {
 				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
 			} else {
 				e.Store.Audit(ctx, "agent", "digest_email_envoye", map[string]string{"to": to})
@@ -300,7 +305,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 		return nil
 	}
 	draft := store.Draft{DetectionID: &d.ID, EngagementID: engID, ToEmail: toEmail,
-		Subject: resp.Subject, Body: resp.Body, Statut: "propose"}
+		Subject: resp.Subject, Body: e.apposerSignature(ctx, resp.Body), Statut: "propose"}
 	id, err := e.Store.CreateDraft(ctx, draft)
 	if err != nil {
 		return nil
@@ -396,7 +401,7 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 	}
 	engID := s.ID
 	draft := store.Draft{EngagementID: &engID, ToEmail: action.ToEmail,
-		Subject: resp.Subject, Body: resp.Body, Statut: "propose"}
+		Subject: resp.Subject, Body: e.apposerSignature(ctx, resp.Body), Statut: "propose"}
 	id, err := e.Store.CreateDraft(ctx, draft)
 	if err != nil {
 		return nil, err

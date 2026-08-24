@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { Reli, TYPE_LABELS, fmtDT, fmtDate } from '../components/ui'
@@ -44,6 +45,15 @@ export default function Miroir() {
   const [busy, setBusy] = useState(false)
   const [sourceId, setSourceId] = useState(null)
   const [filId, setFilId] = useState(null)
+  const [params, setParams] = useSearchParams()
+
+  // Cible d'un résultat de recherche.
+  useEffect(() => {
+    const id = Number(params.get('fil'))
+    if (!id) return
+    setFilId(id)
+    setParams((p) => { p.delete('fil'); return p }, { replace: true })
+  }, [params, setParams])
 
   const load = useCallback(() => {
     api('/miroir').then(setRep).catch(() => setRep(null))

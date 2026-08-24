@@ -39,6 +39,15 @@ export default function Suivi() {
 
   const d = useDraft(load)
   const [source, setSource] = useState(null) // { id, action }
+
+  // La recherche de la barre du haut renvoie ici avec l'engagement à ouvrir.
+  useEffect(() => {
+    const id = Number(params.get('ouvrir'))
+    if (!id || !rows) return
+    const r = rows.find((x) => x.id === id)
+    setSource({ id, action: r?.action })
+    setParams((p) => { p.delete('ouvrir'); return p }, { replace: true })
+  }, [params, rows, setParams])
   const [menuId, setMenuId] = useState(null)      // menu de correction ouvert
   const [menuPos, setMenuPos] = useState(null)    // ancrage écran du menu
   const [dateId, setDateId] = useState(null)      // échéance en cours de confirmation

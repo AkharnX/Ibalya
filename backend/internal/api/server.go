@@ -119,6 +119,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rules", s.auth(s.listRules))
 	mux.HandleFunc("POST /api/rules", s.auth(s.createRule))
 	mux.HandleFunc("DELETE /api/rules/{id}", s.auth(s.deleteRule))
+	mux.HandleFunc("GET /api/recherche", s.auth(s.recherche))
 	mux.HandleFunc("GET /api/persons", s.auth(s.listPersons))
 	mux.HandleFunc("GET /api/persons/{id}", s.auth(s.fichePersonne))
 	mux.HandleFunc("PATCH /api/persons/{id}", s.auth(s.patchPerson))
@@ -709,6 +710,11 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
 		"digest_type":       s.Store.GetSetting(ctx, "digest_type", "quotidien"),
 		"digest_email":      s.Store.GetSetting(ctx, "digest_email", "0"),
+		"digest_expediteur": s.Store.GetSetting(ctx, "digest_expediteur", ""),
+		"identite_prenom":   s.Store.GetSetting(ctx, "identite_prenom", ""),
+		"identite_nom":      s.Store.GetSetting(ctx, "identite_nom", ""),
+		"identite_fonction": s.Store.GetSetting(ctx, "identite_fonction", ""),
+		"identite_societe":  s.Store.GetSetting(ctx, "identite_societe", ""),
 	})
 }
 
@@ -736,6 +742,24 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		case "digest_email":
 			if v != "0" && v != "1" {
 				httpError(w, 400, "digest_email: 0 ou 1")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, v)
+		// Identité du dirigeant. Elle sert à signer les messages sortants :
+		// le modèle inventait des noms — cinq variantes sur douze brouillons,
+		// dont deux qui n'étaient pas le bon prénom.
+		case "identite_prenom", "identite_nom", "identite_fonction", "identite_societe":
+			if len(v) > 120 {
+				httpError(w, 400, k+" : 120 caractères au maximum")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, strings.TrimSpace(v))
+		// Expéditeur du digest. Doit être une adresse vérifiée dans Gmail,
+		// sans quoi l'envoi est refusé par Google.
+		case "digest_expediteur":
+			v = strings.TrimSpace(v)
+			if v != "" && !strings.Contains(v, "@") {
+				httpError(w, 400, "digest_expediteur : adresse email attendue")
 				return
 			}
 			s.Store.SetSetting(r.Context(), k, v)

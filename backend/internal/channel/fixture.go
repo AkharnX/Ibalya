@@ -102,3 +102,9 @@ func (f *Fixture) Send(ctx context.Context, to, subject, body string) error {
 	fmt.Printf("[fixture] message envoyé à %s : %s\n", to, subject)
 	return nil
 }
+
+// SendFrom : le connecteur de démonstration n'envoie rien, l'expéditeur n'a
+// donc pas d'effet. Présent pour satisfaire l'interface de canal (EF-10).
+func (f *Fixture) SendFrom(ctx context.Context, from, fromNom, to, subject, body string) error {
+	return f.Send(ctx, to, subject, body)
+}

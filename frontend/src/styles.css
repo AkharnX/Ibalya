@@ -708,11 +708,7 @@ label{
 }
 .renvoi .btn{margin-left:auto;}
 
-/* La marque dans la barre du haut ne sert que lorsque la barre latérale est
-   escamotée : sur grand écran elle ferait doublon avec le logo de la sidebar. */
-.topbar-gauche{display:flex;align-items:center;gap:12px;}
-.topbar-gauche .logo{display:none;}
-@media (max-width:860px){ .topbar-gauche .logo{display:flex;} }
+.topbar-gauche{display:flex;align-items:center;gap:12px;min-width:0;flex:1;}
 
 /* Intitulé réservé aux lecteurs d'écran : les colonnes d'action étaient des
    en-têtes vides, illisibles pour qui n'a pas l'icône sous les yeux. */
@@ -791,3 +787,51 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 .nav-libelle{display:flex;align-items:center;gap:10px;min-width:0;}
 .nav-libelle .ic{opacity:.8;}
 .nav-item.active .nav-libelle .ic{opacity:1;}
+
+/* ── barre du haut : recherche et fraîcheur ── */
+.topbar-droite{display:flex;align-items:center;gap:18px;}
+.fraicheur{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;}
+.fraicheur span{font-size:11.5px;color:var(--muted-foreground);}
+.fraicheur-compte{font-family:var(--font-mono);font-size:10.5px;opacity:.8;}
+
+.recherche{position:relative;display:flex;align-items:center;gap:8px;min-width:0;}
+.recherche > .ic{position:absolute;left:10px;color:var(--muted-foreground);pointer-events:none;}
+.recherche input{
+  width:340px;max-width:44vw;padding:6px 10px 6px 32px;font-size:13px;
+  background:var(--background);
+}
+.recherche input::-webkit-search-cancel-button{filter:invert(.5);}
+.recherche-resultats{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:70;
+  width:min(460px,80vw);max-height:60vh;overflow-y:auto;
+  background:var(--card);border:1px solid var(--border);
+  box-shadow:0 10px 30px rgba(0,0,0,.3);padding:4px;
+}
+.recherche-vide{margin:0;padding:12px;font-size:13px;color:var(--muted-foreground);}
+.recherche-item{
+  display:grid;grid-template-columns:96px 1fr;gap:4px 10px;align-items:baseline;
+  width:100%;text-align:left;background:none;border:none;cursor:pointer;
+  padding:8px 10px;font:inherit;color:var(--foreground);
+}
+.recherche-item.actif{background:var(--secondary);}
+.recherche-type{
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted-foreground);font-family:var(--font-mono);
+}
+.recherche-titre{font-size:13px;overflow:hidden;text-overflow:ellipsis;}
+.recherche-detail{
+  grid-column:2;font-size:11.5px;color:var(--muted-foreground);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* Aperçu de la signature réellement apposée. */
+.apercu-signature{margin:14px 0;border-left:2px solid var(--primary);padding-left:12px;}
+.apercu-signature pre{
+  margin:6px 0 0;font-family:var(--font-sans);font-size:13px;
+  white-space:pre-wrap;color:var(--foreground);
+}
+
+@media (max-width:860px){
+  .recherche input{width:100%;max-width:none;}
+  .fraicheur{display:none;}
+}

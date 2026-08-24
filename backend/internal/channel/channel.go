@@ -31,4 +31,8 @@ type Reader interface {
 	FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error)
 	// Send envoie un message sortant (marche 3 — uniquement après validation explicite).
 	Send(ctx context.Context, to, subject, body string) error
+	// SendFrom envoie depuis une adresse donnée. Vide, l'adresse du compte est
+	// utilisée : c'est le cas des messages que le dirigeant adresse à ses
+	// clients, qui doivent partir de sa boîte et non d'un expéditeur de service.
+	SendFrom(ctx context.Context, from, fromNom, to, subject, body string) error
 }

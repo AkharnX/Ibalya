@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
 import { SqueletteTable } from '../components/Squelette'
 import FichePersonne from '../components/FichePersonne'
@@ -19,6 +20,15 @@ export default function Interlocuteurs() {
   const [filtre, setFiltre] = useState('')
   const [search, setSearch] = useState('')
   const [ficheId, setFicheId] = useState(null)
+  const [params, setParams] = useSearchParams()
+
+  // Cible d'un résultat de recherche.
+  useEffect(() => {
+    const id = Number(params.get('fiche'))
+    if (!id) return
+    setFicheId(id)
+    setParams((p) => { p.delete('fiche'); return p }, { replace: true })
+  }, [params, setParams])
   const [sourceId, setSourceId] = useState(null)
   const [filId, setFilId] = useState(null)
 
