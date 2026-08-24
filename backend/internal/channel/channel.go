@@ -35,4 +35,9 @@ type Reader interface {
 	// utilisée : c'est le cas des messages que le dirigeant adresse à ses
 	// clients, qui doivent partir de sa boîte et non d'un expéditeur de service.
 	SendFrom(ctx context.Context, from, fromNom, to, subject, body string) error
+	// LienWeb construit l'adresse d'un message ou d'un fil dans l'interface du
+	// fournisseur. Vide quand il n'en existe pas — c'est le cas d'IMAP, qui ne
+	// désigne aucune interface : l'appelant n'affiche alors pas de lien plutôt
+	// que d'en fabriquer un faux.
+	LienWeb(compte, externalID string) string
 }

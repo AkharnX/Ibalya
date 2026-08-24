@@ -15,7 +15,15 @@ type Config struct {
 	PublicBaseURL      string
 	GoogleClientID     string
 	GoogleClientSecret string
-	Channel            string // gmail | fixture
+	Channel            string // gmail | imap | fixture
+	IMAPHote           string
+	IMAPPort           int
+	IMAPUtilisateur    string
+	IMAPMotDePasse     string
+	IMAPDossier        string
+	SMTPHote           string
+	SMTPPort           int
+	IMAPTLSSansVerif   bool
 	FixturePath        string
 	FrontendDir        string
 	LandingDir         string
@@ -65,6 +73,9 @@ func (c Config) Verifier() error {
 			return fmt.Errorf("la base utilise le mot de passe d'exemple %q, publié dans le dépôt : changez DB_PASSWORD et DATABASE_URL", faible)
 		}
 	}
+	if c.IMAPTLSSansVerif {
+		return fmt.Errorf("IMAP_TLS_SKIP_VERIFY accepte n'importe quel certificat : interdit sur une installation publique")
+	}
 	if c.AdminToken != "" && len(c.AdminToken) < 32 {
 		return fmt.Errorf("ADMIN_TOKEN fait %d caractères, 32 au minimum sur une installation publique", len(c.AdminToken))
 	}
@@ -81,6 +92,14 @@ func Load() Config {
 		GoogleClientID:     env("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: env("GOOGLE_CLIENT_SECRET", ""),
 		Channel:            env("CHANNEL", "gmail"),
+		IMAPHote:           env("IMAP_HOST", ""),
+		IMAPPort:           envInt("IMAP_PORT", 993),
+		IMAPUtilisateur:    env("IMAP_USER", ""),
+		IMAPMotDePasse:     env("IMAP_PASSWORD", ""),
+		IMAPDossier:        env("IMAP_FOLDER", "INBOX"),
+		SMTPHote:           env("SMTP_HOST", ""),
+		SMTPPort:           envInt("SMTP_PORT", 587),
+		IMAPTLSSansVerif:   env("IMAP_TLS_SKIP_VERIFY", "") == "1",
 		FixturePath:        env("FIXTURE_PATH", ""),
 		FrontendDir:        env("FRONTEND_DIR", "frontend/dist"),
 		LandingDir:         env("LANDING_DIR", "landing"),

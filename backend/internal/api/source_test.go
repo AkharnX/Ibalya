@@ -3,27 +3,8 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
-
-// Le lien doit ouvrir le BON compte : un dirigeant connecté à plusieurs
-// sessions Google atterrirait sinon dans la mauvaise boîte.
-func TestUrlGmail(t *testing.T) {
-	u := urlGmail("marc@exemple.fr", "18f2a")
-	if !strings.Contains(u, "authuser=marc%40exemple.fr") {
-		t.Errorf("le compte doit être encodé dans l'URL, obtenu %q", u)
-	}
-	if !strings.HasSuffix(u, "#all/18f2a") {
-		t.Errorf("l'identifiant du message doit terminer l'URL, obtenu %q", u)
-	}
-	if urlGmail("marc@exemple.fr", "") != "" {
-		t.Error("sans identifiant de message, aucun lien ne doit être produit")
-	}
-	if u := urlGmail("", "18f2a"); strings.Contains(u, "authuser") {
-		t.Errorf("sans compte connu, pas de paramètre authuser : %q", u)
-	}
-}
 
 // Le jeton de service ne doit jamais être exploitable depuis Internet, y
 // compris avec un en-tête X-Forwarded-For ou X-Real-IP forgé.

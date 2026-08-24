@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"net/url"
 
 	"ibalya/backend/internal/store"
 )
@@ -15,8 +14,8 @@ import (
 
 type MessageSource struct {
 	store.Message
-	EstSource bool   `json:"est_source"` // le message d'où l'engagement a été extrait
-	URLGmail  string `json:"url_gmail,omitempty"`
+	EstSource bool   `json:"est_source"`          // le message d'où l'engagement a été extrait
+	URLGmail  string `json:"url_gmail,omitempty"` // vide si le canal n'a pas d'interface web
 }
 
 type SourceReponse struct {
@@ -26,20 +25,6 @@ type SourceReponse struct {
 	Canal        string          `json:"canal"`
 	URLGmailFil  string          `json:"url_gmail_fil,omitempty"`
 	Messages     []MessageSource `json:"messages"`
-}
-
-// urlGmail construit un lien direct vers un message ou un fil dans Gmail.
-// Le paramètre authuser évite d'atterrir sur le mauvais compte quand
-// l'utilisateur est connecté à plusieurs boîtes Google dans son navigateur.
-func urlGmail(compte, externalID string) string {
-	if externalID == "" {
-		return ""
-	}
-	base := "https://mail.google.com/mail/"
-	if compte != "" {
-		base += "?authuser=" + url.QueryEscape(compte)
-	}
-	return base + "#all/" + externalID
 }
 
 // filSource assemble la conversation d'un fil. eng est facultatif : fourni, il
@@ -67,17 +52,20 @@ func (s *Server) filSource(ctx context.Context, threadID int64, eng *store.Engag
 	if len(msgs) == 0 {
 		return nil, errIntrouvable
 	}
-	_, compte, _ := s.Store.GetOAuthToken(ctx, "google")
-	if fil.Channel == "gmail" {
-		rep.URLGmailFil = urlGmail(compte, fil.ExternalID)
+	// Le lien vers l'interface du fournisseur est construit par le connecteur :
+	// tous n'en ont pas. IMAP ne désigne aucune interface web et retourne vide,
+	// auquel cas l'interface n'affiche pas de bouton.
+	compte, _ := s.Engine.Channel.AccountEmail(ctx)
+	if fil.Channel == s.Engine.Channel.Name() {
+		rep.URLGmailFil = s.Engine.Channel.LienWeb(compte, fil.ExternalID)
 	}
 	for _, m := range msgs {
 		ms := MessageSource{Message: m}
 		if eng != nil {
 			ms.EstSource = eng.SourceMessageID != nil && *eng.SourceMessageID == m.ID
 		}
-		if m.Channel == "gmail" {
-			ms.URLGmail = urlGmail(compte, m.ExternalID)
+		if m.Channel == s.Engine.Channel.Name() {
+			ms.URLGmail = s.Engine.Channel.LienWeb(compte, m.ExternalID)
 		}
 		rep.Messages = append(rep.Messages, ms)
 	}

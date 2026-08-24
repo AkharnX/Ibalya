@@ -103,6 +103,9 @@ func (f *Fixture) Send(ctx context.Context, to, subject, body string) error {
 	return nil
 }
 
+// LienWeb : les fixtures ne renvoient vers aucune interface.
+func (f *Fixture) LienWeb(compte, externalID string) string { return "" }
+
 // SendFrom : le connecteur de démonstration n'envoie rien, l'expéditeur n'a
 // donc pas d'effet. Présent pour satisfaire l'interface de canal (EF-10).
 func (f *Fixture) SendFrom(ctx context.Context, from, fromNom, to, subject, body string) error {

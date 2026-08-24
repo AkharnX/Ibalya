@@ -268,13 +268,15 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		WHERE echeance IS NOT NULL AND echeance_inferee AND NOT echeance_confirmee
 		  AND statut IN ('ouvert','confirme','en_retard')`).Scan(&counts.EcheancesAConfirmer)
 
-	_, email, _ := s.Store.GetOAuthToken(ctx, "google")
-	tok, _, _ := s.Store.GetOAuthToken(ctx, "google")
+	// L'état du canal se lit sur le connecteur : lui seul sait s'il est
+	// utilisable. Gmail exige un jeton, IMAP des identifiants, les fixtures
+	// rien — l'ancienne lecture du jeton Google déclarait IMAP non connecté.
+	email, errCompte := s.Engine.Channel.AccountEmail(ctx)
 	llmOK := s.Engine.LLM.Health(ctx) == nil
 
 	writeJSON(w, map[string]any{
 		"canal":             s.Engine.Channel.Name(),
-		"canal_connecte":    tok != nil || s.Engine.Channel.Name() == "fixture",
+		"canal_connecte":    errCompte == nil && email != "",
 		"compte":            email,
 		"service_llm_ok":    llmOK,
 		"dernier_cycle":     s.Store.GetSetting(ctx, "dernier_cycle", ""),
