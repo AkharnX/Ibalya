@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/mail"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -232,6 +233,19 @@ func cleanBody(body string) string {
 		s = s[:4000]
 	}
 	return s
+}
+
+// LienWeb : le paramètre authuser évite d'atterrir sur le mauvais compte quand
+// l'utilisateur est connecté à plusieurs boîtes Google dans son navigateur.
+func (g *Gmail) LienWeb(compte, externalID string) string {
+	if externalID == "" {
+		return ""
+	}
+	base := "https://mail.google.com/mail/"
+	if compte != "" {
+		base += "?authuser=" + url.QueryEscape(compte)
+	}
+	return base + "#all/" + externalID
 }
 
 func (g *Gmail) Send(ctx context.Context, to, subject, body string) error {

@@ -75,8 +75,14 @@ func estLocal(r *http.Request) bool {
 //
 // Retourne la chaîne vide tant qu'aucun canal n'est raccordé : sans cela,
 // personne ne pourrait ouvrir la session nécessaire pour en raccorder un.
+// L'adresse est demandée au connecteur et non au jeton OAuth : un canal à
+// identifiants directs, comme IMAP, n'a aucun jeton. Sans cela la garde
+// laisserait entrer n'importe quel compte sur une installation IMAP.
 func (s *Server) proprietaire(ctx context.Context) string {
-	_, email, err := s.Store.GetOAuthToken(ctx, "google")
+	if s.Engine == nil || s.Engine.Channel == nil {
+		return ""
+	}
+	email, err := s.Engine.Channel.AccountEmail(ctx)
 	if err != nil {
 		return ""
 	}

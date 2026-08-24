@@ -58,6 +58,20 @@ func main() {
 		}
 		reader = channel.NewFixture(cfg.FixturePath)
 		log.Printf("connecteur fixture: %s", cfg.FixturePath)
+	case "imap":
+		// Un connecteur IMAP couvre Yahoo, OVH, Gandi, Orange, Free et toute
+		// boîte auto-hébergée, là où chaque API propriétaire n'en couvre qu'une.
+		if cfg.IMAPHote == "" || cfg.IMAPUtilisateur == "" || cfg.IMAPMotDePasse == "" {
+			log.Fatal("CHANNEL=imap exige IMAP_HOST, IMAP_USER et IMAP_PASSWORD")
+		}
+		reader = channel.NewIMAP(channel.IMAPConfig{
+			Hote: cfg.IMAPHote, Port: cfg.IMAPPort,
+			Utilisateur: cfg.IMAPUtilisateur, MotDePasse: cfg.IMAPMotDePasse,
+			Dossier:  cfg.IMAPDossier,
+			SMTPHote: cfg.SMTPHote, SMTPPort: cfg.SMTPPort,
+			TLSSansVerification: cfg.IMAPTLSSansVerif,
+		})
+		log.Printf("connecteur imap: %s@%s", cfg.IMAPUtilisateur, cfg.IMAPHote)
 	default:
 		reader = channel.NewGmail(oauthCfg, st)
 		log.Println("connecteur gmail (OAuth)")
@@ -87,8 +101,13 @@ func scheduler(ctx context.Context, cfg config.Config, st *store.Store, eng *eng
 	defer digestTicker.Stop()
 
 	connected := func() bool {
+		// Un canal à identifiants directs (IMAP, fixtures) est prêt dès le
+		// démarrage ; seul OAuth exige un raccordement préalable.
+		if cfg.Channel != "gmail" {
+			return true
+		}
 		tok, _, _ := st.GetOAuthToken(ctx, "google")
-		return tok != nil || cfg.Channel == "fixture"
+		return tok != nil
 	}
 
 	for {
