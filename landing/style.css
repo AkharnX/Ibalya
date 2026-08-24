@@ -210,3 +210,15 @@ a{color:inherit;}
 .lp-equipe div{border-top:1px solid var(--border);padding-top:16px;}
 .lp-equipe b{display:block;font-size:15px;font-weight:600;}
 .lp-equipe span{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+/* Palier sur devis : pas de prix affiché, donc pas d'étiquette de pays. */
+.lp-prix-devis b{font-family:var(--sans);font-size:19px;font-weight:600;}
+.lp-prix-devis i{margin-top:5px;}
+
+/* Le délai de mise en valeur est l'argument le plus fort face aux agences,
+   dont le time-to-value se compte en mois. Il justifie les frais d'entrée. */
+.lp-delai{
+  margin-top:14px;padding-left:14px;border-left:2px solid var(--primary);
+  font-size:14.5px;
+}
+.lp-delai b{font-weight:600;}
