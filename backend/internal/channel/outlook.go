@@ -17,8 +17,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -104,17 +106,24 @@ func (o *Outlook) appeler(ctx context.Context, methode, chemin string, corps any
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
+		// On lit le corps une fois : un décodage raté laissait « Graph a
+		// répondu 400 » sans rien d'exploitable, alors que Graph explique
+		// toujours ce qui ne va pas.
+		brut, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		var e struct {
 			Error struct {
 				Code    string `json:"code"`
 				Message string `json:"message"`
 			} `json:"error"`
 		}
-		_ = json.NewDecoder(resp.Body).Decode(&e)
+		_ = json.Unmarshal(brut, &e)
 		if e.Error.Message != "" {
 			return fmt.Errorf("Graph %s : %s", e.Error.Code, e.Error.Message)
 		}
-		return fmt.Errorf("Graph a répondu %d", resp.StatusCode)
+		if txt := strings.TrimSpace(string(brut)); txt != "" {
+			return fmt.Errorf("Graph a répondu %d : %s", resp.StatusCode, txt)
+		}
+		return fmt.Errorf("Graph a répondu %d sans explication", resp.StatusCode)
 	}
 	if sortie == nil {
 		return nil
@@ -186,10 +195,16 @@ func (o *Outlook) FetchSince(ctx context.Context, since time.Time, max int) ([]M
 	if max <= 0 || max > 500 {
 		max = 500
 	}
-	chemin := fmt.Sprintf(
-		"/me/messages?$filter=receivedDateTime ge %s&$orderby=receivedDateTime desc&$top=%d"+
-			"&$select=id,conversationId,subject,receivedDateTime,body,from,sender,toRecipients,ccRecipients",
-		since.UTC().Format(time.RFC3339), max)
+	// Les paramètres OData contiennent des espaces — « receivedDateTime ge … »,
+	// « receivedDateTime desc » — qui sont invalides bruts dans une URL et que
+	// Graph rejette par un 400. On encode donc, en %20 plutôt qu'en « + » :
+	// OData ne traite pas le signe plus comme une espace.
+	q := url.Values{}
+	q.Set("$filter", "receivedDateTime ge "+since.UTC().Format(time.RFC3339))
+	q.Set("$orderby", "receivedDateTime desc")
+	q.Set("$top", strconv.Itoa(max))
+	q.Set("$select", "id,conversationId,subject,receivedDateTime,bodyPreview,body,from,sender,toRecipients,ccRecipients")
+	chemin := "/me/messages?" + strings.ReplaceAll(q.Encode(), "+", "%20")
 
 	var page struct {
 		Value []messageGraph `json:"value"`
