@@ -107,7 +107,10 @@ func (i *IMAP) FetchSince(ctx context.Context, since time.Time, max int) ([]Mess
 	if err != nil {
 		return nil, err
 	}
-	defer c.Logout().Wait()
+	// defer c.Logout().Wait() évaluerait c.Logout() immédiatement et ne
+	// différerait que l'attente : la déconnexion partait juste après
+	// l'authentification et le SELECT recevait une connexion fermée.
+	defer func() { _ = c.Logout().Wait() }()
 
 	if _, err := c.Select(i.cfg.Dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
 		return nil, fmt.Errorf("dossier %q : %w", i.cfg.Dossier, err)

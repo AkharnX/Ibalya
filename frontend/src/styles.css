@@ -872,3 +872,21 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   gap:12px;flex-wrap:wrap;margin-top:6px;
 }
 @media (max-width:900px){ .topbar-societe{display:none;} }
+
+/* ── raccordement du canal ── */
+.choix-canal{display:flex;gap:10px;flex-wrap:wrap;}
+.choix-canal label{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  border:1px solid var(--border);padding:8px 14px;font-size:13.5px;
+}
+.choix-canal label.actif{border-color:var(--primary);background:var(--secondary);}
+.choix-canal input{width:auto;margin:0;accent-color:var(--primary);}
+
+/* Résultat de l'épreuve de connexion : il doit être impossible de le confondre
+   avec un simple message d'aide, c'est lui qui autorise l'enregistrement. */
+.essai-canal{
+  display:flex;align-items:center;gap:10px;
+  margin:14px 0;padding:11px 14px;font-size:13px;border:1px solid;
+}
+.essai-canal.ok{border-color:var(--healthy);background:var(--healthy-bg);color:var(--healthy);}
+.essai-canal.echec{border-color:var(--risk);background:var(--risk-bg);color:var(--risk);}
