@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"fmt"
 	"ibalya/backend/internal/channel"
 	"ibalya/backend/internal/config"
 	"ibalya/backend/internal/engine"
@@ -67,9 +68,9 @@ func (s *Server) Handler() http.Handler {
 		writeJSON(w, map[string]string{"status": "ok"})
 	})
 
-	// OAuth Google
-	mux.HandleFunc("POST /api/oauth/google/start", s.auth(s.oauthStart))
-	mux.HandleFunc("GET /api/oauth/google/callback", s.oauthCallback)
+	// Raccordement d'une boîte : google (Gmail) ou microsoft (Outlook).
+	mux.HandleFunc("POST /api/oauth/{fournisseur}/start", s.auth(s.oauthStart))
+	mux.HandleFunc("GET /api/oauth/{fournisseur}/callback", s.oauthCallback)
 
 	// statut & cycle
 	mux.HandleFunc("GET /api/status", s.auth(s.status))
@@ -164,46 +165,92 @@ func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 
 // --- OAuth ---
 
+// configRaccordement retourne la configuration OAuth du fournisseur demandé,
+// et le nom sous lequel son jeton est rangé.
+func (s *Server) configRaccordement(f string) (*oauth2.Config, string, error) {
+	switch f {
+	case "google":
+		if s.OAuth == nil || s.OAuth.ClientID == "" {
+			return nil, "", fmt.Errorf("GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET ne sont pas configurés")
+		}
+		return s.OAuth, "google", nil
+	case "microsoft":
+		if s.Cfg.MicrosoftClientID == "" {
+			return nil, "", fmt.Errorf("MICROSOFT_CLIENT_ID et MICROSOFT_CLIENT_SECRET ne sont pas configurés")
+		}
+		return channel.OutlookOAuthConfig(s.Cfg.MicrosoftClientID, s.Cfg.MicrosoftClientSecret,
+			s.Cfg.MicrosoftTenant, s.Cfg.PublicBaseURL+"/api/oauth/microsoft/callback"), "microsoft", nil
+	}
+	return nil, "", fmt.Errorf("fournisseur inconnu : %s", f)
+}
+
 func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
-	if s.OAuth == nil || s.OAuth.ClientID == "" {
-		httpError(w, 400, "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET non configurés")
+	f := r.PathValue("fournisseur")
+	cfg, _, err := s.configRaccordement(f)
+	if err != nil {
+		httpError(w, 400, err.Error())
 		return
 	}
 	b := make([]byte, 16)
 	rand.Read(b)
 	state := hex.EncodeToString(b)
-	s.Store.SetSetting(r.Context(), "oauth_state", state)
-	url := s.OAuth.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.SetAuthURLParam("prompt", "consent"))
+	// L'état porte le fournisseur : le rappel doit savoir lequel répond, et
+	// deux raccordements ne doivent pas se confondre.
+	s.Store.SetSetting(r.Context(), "oauth_state", f+":"+state)
+	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.SetAuthURLParam("prompt", "consent"))
 	writeJSON(w, map[string]string{"url": url})
 }
 
 func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	f := r.PathValue("fournisseur")
+	cfg, provider, err := s.configRaccordement(f)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	// L'état porte le fournisseur : un rappel de Microsoft ne doit pas valider
+	// un raccordement Google entamé en parallèle.
 	attendu := s.Store.GetSetting(ctx, "oauth_state", "")
-	if attendu == "" || r.URL.Query().Get("state") != attendu {
+	if attendu == "" || attendu != f+":"+r.URL.Query().Get("state") {
 		httpError(w, 400, "état OAuth invalide")
 		return
 	}
 	// À usage unique : un nonce rejouable ne protège plus de rien.
 	s.Store.SetSetting(ctx, "oauth_state", "")
-	tok, err := s.OAuth.Exchange(ctx, r.URL.Query().Get("code"))
+
+	tok, err := cfg.Exchange(ctx, r.URL.Query().Get("code"))
 	if err != nil {
 		httpError(w, 400, "échange OAuth: "+err.Error())
 		return
 	}
 	b, _ := json.Marshal(tok)
-	if err := s.Store.SaveOAuthToken(ctx, "google", b, ""); err != nil {
+	if err := s.Store.SaveOAuthToken(ctx, provider, b, ""); err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
-	// récupère l'adresse du compte et la persiste
-	if g, ok := s.Engine.Channel.(*channel.Gmail); ok {
-		if email, err := g.AccountEmail(context.Background()); err == nil {
-			tokB, _, _ := s.Store.GetOAuthToken(ctx, "google")
-			_ = s.Store.SaveOAuthToken(ctx, "google", tokB, email)
-		}
+
+	// Le canal bascule sur la boîte qu'on vient de raccorder : sans cela le
+	// raccordement réussirait sans que l'agent lise quoi que ce soit.
+	var lecteur channel.Reader
+	switch provider {
+	case "google":
+		lecteur = channel.NewGmail(cfg, s.Store)
+		s.Store.SetSetting(ctx, "canal_type", "gmail")
+	case "microsoft":
+		lecteur = channel.NewOutlook(cfg, s.Store)
+		s.Store.SetSetting(ctx, "canal_type", "outlook")
 	}
-	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": "google"})
+	if lecteur != nil {
+		// L'adresse est persistée ici : le tableau de bord et les liens en ont
+		// besoin, et l'appel peut échouer plus tard.
+		if email, err := lecteur.AccountEmail(context.Background()); err == nil {
+			tokB, _, _ := s.Store.GetOAuthToken(ctx, provider)
+			_ = s.Store.SaveOAuthToken(ctx, provider, tokB, email)
+		}
+		s.Commutateur.Remplacer(lecteur)
+	}
+	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": provider})
 	// J+0 → J+1 : lance l'onboarding en arrière-plan (30 jours + miroir + capsule)
 	go s.onboarding()
 	http.Redirect(w, r, "/app/?connected=1", http.StatusFound)
