@@ -50,9 +50,11 @@ func TestSuggestAction(t *testing.T) {
 		}
 	})
 
-	t.Run("retard sur SA promesse : je relance le fournisseur", func(t *testing.T) {
-		if a := suggestAction(base(CatRetard, "livraison", false)); a.Intent != "relance_fournisseur" {
-			t.Errorf("attendu relance_fournisseur, obtenu %q", a.Intent)
+	// Renommée de relance_fournisseur : la contrepartie n'est pas toujours un
+	// fournisseur, ce peut être un client dont on attend une validation.
+	t.Run("retard sur SA promesse : je relance", func(t *testing.T) {
+		if a := suggestAction(base(CatRetard, "livraison", false)); a.Intent != "relance_retard" {
+			t.Errorf("attendu relance_retard, obtenu %q", a.Intent)
 		}
 	})
 
@@ -65,9 +67,13 @@ func TestSuggestAction(t *testing.T) {
 		}
 	})
 
-	t.Run("livraison imminente : on confirme la date", func(t *testing.T) {
+	// L'échéance doit être confirmée pour déclencher l'urgence : une date
+	// inférée par le modèle n'alimente rien tant que le dirigeant ne l'a pas
+	// validée (CDC 7.3). Le cas non confirmé est couvert dans suggestion_test.go.
+	t.Run("livraison imminente et confirmée : on confirme la date", func(t *testing.T) {
 		s := base(CatEnCours, "livraison", true)
 		s.Echeance = dans(1)
+		s.EcheanceConfirmee = true
 		if a := suggestAction(s); a.Intent != "confirmer_date" {
 			t.Errorf("attendu confirmer_date, obtenu %q", a.Intent)
 		}
@@ -76,6 +82,7 @@ func TestSuggestAction(t *testing.T) {
 	t.Run("livraison lointaine : simple point d'avancement", func(t *testing.T) {
 		s := base(CatEnCours, "livraison", true)
 		s.Echeance = dans(20)
+		s.EcheanceConfirmee = true
 		if a := suggestAction(s); a.Intent != "point_avancement" {
 			t.Errorf("attendu point_avancement, obtenu %q", a.Intent)
 		}
