@@ -5,25 +5,29 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { EVT_LABELS, fmtDT } from './ui'
 
-export default function SourcePanel({ engagementId, onClose }) {
+// Le panneau s'ouvre sur un engagement ou directement sur une conversation.
+// Les fils sans réponse du miroir n'ont produit aucun engagement : sans la
+// seconde entrée, ils n'étaient consultables nulle part.
+export default function SourcePanel({ engagementId, threadId, onClose }) {
   const [data, setData] = useState(null)
   const [events, setEvents] = useState([])
   const [erreur, setErreur] = useState('')
 
   useEffect(() => {
-    if (!engagementId) { setData(null); setEvents([]); setErreur(''); return }
+    if (!engagementId && !threadId) { setData(null); setEvents([]); setErreur(''); return }
     setData(null); setEvents([]); setErreur('')
-    api(`/engagements/${engagementId}/source`)
-      .then(setData)
-      .catch((e) => setErreur(e.message))
-    // Journal d'événements (CDC 5.2) : l'état d'un engagement se reconstruit à
-    // tout instant, et c'est la matière de l'audit trail.
-    api(`/engagements/${engagementId}/events`)
-      .then((r) => setEvents(r || []))
-      .catch(() => setEvents([]))
-  }, [engagementId])
+    const source = engagementId ? `/engagements/${engagementId}/source` : `/threads/${threadId}/source`
+    api(source).then(setData).catch((e) => setErreur(e.message))
+    if (engagementId) {
+      // Journal d'événements (CDC 5.2) : l'état d'un engagement se reconstruit
+      // à tout instant, et c'est la matière de l'audit trail.
+      api(`/engagements/${engagementId}/events`)
+        .then((r) => setEvents(r || []))
+        .catch(() => setEvents([]))
+    }
+  }, [engagementId, threadId])
 
-  const ouvert = !!engagementId
+  const ouvert = !!engagementId || !!threadId
 
   return (
     <>
@@ -41,7 +45,7 @@ export default function SourcePanel({ engagementId, onClose }) {
           {erreur && <div className="empty">{erreur}</div>}
           {data && (
             <>
-              <p className="context">🔗 Engagement extrait : {data.objet}</p>
+              {data.objet && <p className="context">Engagement extrait : {data.objet}</p>}
 
               {events.length > 0 && (
                 <div className="journal">

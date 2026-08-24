@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, toast } from '../api'
 import { SqueletteTable } from '../components/Squelette'
+import FichePersonne from '../components/FichePersonne'
+import SourcePanel from '../components/SourcePanel'
 
 // Personnes et organisations (CDC 5.3). Le type et l'indicateur de sensibilité
 // nourrissent la capsule : un interlocuteur marqué comme sensible obtient une
@@ -16,6 +18,9 @@ export default function Interlocuteurs() {
   const [rows, setRows] = useState(null)
   const [filtre, setFiltre] = useState('')
   const [search, setSearch] = useState('')
+  const [ficheId, setFicheId] = useState(null)
+  const [sourceId, setSourceId] = useState(null)
+  const [filId, setFilId] = useState(null)
 
   const load = useCallback(() => {
     api('/persons').then((r) => setRows(r || [])).catch((e) => { setRows([]); toast(e.message, true) })
@@ -85,7 +90,12 @@ export default function Interlocuteurs() {
             <tbody>
               {shown.map((p) => (
                 <tr key={p.id}>
-                  <td className="obj">{p.name || <span className="sub">(inconnu)</span>}</td>
+                  <td className="obj">
+                    <button className="lien-source" title="Ouvrir la fiche"
+                      onClick={() => setFicheId(p.id)}>
+                      {p.name || p.email.split('@')[0]}
+                    </button>
+                  </td>
                   <td className="sub mono">{p.email}</td>
                   <td>
                     <select value={p.type || 'autre'} onChange={(e) => mettreAJour(p, { type: e.target.value })}
@@ -106,6 +116,12 @@ export default function Interlocuteurs() {
           </table>
         </div>
       )}
+
+      <FichePersonne personneId={ficheId} onClose={() => setFicheId(null)}
+        onEngagement={(id) => { setFicheId(null); setSourceId(id) }}
+        onFil={(id) => { setFicheId(null); setFilId(id) }} />
+      <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
+      <SourcePanel threadId={filId} onClose={() => setFilId(null)} />
     </section>
   )
 }

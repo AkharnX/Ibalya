@@ -276,7 +276,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 			*d.ThreadID).Scan(&toEmail)
 	}
 	if engObjet == "" && d.ThreadID != nil {
-		if t, err := e.Store.GetThread(ctx, *d.ThreadID); err == nil {
+		if t, err := e.Store.GetThread(ctx, *d.ThreadID); err == nil && t != nil {
 			engObjet = strings.TrimPrefix(t.Subject, "RE: ")
 		}
 	}

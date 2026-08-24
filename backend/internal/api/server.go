@@ -85,6 +85,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/engagements", s.auth(s.listEngagements))
 	mux.HandleFunc("GET /api/engagements/{id}/events", s.auth(s.listEvents))
 	mux.HandleFunc("GET /api/engagements/{id}/source", s.auth(s.engagementSource))
+	mux.HandleFunc("GET /api/threads/{id}/source", s.auth(s.threadSource))
 	mux.HandleFunc("PATCH /api/engagements/{id}", s.auth(s.patchEngagement))
 	mux.HandleFunc("POST /api/engagements/{id}/correct", s.auth(s.correctEngagement))
 
@@ -119,6 +120,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/rules", s.auth(s.createRule))
 	mux.HandleFunc("DELETE /api/rules/{id}", s.auth(s.deleteRule))
 	mux.HandleFunc("GET /api/persons", s.auth(s.listPersons))
+	mux.HandleFunc("GET /api/persons/{id}", s.auth(s.fichePersonne))
 	mux.HandleFunc("PATCH /api/persons/{id}", s.auth(s.patchPerson))
 	mux.HandleFunc("GET /api/audit", s.auth(s.listAudit))
 	mux.HandleFunc("GET /api/kpis", s.auth(s.kpis))

@@ -534,6 +534,7 @@ label{
   color:inherit;font-weight:500;cursor:pointer;text-align:left;
 }
 .lien-source:hover{color:var(--primary);text-decoration:underline;}
+.lien-source:focus-visible{outline:2px solid var(--primary);outline-offset:2px;color:var(--primary);}
 
 /* ═══ squelettes de chargement ═══ */
 /* Le balayage est lent et discret : il signale l'activité sans attirer l'œil. */
@@ -735,3 +736,23 @@ label{
 a{color:var(--primary);text-decoration:none;border-bottom:1px solid transparent;}
 a:hover{border-bottom-color:currentColor;}
 a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+
+/* ── fiche d'un interlocuteur ── */
+.fiche-etiquettes{display:flex;gap:8px;margin-bottom:16px;}
+.tag-vigilance{background:var(--delay-bg);color:var(--delay);}
+.fiche-chiffres{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);margin-bottom:10px;
+}
+.fiche-chiffres div{background:var(--card);padding:11px 12px;}
+.fiche-chiffres b{display:block;font-family:var(--font-mono);font-size:19px;line-height:1.1;}
+.fiche-chiffres span{display:block;font-size:11px;color:var(--muted-foreground);margin-top:3px;}
+.draft-body h4{
+  margin:24px 0 10px;font-size:12px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted-foreground);
+}
+.fiche-liste{list-style:none;margin:0;padding:0;}
+.fiche-liste li{padding:10px 0;border-top:1px solid var(--border);}
+.fiche-liste li:first-child{border-top:none;}
+.fiche-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;}
+@media (max-width:520px){ .fiche-chiffres{grid-template-columns:repeat(2,1fr);} }

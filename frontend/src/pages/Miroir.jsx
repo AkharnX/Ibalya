@@ -42,6 +42,7 @@ export default function Miroir() {
   const [rep, setRep] = useState(undefined) // undefined = chargement, null = jamais généré
   const [busy, setBusy] = useState(false)
   const [sourceId, setSourceId] = useState(null)
+  const [filId, setFilId] = useState(null)
 
   const load = useCallback(() => {
     api('/miroir').then(setRep).catch(() => setRep(null))
@@ -126,7 +127,10 @@ export default function Miroir() {
                   <tbody>
                     {m.fils_sans_reponse.map((f) => (
                       <tr key={f.thread_id}>
-                        <td className="obj">{f.sujet || '(sans objet)'}</td>
+                        <td className="obj">
+                          <button className="lien-source" title="Voir la conversation"
+                            onClick={() => setFilId(f.thread_id)}>{f.sujet || '(sans objet)'}</button>
+                        </td>
                         <td className="sub">{f.interlocuteur || '—'}</td>
                         <td><span className="mono">{f.jours_silence} j</span></td>
                       </tr>
@@ -140,6 +144,7 @@ export default function Miroir() {
       )}
 
       <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
+      <SourcePanel threadId={filId} onClose={() => setFilId(null)} />
     </section>
   )
 }
