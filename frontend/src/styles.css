@@ -142,6 +142,7 @@ body{
 
 .content{flex:1;min-width:0;display:flex;flex-direction:column;}
 .topbar{
+  position:relative;
   height:56px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;padding:0 32px;
   position:sticky;top:0;z-index:10;
@@ -836,11 +837,21 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   .fraicheur{display:none;}
 }
 
-/* Nom de l'espace de travail, au centre de la barre du haut. */
+/* Nom de l'espace de travail, centré dans la barre. Positionnement absolu :
+   un élément de flux serait décalé par la largeur variable de la recherche à
+   gauche et de la fraîcheur à droite, et ne serait donc jamais vraiment centré. */
 .topbar-societe{
-  font-size:13px;font-weight:600;letter-spacing:-.1px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  padding:0 20px;
+  position:absolute;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;line-height:1.15;
+  pointer-events:none;max-width:30vw;
+}
+.topbar-societe-sur{
+  font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--muted-foreground);font-family:var(--font-mono);
+}
+.topbar-societe-nom{
+  font-size:16px;font-weight:600;letter-spacing:-.2px;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
 /* Réglages : l'identité occupe toute la largeur, les deux autres panneaux se

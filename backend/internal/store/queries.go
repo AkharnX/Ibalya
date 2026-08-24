@@ -107,6 +107,12 @@ func (s *Store) GetPerson(ctx context.Context, id int64) (*Person, error) {
 	return &p, nil
 }
 
+// SetDraftBody remplace le corps d'un brouillon encore en attente.
+func (s *Store) SetDraftBody(ctx context.Context, id int64, corps string) error {
+	_, err := s.Pool.Exec(ctx, `UPDATE drafts SET body=$2 WHERE id=$1 AND statut='propose'`, id, corps)
+	return err
+}
+
 func (s *Store) UpsertPerson(ctx context.Context, email, name string) (int64, error) {
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO persons (email, name) VALUES ($1,$2)

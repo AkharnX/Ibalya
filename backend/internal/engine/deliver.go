@@ -378,6 +378,15 @@ func (e *Engine) threadExtraits(ctx context.Context, threadID *int64) []string {
 // Réutilise le brouillon déjà en attente s'il y en a un (clics répétés).
 func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionSuggeree) (*store.Draft, error) {
 	if existing, _ := e.Store.FindProposedDraftByEngagement(ctx, s.ID); existing != nil {
+		// Un brouillon produit avant la mise en place de la signature, ou avant
+		// que le dirigeant ne la modifie, doit la porter lui aussi : sinon il
+		// suffit d'un brouillon déjà en attente pour que le changement reste
+		// invisible.
+		if corrige := e.apposerSignature(ctx, existing.Body); corrige != existing.Body {
+			if err := e.Store.SetDraftBody(ctx, existing.ID, corrige); err == nil {
+				existing.Body = corrige
+			}
+		}
 		return existing, nil
 	}
 	accountEmail, _ := e.Channel.AccountEmail(ctx)
