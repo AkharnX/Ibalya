@@ -21,6 +21,7 @@
   --sidebar: #06080c;
   --sidebar-foreground: #f8f9fa;
   --sidebar-muted: #8b93a5;
+  --sidebar-item: #c9d1de;
   --sidebar-hover: #151c2b;
   --sidebar-border: #1e293b;
   --logo-ink: #f8f9fa;
@@ -57,6 +58,7 @@
   --sidebar: #ffffff;
   --sidebar-foreground: #111827;
   --sidebar-muted: #64748b;
+  --sidebar-item: #334155;
   --sidebar-hover: #f1f5f9;
   --sidebar-border: #e2e8f0;
   --logo-ink: #2563eb;
@@ -100,14 +102,21 @@ body{
   color:var(--logo-ink);
 }
 .sidebar-nav{padding:12px;flex:1;overflow-y:auto;}
+/* Titres de groupe et entrées partageaient la même couleur : seules la taille
+   et la casse les séparaient, ce qui les faisait lire comme un même niveau.
+   Les entrées passent sur un ton nettement plus clair, les titres gardent le
+   ton muet — les descendre davantage les ferait tomber sous 4,5:1, et un texte
+   de 10 px n'a pas droit à cette indulgence. Un filet renforce le regroupement
+   autrement que par la couleur. */
 .nav-group{
   font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.15em;
-  color:var(--sidebar-muted);padding:0 12px;margin:24px 0 10px;
+  color:var(--sidebar-muted);padding:16px 12px 0;margin:12px 0 8px;
+  border-top:1px solid var(--sidebar-border);
 }
-.sidebar-nav .nav-group:first-child{margin-top:8px;}
+.sidebar-nav > div:first-child .nav-group{margin-top:0;padding-top:4px;border-top:none;}
 .nav-item{
   display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
-  padding:8px 12px;font-size:13.5px;color:var(--sidebar-muted);
+  padding:8px 12px;font-size:13.5px;color:var(--sidebar-item);
   text-decoration:none;position:relative;transition:background .12s,color .12s;
 }
 .nav-item:hover{color:var(--sidebar-foreground);background:var(--sidebar-hover);}
@@ -323,11 +332,15 @@ tbody tr:hover{background:var(--secondary);}
 }
 .eng-title{font-weight:500;font-size:13.5px;margin:0 0 3px;}
 .eng-flow{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin:0;}
-.eng-action{
-  font-size:12px;color:var(--primary);margin:6px 0 0;cursor:pointer;background:none;
-  border:none;padding:0;font-family:inherit;display:inline-flex;align-items:center;gap:4px;
+/* Bloc d'action suggérée, dans le panneau de traçabilité. */
+.suggestion{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border:1px solid var(--primary);background:var(--secondary);
+  padding:13px 15px;margin-bottom:16px;
 }
-.eng-action:hover{text-decoration:underline;}
+.suggestion b{display:block;font-size:13.5px;}
+.suggestion .sub{display:block;font-size:12px;color:var(--muted-foreground);margin-top:3px;}
+
 
 /* ═══ boutons & champs ═══ */
 /* Tout <button> est stylé par défaut : sans cette règle, un bouton sans classe
@@ -593,8 +606,19 @@ label{
 .miroir-bloc{margin-top:28px;}
 
 /* Journal d'un engagement (CDC 5.2), affiché dans le panneau de traçabilité. */
-.journal{border:1px solid var(--border);padding:12px 14px;margin-bottom:16px;}
-.journal h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted-foreground);}
+/* Journal replié par défaut : c'est une pièce de traçabilité qu'on consulte,
+   pas la première chose qu'on vient lire dans ce panneau. */
+.journal{border:1px solid var(--border);padding:10px 14px;margin-bottom:16px;}
+.journal summary{
+  cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted-foreground);display:flex;align-items:center;gap:8px;
+}
+.journal summary::marker{color:var(--muted-foreground);}
+.journal summary .n{
+  font-family:var(--font-mono);text-transform:none;letter-spacing:0;
+  background:var(--secondary);padding:1px 6px;font-size:11px;
+}
+.journal[open] summary{margin-bottom:8px;}
 .journal-liste{list-style:none;margin:0;padding:0;}
 .journal-liste li{display:flex;gap:12px;align-items:baseline;padding:4px 0;border-top:1px solid var(--border);}
 .journal-liste li:first-child{border-top:none;}

@@ -37,7 +37,7 @@ export default function Suivi() {
   useEffect(load, [load])
 
   const d = useDraft(load)
-  const [sourceId, setSourceId] = useState(null)
+  const [source, setSource] = useState(null) // { id, action }
   const [menuId, setMenuId] = useState(null)      // menu de correction ouvert
   const [menuPos, setMenuPos] = useState(null)    // ancrage écran du menu
   const [dateId, setDateId] = useState(null)      // échéance en cours de confirmation
@@ -165,16 +165,11 @@ export default function Suivi() {
                   <td>
                     <p className="eng-title">
                       <button className="lien-source" title="Voir la conversation d'origine"
-                        onClick={() => setSourceId(r.id)}>{r.objet}</button>
+                        onClick={() => setSource({ id: r.id, action: r.action })}>{r.objet}</button>
                       {r.echeance && r.echeance_inferee && !r.echeance_confirmee && <span className="tag-confirm">à confirmer</span>}
                     </p>
                     <p className="eng-flow">{r.emetteur_email || '?'} → {r.destinataire_email || '?'}</p>
-                    {r.blocage && <p className="eng-flow">⛓ bloqué par : {r.blocage.amont_objet}</p>}
-                    {r.action && (
-                      <button className="eng-action" onClick={() => d.openForEngagement(r.id, r.action)}>
-                        → {r.action.label}
-                      </button>
-                    )}
+                    {r.blocage && <p className="eng-flow">bloqué par : {r.blocage.amont_objet}</p>}
                   </td>
                   <td>
                     {dateId === r.id ? (
@@ -224,7 +219,9 @@ export default function Suivi() {
 
       <DraftPanel draft={d.draft} loading={d.loading} title={d.meta.title} hint={d.meta.hint}
         onClose={d.close} onSent={d.onSent} />
-      <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
+      <SourcePanel engagementId={source?.id} action={source?.action}
+        onAction={(a) => { const id = source.id; setSource(null); d.openForEngagement(id, a) }}
+        onClose={() => setSource(null)} />
     </section>
   )
 }
