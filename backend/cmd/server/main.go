@@ -17,6 +17,7 @@ import (
 	"ibalya/backend/internal/api"
 	"ibalya/backend/internal/channel"
 	"ibalya/backend/internal/config"
+	"ibalya/backend/internal/courrier"
 	"ibalya/backend/internal/engine"
 	"ibalya/backend/internal/ingest"
 	"ibalya/backend/internal/llm"
@@ -108,7 +109,20 @@ func main() {
 	}
 
 	commutateur := channel.NewCommutateur(reader)
-	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur, BaseURL: cfg.PublicBaseURL}
+	// Expéditeur de service : le digest vient d'Ibalya, pas du dirigeant.
+	envoi := courrier.Nouveau(courrier.Config{
+		Hote: cfg.ServiceSMTPHote, Port: cfg.ServiceSMTPPort,
+		Login: cfg.ServiceSMTPLogin, Cle: cfg.ServiceSMTPCle,
+		De: cfg.ServiceMailDe, DeNom: cfg.ServiceMailNom,
+	})
+	if envoi.Configure() {
+		log.Printf("expéditeur de service : %s", envoi.Expediteur())
+	} else {
+		log.Println("aucun expéditeur de service : le digest partira de la boîte du dirigeant")
+	}
+
+	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur,
+		BaseURL: cfg.PublicBaseURL, Courrier: envoi}
 	ing := &ingest.Ingester{Store: st, Channel: commutateur}
 	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg,
 		Commutateur: commutateur, Coffre: coffre}

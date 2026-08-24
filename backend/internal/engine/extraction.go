@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/courrier"
 	"ibalya/backend/internal/llm"
 	"ibalya/backend/internal/store"
 )
@@ -23,6 +24,9 @@ type Engine struct {
 	// BaseURL sert à renvoyer vers le tableau de bord depuis le digest envoyé
 	// par email : sans lien, le dirigeant lit un constat sans pouvoir agir.
 	BaseURL string
+	// Courrier envoie les messages de service — le digest. Nil quand aucun
+	// fournisseur n'est configuré : on se rabat alors sur la boîte du dirigeant.
+	Courrier *courrier.Service
 }
 
 // capsuleLLM assemble la capsule complète transmise au modèle : les faits
