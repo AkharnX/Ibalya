@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -119,4 +120,24 @@ func TestOutlookPerimetresDemandes(t *testing.T) {
 
 func TestOutlookRespecteLInterface(t *testing.T) {
 	var _ Reader = (*Outlook)(nil)
+}
+
+// Les paramètres OData contiennent des espaces — « receivedDateTime ge … » —
+// invalides bruts dans une URL. Graph répondait 400 et l'agent n'ingérait rien.
+func TestOutlookRequeteEncodee(t *testing.T) {
+	q := url.Values{}
+	q.Set("$filter", "receivedDateTime ge 2026-08-24T09:00:00Z")
+	q.Set("$orderby", "receivedDateTime desc")
+	encode := strings.ReplaceAll(q.Encode(), "+", "%20")
+
+	if strings.Contains(encode, " ") {
+		t.Fatalf("des espaces bruts subsistent : %s", encode)
+	}
+	// OData ne lit pas « + » comme une espace : l'encodage doit produire %20.
+	if strings.Contains(encode, "+") {
+		t.Fatalf("le signe plus n'est pas une espace pour OData : %s", encode)
+	}
+	if !strings.Contains(encode, "receivedDateTime%20ge%20") {
+		t.Fatalf("le filtre doit être encodé en %%20 : %s", encode)
+	}
 }
