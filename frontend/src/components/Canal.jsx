@@ -51,9 +51,13 @@ export default function Canal({ statut, onChange }) {
     setEssai(null)
   }
 
-  const connecterGmail = async () => {
-    try { const r = await api('/oauth/google/start', { method: 'POST' }); window.location.href = r.url }
-    catch (e) { toast(e.message, true) }
+  // Le raccordement OAuth se fait chez le fournisseur : Ibalya ne voit jamais
+  // le mot de passe, seulement un jeton révocable.
+  const raccorder = (fournisseur) => async () => {
+    try {
+      const r = await api(`/oauth/${fournisseur}/start`, { method: 'POST' })
+      window.location.href = r.url
+    } catch (e) { toast(e.message, true) }
   }
 
   const tester = async () => {
@@ -99,6 +103,10 @@ export default function Canal({ statut, onChange }) {
             <input type="radio" checked={mode === 'gmail'} onChange={() => setMode('gmail')} />
             Gmail
           </label>
+          <label className={mode === 'outlook' ? 'actif' : ''}>
+            <input type="radio" checked={mode === 'outlook'} onChange={() => setMode('outlook')} />
+            Outlook
+          </label>
           <label className={mode === 'imap' ? 'actif' : ''}>
             <input type="radio" checked={mode === 'imap'} onChange={() => setMode('imap')} />
             Autre boîte (IMAP)
@@ -109,9 +117,20 @@ export default function Canal({ statut, onChange }) {
       {mode === 'gmail' ? (
         <>
           <p className="help">
-            Le raccordement passe par Google : Ibalya n’a jamais votre mot de passe.
+            Le raccordement passe par Google : Ibalya n’a jamais votre mot de passe,
+            seulement une autorisation que vous pouvez révoquer à tout moment.
           </p>
-          <button className="primary" onClick={connecterGmail}>Connecter Gmail</button>
+          <button className="primary" onClick={raccorder('google')}>Connecter Gmail</button>
+        </>
+      ) : mode === 'outlook' ? (
+        <>
+          <p className="help">
+            Le raccordement passe par Microsoft : Ibalya n’a jamais votre mot de passe,
+            seulement une autorisation révocable. Fonctionne avec les comptes
+            professionnels comme personnels ; sur un compte d’entreprise, votre
+            administrateur peut devoir approuver l’accès.
+          </p>
+          <button className="primary" onClick={raccorder('microsoft')}>Connecter Outlook</button>
         </>
       ) : (
         <>
@@ -154,7 +173,8 @@ export default function Canal({ statut, onChange }) {
           <p className="help">
             La plupart des fournisseurs exigent un <b>mot de passe d’application</b>, distinct
             de celui de votre compte, à créer depuis leurs réglages de sécurité. Outlook
-            professionnel n’accepte plus ce mode et n’est pas encore pris en charge.
+            professionnel n’accepte plus ce mode : pour Outlook, choisissez le
+            fournisseur dédié ci-dessus.
           </p>
 
           {essai && (

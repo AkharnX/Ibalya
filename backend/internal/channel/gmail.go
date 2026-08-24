@@ -50,11 +50,14 @@ func NewGmail(cfg *oauth2.Config, store TokenStore) *Gmail {
 
 func (g *Gmail) Name() string { return "gmail" }
 
-// persistingTokenSource sauvegarde le token à chaque rafraîchissement.
+// persistingTokenSource sauvegarde le jeton à chaque rafraîchissement. Le
+// fournisseur est porté par le champ : Gmail et Outlook partagent la mécanique
+// mais pas la ligne de stockage.
 type persistingTokenSource struct {
-	src   oauth2.TokenSource
-	store TokenStore
-	last  string
+	src         oauth2.TokenSource
+	store       TokenStore
+	fournisseur string
+	last        string
 }
 
 func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
@@ -66,7 +69,7 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 		p.last = tok.AccessToken
 		b, _ := json.Marshal(tok)
 		// surtout pas SaveOAuthToken : il écraserait account_email
-		_ = p.store.UpdateOAuthTokenOnly(context.Background(), "google", b)
+		_ = p.store.UpdateOAuthTokenOnly(context.Background(), p.fournisseur, b)
 	}
 	return tok, nil
 }
@@ -84,7 +87,7 @@ func (g *Gmail) service(ctx context.Context) (*gmail.Service, error) {
 	if err := json.Unmarshal(raw, &tok); err != nil {
 		return nil, err
 	}
-	ts := &persistingTokenSource{src: g.cfg.TokenSource(ctx, &tok), store: g.store}
+	ts := &persistingTokenSource{src: g.cfg.TokenSource(ctx, &tok), store: g.store, fournisseur: "google"}
 	return gmail.NewService(ctx, option.WithTokenSource(ts))
 }
 

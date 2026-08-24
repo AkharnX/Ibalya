@@ -8,29 +8,32 @@ import (
 )
 
 type Config struct {
-	DatabaseURL        string
-	APIAddr            string
-	AdminToken         string
-	LLMServiceURL      string
-	PublicBaseURL      string
-	GoogleClientID     string
-	GoogleClientSecret string
-	Channel            string // gmail | imap | fixture
-	IMAPHote           string
-	IMAPPort           int
-	IMAPUtilisateur    string
-	IMAPMotDePasse     string
-	IMAPDossier        string
-	SMTPHote           string
-	SMTPPort           int
-	IMAPTLSSansVerif   bool
-	CleChiffrement     string
-	FixturePath        string
-	FrontendDir        string
-	LandingDir         string
-	IngestInterval     int // minutes
-	DetectInterval     int // minutes
-	DigestHour         int
+	DatabaseURL           string
+	APIAddr               string
+	AdminToken            string
+	LLMServiceURL         string
+	PublicBaseURL         string
+	GoogleClientID        string
+	GoogleClientSecret    string
+	Channel               string // gmail | imap | fixture
+	IMAPHote              string
+	IMAPPort              int
+	IMAPUtilisateur       string
+	IMAPMotDePasse        string
+	IMAPDossier           string
+	SMTPHote              string
+	SMTPPort              int
+	IMAPTLSSansVerif      bool
+	CleChiffrement        string
+	MicrosoftClientID     string
+	MicrosoftClientSecret string
+	MicrosoftTenant       string
+	FixturePath           string
+	FrontendDir           string
+	LandingDir            string
+	IngestInterval        int // minutes
+	DetectInterval        int // minutes
+	DigestHour            int
 }
 
 // env lit une variable d'environnement en retirant les espaces parasites :
@@ -85,28 +88,33 @@ func (c Config) Verifier() error {
 
 func Load() Config {
 	return Config{
-		DatabaseURL:        env("DATABASE_URL", "postgres://ibalya:ibalya_dev@127.0.0.1:5435/ibalya?sslmode=disable"),
-		APIAddr:            env("API_ADDR", "127.0.0.1:9999"),
-		AdminToken:         env("ADMIN_TOKEN", ""),
-		LLMServiceURL:      env("LLM_SERVICE_URL", "http://127.0.0.1:8092"),
-		PublicBaseURL:      env("PUBLIC_BASE_URL", "http://localhost:9999"),
-		GoogleClientID:     env("GOOGLE_CLIENT_ID", ""),
-		GoogleClientSecret: env("GOOGLE_CLIENT_SECRET", ""),
-		Channel:            env("CHANNEL", "gmail"),
-		IMAPHote:           env("IMAP_HOST", ""),
-		IMAPPort:           envInt("IMAP_PORT", 993),
-		IMAPUtilisateur:    env("IMAP_USER", ""),
-		IMAPMotDePasse:     env("IMAP_PASSWORD", ""),
-		IMAPDossier:        env("IMAP_FOLDER", "INBOX"),
-		SMTPHote:           env("SMTP_HOST", ""),
-		SMTPPort:           envInt("SMTP_PORT", 587),
-		IMAPTLSSansVerif:   env("IMAP_TLS_SKIP_VERIFY", "") == "1",
-		CleChiffrement:     env("ENCRYPTION_KEY", ""),
-		FixturePath:        env("FIXTURE_PATH", ""),
-		FrontendDir:        env("FRONTEND_DIR", "frontend/dist"),
-		LandingDir:         env("LANDING_DIR", "landing"),
-		IngestInterval:     envInt("INGEST_INTERVAL_MINUTES", 15),
-		DetectInterval:     envInt("DETECT_INTERVAL_MINUTES", 30),
-		DigestHour:         envInt("DIGEST_HOUR", 7),
+		DatabaseURL:           env("DATABASE_URL", "postgres://ibalya:ibalya_dev@127.0.0.1:5435/ibalya?sslmode=disable"),
+		APIAddr:               env("API_ADDR", "127.0.0.1:9999"),
+		AdminToken:            env("ADMIN_TOKEN", ""),
+		LLMServiceURL:         env("LLM_SERVICE_URL", "http://127.0.0.1:8092"),
+		PublicBaseURL:         env("PUBLIC_BASE_URL", "http://localhost:9999"),
+		GoogleClientID:        env("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:    env("GOOGLE_CLIENT_SECRET", ""),
+		Channel:               env("CHANNEL", "gmail"),
+		IMAPHote:              env("IMAP_HOST", ""),
+		IMAPPort:              envInt("IMAP_PORT", 993),
+		IMAPUtilisateur:       env("IMAP_USER", ""),
+		IMAPMotDePasse:        env("IMAP_PASSWORD", ""),
+		IMAPDossier:           env("IMAP_FOLDER", "INBOX"),
+		SMTPHote:              env("SMTP_HOST", ""),
+		SMTPPort:              envInt("SMTP_PORT", 587),
+		IMAPTLSSansVerif:      env("IMAP_TLS_SKIP_VERIFY", "") == "1",
+		CleChiffrement:        env("ENCRYPTION_KEY", ""),
+		MicrosoftClientID:     env("MICROSOFT_CLIENT_ID", ""),
+		MicrosoftClientSecret: env("MICROSOFT_CLIENT_SECRET", ""),
+		// « common » accepte comptes professionnels et personnels ; un
+		// identifiant de locataire restreint à une seule organisation.
+		MicrosoftTenant: env("MICROSOFT_TENANT", "common"),
+		FixturePath:     env("FIXTURE_PATH", ""),
+		FrontendDir:     env("FRONTEND_DIR", "frontend/dist"),
+		LandingDir:      env("LANDING_DIR", "landing"),
+		IngestInterval:  envInt("INGEST_INTERVAL_MINUTES", 15),
+		DetectInterval:  envInt("DETECT_INTERVAL_MINUTES", 30),
+		DigestHour:      envInt("DIGEST_HOUR", 7),
 	}
 }

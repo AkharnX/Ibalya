@@ -80,6 +80,12 @@ func main() {
 
 	// Un canal raccordé depuis l'interface prime sur la variable d'environnement :
 	// c'est le dirigeant qui décide, pas le fichier de configuration.
+	if st.GetSetting(ctx, "canal_type", "") == "outlook" && cfg.MicrosoftClientID != "" {
+		reader = channel.NewOutlook(channel.OutlookOAuthConfig(cfg.MicrosoftClientID,
+			cfg.MicrosoftClientSecret, cfg.MicrosoftTenant,
+			cfg.PublicBaseURL+"/api/oauth/microsoft/callback"), st)
+		log.Println("connecteur outlook (Microsoft Graph)")
+	}
 	if st.GetSetting(ctx, "canal_type", "") == "imap" {
 		if r, err := imapDepuisReglages(ctx, st, cfg); err == nil {
 			reader = r
