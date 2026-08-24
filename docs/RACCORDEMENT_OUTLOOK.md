@@ -14,6 +14,25 @@ donne accès à ces boîtes.
 
 ## Les étapes
 
+### 0. Avoir un annuaire
+
+L'enregistrement doit vivre dans un annuaire Azure. Un compte Microsoft
+personnel n'en a pas par défaut, et la connexion au portail échoue alors avec
+un message qui parle d'un client « Microsoft Services » et d'une application
+inconnue — message trompeur, il signifie simplement qu'aucun annuaire n'existe.
+
+**L'annuaire qui héberge l'enregistrement n'a pas à être celui de la boîte
+email.** N'importe quel annuaire que vous contrôlez convient : l'application
+est déclarée multi-locataire, et n'importe quel utilisateur Outlook peut
+ensuite s'y raccorder.
+
+Trois façons d'en obtenir un : créer un compte Azure gratuit sur
+`azure.microsoft.com/free`, passer par `entra.microsoft.com` qui propose de
+créer l'annuaire manquant, ou utiliser un compte professionnel Microsoft 365
+qui en possède déjà un.
+
+### Les étapes
+
 1. Aller sur **portal.azure.com**, section *Microsoft Entra ID* →
    *Inscriptions d'applications* → *Nouvelle inscription*.
 
@@ -30,11 +49,28 @@ donne accès à ces boîtes.
    L'adresse doit correspondre exactement, y compris le protocole. Une adresse
    de développement s'ajoute comme seconde URI.
 
-4. Noter l'**ID d'application (client)** affiché sur la page de vue d'ensemble.
+4. **`MICROSOFT_CLIENT_ID`** se lit sur la page **Vue d'ensemble**, ligne
+   « ID d'application (client) ». Format `74658136-14ec-4630-ad9b-...`. Il
+   n'est pas secret et reste affiché en permanence.
 
-5. *Certificats et secrets* → *Nouveau secret client*. Noter la **valeur**
-   immédiatement : elle ne sera plus affichée ensuite. Noter aussi sa date
-   d'expiration — un secret expiré coupe le raccordement sans prévenir.
+5. **`MICROSOFT_CLIENT_SECRET`** s'obtient dans *Certificats et secrets* →
+   onglet *Secrets client* → *Nouveau secret client*. Après création, deux
+   colonnes apparaissent :
+
+   | Colonne | À prendre ? | Format |
+   |---|---|---|
+   | **Valeur** | **oui** | chaîne aléatoire, `8Xr~Q2m.aBc...` |
+   | ID de secret | non | identifiant, comme le client ID |
+
+   C'est l'erreur la plus fréquente : les deux se ressemblent, mais coller
+   l'*ID de secret* fait échouer l'échange OAuth avec un message peu parlant.
+   Repère sûr : le secret contient des caractères spéciaux, l'identifiant non.
+
+   **La Valeur ne s'affiche qu'une fois.** Dès que la page est quittée, elle
+   est masquée définitivement et il faut créer un nouveau secret.
+
+   Noter aussi la date d'expiration : un secret expiré coupe le raccordement
+   sans prévenir.
 
 6. *Autorisations d'API* → *Ajouter* → *Microsoft Graph* → *Autorisations
    déléguées*, et cocher :
