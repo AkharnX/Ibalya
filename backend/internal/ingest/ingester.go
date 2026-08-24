@@ -43,7 +43,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			continue
 		}
 		thread, err := ing.Store.GetThread(ctx, threadID)
-		if err != nil {
+		if err != nil || thread == nil {
 			continue
 		}
 		m := store.Message{

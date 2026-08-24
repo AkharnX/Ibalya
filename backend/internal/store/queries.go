@@ -45,6 +45,68 @@ func (s *Store) ThreadParticipants(ctx context.Context, threadID int64) (map[str
 	return out, rows.Err()
 }
 
+// EngagementsDeContact retourne tous les engagements liés à une adresse, quel
+// que soit leur statut et quel que soit le sens : ce que la personne a promis
+// comme ce qu'on lui a promis.
+func (s *Store) EngagementsDeContact(ctx context.Context, email string) ([]Engagement, error) {
+	if strings.TrimSpace(email) == "" {
+		return []Engagement{}, nil
+	}
+	rows, err := s.Pool.Query(ctx, engagementSelect+`
+		WHERE lower(pe.email)=lower($1) OR lower(pd.email)=lower($1)
+		ORDER BY e.echeance NULLS LAST, e.id DESC`, email)
+	if err != nil {
+		return nil, err
+	}
+	return scanEngagements(rows)
+}
+
+// FilsDeContact liste les conversations où l'adresse apparaît, la plus récente
+// d'abord.
+func (s *Store) FilsDeContact(ctx context.Context, email string, limite int) ([]Thread, error) {
+	if strings.TrimSpace(email) == "" {
+		return []Thread{}, nil
+	}
+	if limite <= 0 {
+		limite = 20
+	}
+	rows, err := s.Pool.Query(ctx, `
+		SELECT DISTINCT t.id, t.channel, t.external_id, t.subject, t.last_message_at,
+		       t.response_rhythm_hours, t.excluded
+		FROM threads t JOIN messages m ON m.thread_id = t.id
+		WHERE lower(m.sender)=lower($1) OR EXISTS (
+		        SELECT 1 FROM unnest(m.recipients) d WHERE lower(d)=lower($1))
+		ORDER BY t.last_message_at DESC NULLS LAST LIMIT $2`, email, limite)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Thread{}
+	for rows.Next() {
+		var t Thread
+		if err := rows.Scan(&t.ID, &t.Channel, &t.ExternalID, &t.Subject, &t.LastMessageAt,
+			&t.ResponseRhythmHours, &t.Excluded); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// GetPerson retourne une personne, ou nil si elle n'existe pas.
+func (s *Store) GetPerson(ctx context.Context, id int64) (*Person, error) {
+	var p Person
+	err := s.Pool.QueryRow(ctx, `SELECT id, name, email, type, sensitive, created_at
+		FROM persons WHERE id=$1`, id).Scan(&p.ID, &p.Name, &p.Email, &p.Type, &p.Sensitive, &p.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
 func (s *Store) UpsertPerson(ctx context.Context, email, name string) (int64, error) {
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO persons (email, name) VALUES ($1,$2)
@@ -94,6 +156,11 @@ func (s *Store) GetThread(ctx context.Context, id int64) (*Thread, error) {
 	err := s.Pool.QueryRow(ctx, `SELECT id, channel, external_id, subject, last_message_at, response_rhythm_hours, excluded
 		FROM threads WHERE id=$1`, id).
 		Scan(&t.ID, &t.Channel, &t.ExternalID, &t.Subject, &t.LastMessageAt, &t.ResponseRhythmHours, &t.Excluded)
+	// nil sans erreur pour un fil absent, comme GetEngagement : sans cela un
+	// identifiant inconnu remonte en 500 au lieu de 404.
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
