@@ -232,10 +232,9 @@ func cleanBody(body string) string {
 		lines = append(lines, l)
 	}
 	s := strings.TrimSpace(strings.Join(lines, "\n"))
-	if len(s) > 4000 {
-		s = s[:4000]
-	}
-	return s
+	// Tronquer et non s[:4000] : une coupe à l'octet près brise un caractère
+	// accentué et fait rejeter l'insertion par la base.
+	return NettoyerUTF8(Tronquer(s, 4000))
 }
 
 // LienWeb : le paramètre authuser évite d'atterrir sur le mauvais compte quand

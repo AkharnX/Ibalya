@@ -11,6 +11,8 @@ import (
 
 	"ibalya/backend/internal/llm"
 	"ibalya/backend/internal/store"
+
+	"ibalya/backend/internal/channel"
 )
 
 // --- Miroir d'activité (EF-2, livrable J+1) ---
@@ -373,7 +375,9 @@ func (e *Engine) threadExtraits(ctx context.Context, threadID *int64) []string {
 	for _, m := range msgs {
 		body := m.Body
 		if len(body) > 300 {
-			body = body[:300] + "…"
+			// channel.Tronquer et non body[:300] : une coupe à l'octet près
+			// brise un caractère accentué, et ce texte part au modèle.
+			body = channel.Tronquer(body, 300) + "…"
 		}
 		extraits = append(extraits, fmt.Sprintf("[%s] %s : %s", m.SentAt.Format("02/01"), m.Sender, body))
 	}
