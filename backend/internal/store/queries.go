@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"strings"
+	"unicode/utf8"
 )
 
 // --- Personnes ---
@@ -184,9 +185,24 @@ func (s *Store) SetThreadRhythm(ctx context.Context, id int64, hours float64) er
 }
 
 // InsertMessage retourne (id, inséré). inséré=false si déjà connu (dédoublonnage EF-11).
+// valideUTF8 retire les séquences d'octets invalides. Dernier rempart avant la
+// base : un texte mal encodé — à la source ou coupé en chemin — ferait rejeter
+// l'insertion entière, et le message serait perdu sans que personne le voie.
+func valideUTF8(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+	return strings.ToValidUTF8(s, "")
+}
+
 func (s *Store) InsertMessage(ctx context.Context, m Message) (int64, bool, error) {
 	if m.Recipients == nil {
 		m.Recipients = []string{} // NOT NULL en base : un message sans To/Cc reste ingérable
+	}
+	m.Subject, m.Body = valideUTF8(m.Subject), valideUTF8(m.Body)
+	m.Sender = valideUTF8(m.Sender)
+	for i, d := range m.Recipients {
+		m.Recipients[i] = valideUTF8(d)
 	}
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO messages
