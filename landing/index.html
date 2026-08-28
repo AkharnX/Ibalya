@@ -121,6 +121,49 @@
       <h2>Une mécanique de précision pour dirigeants pressés.</h2>
       <p>Aucune tâche à saisir. Ibalya lit vos échanges existants et structure l'information à votre place.</p>
     </div>
+    <!-- Démonstration jouée : montrer l'agent travailler vaut mieux que le décrire.
+         Tout en CSS, aucune dépendance, quelques kilo-octets. -->
+    <div class="lp-demo" role="img"
+         aria-label="Démonstration : le 4 août, un fournisseur écrit « je vous livre le vitrage jeudi 14 ». Ibalya en extrait un engagement. Le 12 août, sans réponse depuis huit jours, l'agent alerte sur un silence anormal qui menace la pose promise au client pour le 15, et prépare une relance.">
+      <div class="lp-demo-fil">
+        <span class="lp-demo-etiq">Votre messagerie</span>
+        <div class="lp-demo-msg lp-t1">
+          <b>vitrages-pro.fr</b><i>4 août</i>
+          <p>Bonjour, je vous confirme la commande. <mark>Livraison du vitrage jeudi 14.</mark></p>
+        </div>
+        <div class="lp-demo-msg lp-demo-vous lp-t2">
+          <b>Vous → client Ménard</b><i>4 août</i>
+          <p>Parfait, on <mark>pose le 15 comme prévu</mark>.</p>
+        </div>
+      </div>
+
+      <div class="lp-demo-agent">
+        <span class="lp-demo-etiq">Ce qu'Ibalya en fait</span>
+
+        <div class="lp-demo-carte lp-t3">
+          <span class="lp-demo-tag">Engagement extrait</span>
+          <p><b>Livraison du vitrage</b></p>
+          <dl>
+            <div><dt>De</dt><dd>vitrages-pro.fr</dd></div>
+            <div><dt>Échéance</dt><dd>14 août</dd></div>
+            <div><dt>Fiabilité</dt><dd>92 %</dd></div>
+          </dl>
+        </div>
+
+        <div class="lp-demo-carte lp-demo-lien lp-t4">
+          <span class="lp-demo-tag">Dépendance confirmée</span>
+          <p>La pose promise au client Ménard <b>dépend</b> de cette livraison.</p>
+        </div>
+
+        <div class="lp-demo-carte lp-demo-alerte lp-t5">
+          <span class="lp-demo-tag">12 août · Alerte</span>
+          <p><b>Silence anormal — 8 jours</b></p>
+          <p class="lp-demo-detail">Le fournisseur ne répond plus. La pose du 15 est menacée.</p>
+          <div class="lp-demo-action">Relance préparée · à valider</div>
+        </div>
+      </div>
+    </div>
+
     <div class="lp-cartes">
       <article class="lp-carte">
         <span class="lp-numero">01</span>

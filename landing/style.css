@@ -222,3 +222,82 @@ a{color:inherit;}
   font-size:14.5px;
 }
 .lp-delai b{font-weight:600;}
+
+/* ═══ démonstration jouée ═══
+   Montrer l'agent travailler plutôt que le décrire. Le visiteur voit une
+   promesse arriver, l'agent l'extraire, puis alerter huit jours plus tard.
+   Tout en CSS : aucune dépendance, quelques kilo-octets, et rien qui sorte
+   de la politique de sécurité du contenu. */
+.lp-demo{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  margin:0 0 40px;
+}
+.lp-demo > div{background:var(--card);padding:20px;}
+.lp-demo-etiq{
+  display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--muted);margin-bottom:16px;
+}
+
+/* fil de discussion */
+.lp-demo-msg{
+  border-left:2px solid var(--border);padding:0 0 0 14px;margin-bottom:18px;
+}
+.lp-demo-msg:last-child{margin-bottom:0;}
+.lp-demo-msg b{font-size:13px;font-weight:600;}
+.lp-demo-msg i{
+  font-style:normal;font-family:var(--mono);font-size:11px;
+  color:var(--muted);margin-left:8px;
+}
+.lp-demo-msg p{font-size:13.5px;line-height:1.55;margin-top:4px;color:var(--muted);}
+.lp-demo-msg mark{
+  background:none;color:var(--foreground);font-weight:500;
+  box-shadow:inset 0 -6px 0 rgba(59,130,246,.22);
+}
+.lp-demo-vous{border-left-color:var(--primary);}
+
+/* ce que l'agent produit */
+.lp-demo-carte{
+  border:1px solid var(--border);padding:13px 15px;margin-bottom:12px;
+}
+.lp-demo-carte:last-child{margin-bottom:0;}
+.lp-demo-tag{
+  display:block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin-bottom:7px;
+}
+.lp-demo-carte p{font-size:13.5px;line-height:1.5;}
+.lp-demo-carte dl{display:flex;gap:22px;flex-wrap:wrap;margin-top:11px;}
+.lp-demo-carte dt{
+  font-family:var(--mono);font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);
+}
+.lp-demo-carte dd{margin:2px 0 0;font-family:var(--mono);font-size:13px;}
+.lp-demo-lien{border-left:2px solid var(--primary);}
+.lp-demo-alerte{border-color:var(--risk);}
+.lp-demo-alerte .lp-demo-tag{color:var(--risk);}
+.lp-demo-detail{color:var(--muted);margin-top:3px;}
+.lp-demo-action{
+  margin-top:11px;padding-top:10px;border-top:1px solid var(--border);
+  font-size:12.5px;color:var(--primary);
+}
+
+/* Apparition séquencée : le rythme raconte la chronologie — la promesse, puis
+   l'extraction, puis l'alerte huit jours plus tard. */
+.lp-t1,.lp-t2,.lp-t3,.lp-t4,.lp-t5{
+  opacity:0;animation:lp-entre .5s ease forwards;
+}
+.lp-t1{animation-delay:.15s}
+.lp-t2{animation-delay:.55s}
+.lp-t3{animation-delay:1.1s}
+.lp-t4{animation-delay:1.6s}
+.lp-t5{animation-delay:2.3s}
+@keyframes lp-entre{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  .lp-t1,.lp-t2,.lp-t3,.lp-t4,.lp-t5{animation:none;opacity:1;}
+}
+@media (max-width:760px){
+  .lp-demo{grid-template-columns:1fr;}
+}
