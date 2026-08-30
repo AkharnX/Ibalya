@@ -40,6 +40,14 @@ jobs:
         working-directory: backend
         run: go test -race -count=1 ./...
 
+      # Mesure la qualité du pré-filtre sur un corpus étiqueté. Cet étage est
+      # déterministe et n'appelle aucun modèle : il tourne à chaque poussée.
+      # L'étage d'extraction demande une clé d'API et se lance à la main avec
+      # --avec-modele.
+      - name: Corpus d'évaluation
+        working-directory: backend
+        run: go run ./cmd/evaluer
+
       - name: Compilation
         working-directory: backend
         run: go build -o /tmp/ibalya ./cmd/server

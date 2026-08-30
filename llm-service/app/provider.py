@@ -3,12 +3,16 @@
 Le reste du service ne connaît que `LLMProvider.complete_json()` : changer de
 fournisseur = ajouter une classe, sans refonte.
 """
+import asyncio
 import json
+import logging
 import os
 import re
 from abc import ABC, abstractmethod
 
 import httpx
+
+logger = logging.getLogger("llm-service")
 
 
 class LLMProvider(ABC):
@@ -28,24 +32,57 @@ class MistralProvider(LLMProvider):
         if not self.api_key:
             raise RuntimeError("MISTRAL_API_KEY manquant")
 
+    # Reprise sur limitation de débit.
+    #
+    # Mistral renvoie 429 quand les appels arrivent trop vite. Sans reprise, le
+    # cycle d'extraction s'interrompait au premier refus et l'ensemble du lot
+    # repartait au cycle suivant : rien n'était perdu, mais l'analyse pouvait
+    # rester bloquée plusieurs heures sur une rafale de messages.
+    #
+    # L'attente double à chaque tentative, et l'en-tête Retry-After prime quand
+    # le fournisseur l'envoie : il sait mieux que nous quand réessayer.
+    TENTATIVES = 4
+    ATTENTE_INITIALE = 2.0
+
     async def complete_json(self, system: str, user: str) -> dict:
+        attente = self.ATTENTE_INITIALE
+        derniere: Exception | None = None
         async with httpx.AsyncClient(timeout=90) as client:
-            resp = await client.post(
-                self.BASE_URL,
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "model": self.model,
-                    "temperature": 0.2,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                },
-            )
-            resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
-            return json.loads(content)
+            for tentative in range(1, self.TENTATIVES + 1):
+                resp = await client.post(
+                    self.BASE_URL,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json={
+                        "model": self.model,
+                        "temperature": 0.2,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user},
+                        ],
+                    },
+                )
+                # 429 : trop d'appels. 5xx : incident passager côté fournisseur.
+                if resp.status_code == 429 or resp.status_code >= 500:
+                    if tentative == self.TENTATIVES:
+                        resp.raise_for_status()
+                    pause = attente
+                    if entete := resp.headers.get("Retry-After"):
+                        try:
+                            pause = max(pause, float(entete))
+                        except ValueError:
+                            pass
+                    logger.warning(
+                        "fournisseur %s : nouvelle tentative dans %.0fs (%d/%d)",
+                        resp.status_code, pause, tentative, self.TENTATIVES,
+                    )
+                    await asyncio.sleep(pause)
+                    attente *= 2
+                    continue
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"]
+                return json.loads(content)
+        raise derniere or RuntimeError("fournisseur injoignable")
 
 
 class MockProvider(LLMProvider):

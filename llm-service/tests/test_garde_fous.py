@@ -80,3 +80,88 @@ def test_relecture_refuse_un_message_vide():
     assert r.status_code in (200, 422)
     if r.status_code == 200:
         assert r.json()["verdict"] == "a_revoir"
+
+
+# --- reprise sur limitation de débit -----------------------------------------
+
+def test_reprise_sur_429(monkeypatch):
+    """Un 429 doit être réessayé, pas propagé au premier coup.
+
+    Sans reprise, une rafale d'appels interrompait le cycle d'extraction : rien
+    n'était perdu, mais l'analyse restait bloquée jusqu'au cycle suivant.
+    """
+    import asyncio
+    import httpx
+    from app import provider as mod
+
+    monkeypatch.setenv("MISTRAL_API_KEY", "cle-de-test")
+    p = mod.MistralProvider()
+    p.ATTENTE_INITIALE = 0.0  # pas d'attente réelle en test
+
+    appels = {"n": 0}
+
+    class FausseReponse:
+        def __init__(self, code, corps=None):
+            self.status_code = code
+            self.headers = {}
+            self._corps = corps
+
+        def json(self):
+            return self._corps
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise httpx.HTTPStatusError(
+                    f"statut {self.status_code}", request=None, response=None)
+
+    class FauxClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, *a, **k):
+            appels["n"] += 1
+            if appels["n"] < 3:
+                return FausseReponse(429)
+            return FausseReponse(200, {
+                "choices": [{"message": {"content": '{"engagements": []}'}}]})
+
+    monkeypatch.setattr(mod.httpx, "AsyncClient", lambda **k: FauxClient())
+    out = asyncio.run(p.complete_json("sys", "usr"))
+    assert out == {"engagements": []}
+    assert appels["n"] == 3, "les deux premiers 429 auraient dû être réessayés"
+
+
+def test_abandon_apres_trop_de_429(monkeypatch):
+    """La reprise n'est pas infinie : au bout du compte, l'erreur remonte."""
+    import asyncio
+    import httpx
+    import pytest
+    from app import provider as mod
+
+    monkeypatch.setenv("MISTRAL_API_KEY", "cle-de-test")
+    p = mod.MistralProvider()
+    p.ATTENTE_INITIALE = 0.0
+
+    class FausseReponse:
+        status_code = 429
+        headers: dict = {}
+
+        def raise_for_status(self):
+            raise httpx.HTTPStatusError("429", request=None, response=None)
+
+    class FauxClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, *a, **k):
+            return FausseReponse()
+
+    monkeypatch.setattr(mod.httpx, "AsyncClient", lambda **k: FauxClient())
+    with pytest.raises(httpx.HTTPStatusError):
+        asyncio.run(p.complete_json("sys", "usr"))
