@@ -12,13 +12,16 @@ export const fmtDT = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle
 
 export const Empty = ({ children }) => <div className="empty">{children}</div>
 
-// Niveaux de fiabilité. Les seuils séparent réellement les données observées :
-// sur les engagements extraits, 10 sont au-dessus de 85 %, 7 entre 70 et 80 %,
-// et le reste sous 65 %. Le seuil de publication, lui, vaut 0,6 par défaut.
+// Niveaux de fiabilité, alignés sur les seuils du back-end.
+//
+// Les seuils précédents (0,85 et 0,65) étaient calés sur une distribution que
+// le modèle produisait lui-même en notant sa propre certitude : elle tassait
+// tout au-dessus de 0,90 et ne séparait rien. Le score est désormais calculé
+// à partir de signaux vérifiables, et ces seuils sont ceux d'engine/fiabilite.go.
 export const NIVEAUX_FIABILITE = [
-  ['elevee', 'Élevée', 0.85, 1.01],
-  ['moyenne', 'Moyenne', 0.65, 0.85],
-  ['faible', 'Faible', 0, 0.65],
+  ['elevee', 'Élevée', 0.75, 1.01],
+  ['a_verifier', 'À vérifier', 0.50, 0.75],
+  ['incertaine', 'Incertaine', 0, 0.50],
 ]
 
 export const niveauFiabilite = (v) => {
@@ -26,14 +29,19 @@ export const niveauFiabilite = (v) => {
   return (NIVEAUX_FIABILITE.find(([, , min, max]) => x >= min && x < max) || NIVEAUX_FIABILITE[2])[0]
 }
 
-// Jauge de fiabilité. La barre seule ne disait pas combien : le pourcentage
-// apparaît au survol, et au clavier — l'attribut title du navigateur met une
-// seconde à s'afficher et ne se déclenche jamais au focus.
+// Jauge de fiabilité.
+//
+// Elle affichait le score en pourcentage. « 92 % » annonce une mesure calibrée,
+// que ce score n'est pas : il combine cinq signaux pondérés à la main, et rien
+// ne garantit encore que 0,92 se trompe deux fois moins que 0,84. Le niveau
+// dit ce qu'on sait sans promettre ce qu'on ignore.
 export const Reli = ({ value }) => {
+  const niveau = niveauFiabilite(value)
+  const libelle = (NIVEAUX_FIABILITE.find(([c]) => c === niveau) || [])[1] || ''
   const pct = Math.round((value || 0) * 100)
   return (
-    <div className={'reli ' + niveauFiabilite(value)} tabIndex={0}
-      role="img" aria-label={`fiabilité ${pct} %`} data-pct={`${pct} %`}>
+    <div className={'reli ' + niveau} tabIndex={0}
+      role="img" aria-label={`fiabilité : ${libelle}`} data-pct={libelle}>
       <span style={{ width: `${pct}%` }} />
     </div>
   )

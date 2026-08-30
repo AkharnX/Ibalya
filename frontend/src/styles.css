@@ -304,8 +304,8 @@ tbody tr:hover{background:var(--secondary);}
   position:relative;cursor:default;
 }
 .reli span{display:block;height:100%;background:var(--primary);}
-.reli.moyenne span{background:var(--delay);}
-.reli.faible span{background:var(--risk);}
+.reli.a_verifier span{background:var(--delay);}
+.reli.incertaine span{background:var(--risk);}
 .reli::after{
   content:attr(data-pct);
   position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
