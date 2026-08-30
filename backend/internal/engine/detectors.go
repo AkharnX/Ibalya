@@ -208,12 +208,25 @@ func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, toda
 			interlocuteur = *r.lastSender
 		}
 		jours := int(silence / 24)
+		// Deux silences opposés se cachaient sous la même phrase. Quand le
+		// dernier message est sortant, c'est l'interlocuteur qu'on attend ;
+		// quand il est entrant, c'est le dirigeant qui doit répondre. Dire
+		// « sans réponse » dans les deux cas inverse les rôles une fois sur
+		// deux, et le digest devient illisible. La génération de brouillon
+		// faisait déjà la distinction, pas le libellé.
+		titre := fmt.Sprintf("En attente de votre réponse depuis %d jour(s)", jours)
+		detail := fmt.Sprintf("Fil « %s » : %s attend votre retour depuis %d jour(s).",
+			r.subject, interlocuteur, jours)
+		if r.lastOutbound {
+			titre = fmt.Sprintf("Sans retour depuis %d jour(s)", jours)
+			detail = fmt.Sprintf("Fil « %s » : vous avez écrit à %s il y a %d jour(s), toujours sans retour, au-delà du rythme habituel du fil.",
+				r.subject, interlocuteur, jours)
+		}
 		d := store.Detection{
 			Type: "silence_anormal", ThreadID: &r.id,
-			Score: 0.65,
-			Titre: fmt.Sprintf("Silence anormal depuis %d jour(s)", jours),
-			Detail: fmt.Sprintf("Fil « %s » (%s) : sans réponse depuis %d jour(s), au-delà du rythme habituel.",
-				r.subject, interlocuteur, jours),
+			Score:  0.65,
+			Titre:  titre,
+			Detail: detail,
 			Payload: mustJSON(map[string]any{"interlocuteur": interlocuteur, "jours_silence": jours,
 				"dernier_sortant": r.lastOutbound}),
 		}
