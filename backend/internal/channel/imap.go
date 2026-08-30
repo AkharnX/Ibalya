@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net"
 	"net/smtp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,7 +84,9 @@ func (i *IMAP) AccountEmail(ctx context.Context) (string, error) {
 func (i *IMAP) LienWeb(compte, externalID string) string { return "" }
 
 func (i *IMAP) connecter() (*imapclient.Client, error) {
-	adresse := fmt.Sprintf("%s:%d", i.cfg.Hote, i.cfg.Port)
+	// JoinHostPort et non Sprintf : une adresse IPv6 littérale contient des
+	// deux-points, que "%s:%d" rendrait ambiguë (« too many colons »).
+	adresse := net.JoinHostPort(i.cfg.Hote, strconv.Itoa(i.cfg.Port))
 	// charset.Reader permet de décoder les corps en ISO-8859-1 et consorts,
 	// encore très répandus chez les hébergeurs français.
 	opts := &imapclient.Options{
@@ -284,7 +288,7 @@ func (i *IMAP) SendFrom(ctx context.Context, from, fromNom, to, subject, body st
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
 		entete, to, encodeSubject(subject), time.Now().Format(time.RFC1123Z), body)
 
-	adresse := fmt.Sprintf("%s:%d", i.cfg.SMTPHote, i.cfg.SMTPPort)
+	adresse := net.JoinHostPort(i.cfg.SMTPHote, strconv.Itoa(i.cfg.SMTPPort))
 	auth := smtp.PlainAuth("", i.cfg.Utilisateur, i.cfg.MotDePasse, i.cfg.SMTPHote)
 	if err := smtp.SendMail(adresse, auth, expediteur, []string{to}, []byte(msg)); err != nil {
 		return fmt.Errorf("envoi SMTP via %s : %w", adresse, err)

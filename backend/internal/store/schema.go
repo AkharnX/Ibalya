@@ -112,16 +112,6 @@ ALTER TABLE engagements ADD COLUMN IF NOT EXISTS verdict_extraction TEXT;
 CREATE INDEX IF NOT EXISTS idx_engagements_verdict
   ON engagements(verdict_extraction) WHERE verdict_extraction IS NOT NULL;
 
--- Reprise : un engagement livré était forcément réel, et « pas un engagement »
--- est un verdict explicite déjà donné par le dirigeant.
-UPDATE engagements SET verdict_extraction='juste'
- WHERE verdict_extraction IS NULL
-   AND (statut='livre' OR EXISTS (SELECT 1 FROM engagement_events v
-        WHERE v.engagement_id=engagements.id AND v.details->>'statut'='livre'));
-UPDATE engagements SET verdict_extraction='faux'
- WHERE EXISTS (SELECT 1 FROM engagement_events v
-        WHERE v.engagement_id=engagements.id
-          AND v.details->>'action'='pas_un_engagement');
 
 CREATE TABLE IF NOT EXISTS engagement_events (
   id BIGSERIAL PRIMARY KEY,
@@ -132,6 +122,19 @@ CREATE TABLE IF NOT EXISTS engagement_events (
   details JSONB NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_events_engagement ON engagement_events(engagement_id, horodatage);
+
+-- Reprise du verdict d'extraction. Placée APRÈS engagement_events : la requête
+-- la lit, et sur une base neuve la table n'existe pas avant cette ligne. Un
+-- engagement livré était forcément réel ; « pas un engagement » est un verdict
+-- explicite déjà donné par le dirigeant.
+UPDATE engagements SET verdict_extraction='juste'
+ WHERE verdict_extraction IS NULL
+   AND (statut='livre' OR EXISTS (SELECT 1 FROM engagement_events v
+        WHERE v.engagement_id=engagements.id AND v.details->>'statut'='livre'));
+UPDATE engagements SET verdict_extraction='faux'
+ WHERE EXISTS (SELECT 1 FROM engagement_events v
+        WHERE v.engagement_id=engagements.id
+          AND v.details->>'action'='pas_un_engagement');
 
 CREATE TABLE IF NOT EXISTS dependency_links (
   id BIGSERIAL PRIMARY KEY,
