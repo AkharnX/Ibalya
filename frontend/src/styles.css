@@ -888,3 +888,13 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 }
 .essai-canal.ok{border-color:var(--healthy);background:var(--healthy-bg);color:var(--healthy);}
 .essai-canal.echec{border-color:var(--risk);background:var(--risk-bg);color:var(--risk);}
+
+/* Bascules des catégories sensibles : la case et son explication sur une
+   ligne, pour que le libellé et son effet restent lisibles ensemble. */
+.setting.bascule{
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+}
+.setting.bascule input{width:auto;margin-top:3px;flex:none;}
+.setting.bascule b{display:block;font-weight:600;}
+.setting.bascule .help{margin-top:2px;}
+.panel-actions{display:flex;align-items:flex-end;}

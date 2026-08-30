@@ -341,13 +341,24 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 func (s *Server) runCycle(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		SinceDays int `json:"since_days"`
+		Max       int `json:"max"`
 	}
 	json.NewDecoder(r.Body).Decode(&body)
 	if body.SinceDays <= 0 {
 		body.SinceDays = 2
 	}
+	// Le plafond était figé à 500. Le rapatriement rend les messages du plus
+	// récent au plus ancien : sur une longue fenêtre — un premier cycle de
+	// trente jours sur une boîte chargée — les plus anciens passaient à la
+	// trappe sans que rien ne le signale.
+	if body.Max <= 0 {
+		body.Max = 500
+	}
+	if body.Max > 2000 {
+		body.Max = 2000
+	}
 	res := s.Engine.RunCycleOrigine(r.Context(), func(ctx context.Context) (any, error) {
-		return s.Ingester.Run(ctx, time.Now().AddDate(0, 0, -body.SinceDays), 500)
+		return s.Ingester.Run(ctx, time.Now().AddDate(0, 0, -body.SinceDays), body.Max)
 	}, "dirigeant")
 	writeJSON(w, res)
 }
@@ -725,6 +736,10 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"identite_fonction":  s.Store.GetSetting(ctx, "identite_fonction", ""),
 		"identite_societe":   s.Store.GetSetting(ctx, "identite_societe", ""),
 		"identite_signature": s.Store.GetSetting(ctx, "identite_signature", ""),
+		// Catégories sensibles écartées avant toute inférence (CDC : filtres
+		// RH, juridique, santé, exclusion configurable).
+		ingest.CleReglageCategories: ingest.EcrireCategories(
+			ingest.LireCategories(s.Store.GetSetting(ctx, ingest.CleReglageCategories, ""))),
 	})
 }
 
@@ -780,6 +795,21 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.Store.SetSetting(r.Context(), k, v)
+		// Catégories sensibles. Le réglage est réécrit à partir des catégories
+		// connues : une clé inventée par le client ne doit pas se retrouver
+		// stockée, et une valeur illisible ne doit pas désactiver le filtre en
+		// silence.
+		case ingest.CleReglageCategories:
+			var recu map[string]bool
+			if err := json.Unmarshal([]byte(v), &recu); err != nil {
+				httpError(w, 400, "categories_sensibles : objet {categorie: bool} attendu")
+				return
+			}
+			actives := map[ingest.Categorie]bool{}
+			for _, c := range ingest.CategoriesConnues {
+				actives[c] = recu[string(c)]
+			}
+			s.Store.SetSetting(r.Context(), k, ingest.EcrireCategories(actives))
 		}
 	}
 	s.Store.Audit(r.Context(), acteur(r), "reglages_modifies", body)
