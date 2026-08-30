@@ -17,8 +17,14 @@ const TYPES = ['all', 'livraison', 'devis', 'facturation', 'rendez_vous', 'prise
 
 // Corrections d'un geste (CDC 11) : chaque geste devient une règle explicite,
 // lisible et révocable depuis « Règles métier ». Pas de boîte noire.
+// Les deux premières lignes disent à l'agent s'il a eu raison d'extraire ;
+// les trois suivantes règlent son comportement. La distinction compte : un
+// engagement abandonné parce que l'affaire ne se fait pas reste une extraction
+// réussie, et le confondre avec un faux positif fausse toute mesure de qualité.
 const CORRECTIONS = [
   ['pas_un_engagement', 'Ce n’est pas un engagement'],
+  ['engagement_imprecis', 'Engagement réel, mais mal résumé'],
+  ['abandon_metier', 'Abandonné — mais l’agent avait raison'],
   ['priorite_haute', 'Priorité haute pour cet interlocuteur'],
   ['ignorer_interlocuteur', 'Ne plus rien extraire de cet interlocuteur'],
   ['ne_plus_alerter', 'Ne plus m’alerter sur ce fil'],

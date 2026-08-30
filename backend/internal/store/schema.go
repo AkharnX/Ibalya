@@ -97,6 +97,32 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_engagements_source
 -- migration : typage des engagements (devis, relance, rendez_vous, ...)
 ALTER TABLE engagements ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'autre';
 
+-- Verdict d'extraction : l'engagement était-il réel ?
+--
+-- Le statut disait ce qu'est devenu l'engagement, jamais si l'agent avait eu
+-- raison de l'extraire. Les deux étaient confondus dans l'événement « corrige »,
+-- où « statut: livré » — un succès — se comptait comme une correction. Toute
+-- mesure de la qualité d'extraction s'en trouvait faussée.
+--
+--   juste    : c'était bien un engagement
+--   faux     : l'agent a extrait quelque chose qui n'en était pas un
+--   imprecis : engagement réel, mais objet ou échéance à côté
+--   NULL     : pas encore tranché
+ALTER TABLE engagements ADD COLUMN IF NOT EXISTS verdict_extraction TEXT;
+CREATE INDEX IF NOT EXISTS idx_engagements_verdict
+  ON engagements(verdict_extraction) WHERE verdict_extraction IS NOT NULL;
+
+-- Reprise : un engagement livré était forcément réel, et « pas un engagement »
+-- est un verdict explicite déjà donné par le dirigeant.
+UPDATE engagements SET verdict_extraction='juste'
+ WHERE verdict_extraction IS NULL
+   AND (statut='livre' OR EXISTS (SELECT 1 FROM engagement_events v
+        WHERE v.engagement_id=engagements.id AND v.details->>'statut'='livre'));
+UPDATE engagements SET verdict_extraction='faux'
+ WHERE EXISTS (SELECT 1 FROM engagement_events v
+        WHERE v.engagement_id=engagements.id
+          AND v.details->>'action'='pas_un_engagement');
+
 CREATE TABLE IF NOT EXISTS engagement_events (
   id BIGSERIAL PRIMARY KEY,
   engagement_id BIGINT NOT NULL REFERENCES engagements(id),

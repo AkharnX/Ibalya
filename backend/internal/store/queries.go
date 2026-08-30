@@ -301,7 +301,8 @@ func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, erro
 
 const engagementSelect = `SELECT e.id, e.emetteur_id, e.destinataire_id,
 	coalesce(pe.email,''), coalesce(pd.email,''),
-	e.objet, e.type, e.echeance, e.echeance_inferee, e.echeance_confirmee, e.statut, e.confiance, e.priorite,
+	e.objet, e.type, e.echeance, e.echeance_inferee, e.echeance_confirmee, e.statut, e.verdict_extraction,
+	e.confiance, e.priorite,
 	e.source_message_id, e.thread_id, e.cree_le, e.maj_le
 	FROM engagements e
 	LEFT JOIN persons pe ON pe.id = e.emetteur_id
@@ -313,7 +314,8 @@ func scanEngagements(rows pgx.Rows) ([]Engagement, error) {
 	for rows.Next() {
 		var e Engagement
 		if err := rows.Scan(&e.ID, &e.EmetteurID, &e.DestinataireID, &e.EmetteurEmail, &e.DestinataireEmail,
-			&e.Objet, &e.Type, &e.Echeance, &e.EcheanceInferee, &e.EcheanceConfirmee, &e.Statut, &e.Confiance,
+			&e.Objet, &e.Type, &e.Echeance, &e.EcheanceInferee, &e.EcheanceConfirmee, &e.Statut,
+			&e.VerdictExtraction, &e.Confiance,
 			&e.Priorite, &e.SourceMessageID, &e.ThreadID, &e.CreeLe, &e.MajLe); err != nil {
 			return nil, err
 		}
@@ -389,7 +391,7 @@ func (s *Store) UpdateEngagement(ctx context.Context, id int64, fields map[strin
 	i := 2
 	for k, v := range fields {
 		switch k {
-		case "statut", "priorite", "objet", "echeance", "echeance_inferee", "echeance_confirmee", "confiance":
+		case "statut", "priorite", "objet", "echeance", "echeance_inferee", "echeance_confirmee", "confiance", "verdict_extraction":
 			q += `, ` + k + ` = $` + itoa(i)
 			args = append(args, v)
 			i++

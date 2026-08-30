@@ -52,12 +52,17 @@ type Engagement struct {
 	EcheanceInferee   bool       `json:"echeance_inferee"`
 	EcheanceConfirmee bool       `json:"echeance_confirmee"`
 	Statut            string     `json:"statut"`
-	Confiance         float64    `json:"confiance"`
-	Priorite          string     `json:"priorite"`
-	SourceMessageID   *int64     `json:"source_message_id"`
-	ThreadID          *int64     `json:"thread_id"`
-	CreeLe            time.Time  `json:"cree_le"`
-	MajLe             time.Time  `json:"maj_le"`
+	// VerdictExtraction dit si l'agent avait raison d'extraire cet engagement :
+	// juste, faux, imprecis, ou nil tant que le dirigeant n'a pas tranché. Le
+	// statut, lui, dit ce que l'engagement est devenu — les deux étaient
+	// confondus, ce qui faussait toute mesure de la qualité d'extraction.
+	VerdictExtraction *string   `json:"verdict_extraction"`
+	Confiance         float64   `json:"confiance"`
+	Priorite          string    `json:"priorite"`
+	SourceMessageID   *int64    `json:"source_message_id"`
+	ThreadID          *int64    `json:"thread_id"`
+	CreeLe            time.Time `json:"cree_le"`
+	MajLe             time.Time `json:"maj_le"`
 }
 
 type EngagementEvent struct {
