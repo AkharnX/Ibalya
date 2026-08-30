@@ -46,11 +46,54 @@ function EditeurSignature({ s, onChange }) {
   )
 }
 
+
+// Catégories de courrier écartées avant toute inférence. Le CDC les exige
+// (« filtres de catégories (RH, juridique, santé), exclusion configurable »),
+// et l'argument commercial est direct : un dirigeant qui confie sa messagerie
+// demande toujours ce qui arrive aux messages qui ne regardent personne.
+const CATEGORIES = [
+  { cle: 'sante', titre: 'Santé',
+    aide: "Arrêts de travail, certificats médicaux, résultats d'analyses." },
+  { cle: 'rh', titre: 'Ressources humaines',
+    aide: 'Candidatures, CV, bulletins de paie, ruptures de contrat.' },
+  { cle: 'juridique', titre: 'Juridique',
+    aide: "Mises en demeure, huissiers, procédures. Souvent porteur d'échéances réelles, donc filtré seulement si vous le demandez." },
+]
+
+function Confidentialite({ valeur, onChange, onEnregistrer }) {
+  let actives = {}
+  try { actives = JSON.parse(valeur || '{}') } catch { actives = {} }
+  const bascule = (cle) => () =>
+    onChange(JSON.stringify({ ...actives, [cle]: !actives[cle] }))
+  return (
+    <div className="panel">
+      <h3>Confidentialité</h3>
+      <p className="help">
+        Un message reconnu dans une catégorie cochée est écarté avant l'analyse :
+        il n'est jamais envoyé au modèle, et son contenu n'est pas conservé par
+        Ibalya. Seuls l'expéditeur et la date restent, pour garder trace de
+        l'échange. Votre messagerie, elle, n'est pas touchée.
+      </p>
+      {CATEGORIES.map((c) => (
+        <label className="setting bascule" key={c.cle}>
+          <input type="checkbox" checked={!!actives[c.cle]} onChange={bascule(c.cle)} />
+          <span>
+            <b>{c.titre}</b>
+            <span className="help">{c.aide}</span>
+          </span>
+        </label>
+      ))}
+      <button className="primary" onClick={onEnregistrer}>Enregistrer</button>
+    </div>
+  )
+}
+
 export default function Reglages() {
   const [settings, setSettings] = useState({
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
     identite_signature: '',
     identite_prenom: '', identite_nom: '', identite_fonction: '', identite_societe: '',
+    categories_sensibles: '{"sante":true,"rh":true,"juridique":false}',
   })
   const [status, setStatus] = useState(null)
   const [kpis, setKpis] = useState(null)
@@ -163,6 +206,10 @@ export default function Reglages() {
           </div>
           <button className="primary" onClick={save}>Enregistrer</button>
         </div>
+        <Confidentialite
+          valeur={settings.categories_sensibles}
+          onChange={(v) => setSettings((p) => ({ ...p, categories_sensibles: v }))}
+          onEnregistrer={save} />
       </div>
 
       <h3>Indicateurs de réussite</h3>

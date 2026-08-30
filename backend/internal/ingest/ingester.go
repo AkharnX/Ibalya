@@ -19,6 +19,10 @@ type Stats struct {
 	Inserted int `json:"inserted"`
 	Excluded int `json:"excluded"`
 	Kept     int `json:"kept"`
+	// Sensibles compte les messages écartés pour catégorie sensible. Le filtre
+	// ne doit pas être silencieux : le dirigeant doit pouvoir constater qu'il
+	// travaille, sans qu'on lui montre ce qui a été écarté.
+	Sensibles int `json:"sensibles"`
 }
 
 // Run récupère les messages depuis `since`, les normalise, applique le
@@ -35,6 +39,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 	if err != nil {
 		return st, err
 	}
+	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
 
 	for _, cm := range msgs {
 		threadID, err := ing.Store.UpsertThread(ctx, ing.Channel.Name(), cm.ThreadExternalID, cm.Subject, cm.SentAt)
@@ -58,6 +63,15 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			Outbound:        cm.Outbound,
 			ListUnsubscribe: cm.ListUnsubscribe,
 		}
+		// Les catégories sensibles se décident AVANT l'écriture : le contenu
+		// d'un arrêt maladie ou d'une candidature n'est pas conservé du tout,
+		// seules les métadonnées le sont pour garder trace de l'échange. La
+		// messagerie d'origine reste la source de vérité.
+		categorie := DetecterCategorie(m.Subject, m.Body, sensibles)
+		if categorie != "" {
+			m.Subject, m.Body = "", ""
+		}
+
 		id, inserted, err := ing.Store.InsertMessage(ctx, m)
 		if err != nil {
 			log.Printf("ingest: insert message: %v", err)
@@ -72,7 +86,12 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 				_, _ = ing.Store.UpsertPerson(ctx, r, "")
 			}
 		}
-		if reason := ExclusionReason(m, thread.Excluded, rules); reason != "" {
+		if categorie != "" {
+			raison := "categorie_sensible_" + string(categorie)
+			st.Excluded++
+			st.Sensibles++
+			_ = ing.Store.MarkMessage(ctx, id, "excluded", &raison)
+		} else if reason := ExclusionReason(m, thread.Excluded, rules); reason != "" {
 			st.Excluded++
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &reason)
 		} else {
