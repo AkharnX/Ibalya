@@ -58,8 +58,14 @@ func (e *Engine) capsuleLLM(ctx context.Context) json.RawMessage {
 
 // SeuilPublication : sous ce score de confiance, un engagement n'est jamais
 // présenté proactivement (CDC 7.2 — premier rempart anti-churn).
+//
+// Le défaut passe de 0,6 à 0,5. L'ancien était calé sur une échelle où le
+// modèle notait sa propre certitude et tassait tout au-dessus de 0,90 : le
+// seuil n'écartait alors presque rien. Sur l'échelle calculée, 0,50 est la
+// frontière entre « incertaine » et « à vérifier », ce qui aligne enfin ce
+// qu'on publie sur ce qu'on affiche.
 func (e *Engine) SeuilPublication(ctx context.Context) float64 {
-	s := e.Store.GetSetting(ctx, "seuil_publication", "0.6")
+	s := e.Store.GetSetting(ctx, "seuil_publication", "0.5")
 	if v, err := parseFloat(s); err == nil {
 		return v
 	}
@@ -157,7 +163,6 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 		Objet:           strings.TrimSpace(ex.Objet),
 		Type:            normalizeType(ex.Type),
 		Statut:          "ouvert",
-		Confiance:       clamp01(ex.Confiance),
 		Priorite:        "normale",
 		SourceMessageID: &m.ID,
 		ThreadID:        &m.ThreadID,
@@ -204,6 +209,29 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 			eng.EcheanceConfirmee = !ex.EcheanceInferee
 		}
 	}
+	// Fiabilité : le score n'est plus celui que le modèle déclare sur lui-même,
+	// mesuré inversé sur la base de recette. Il se construit ici à partir de
+	// signaux vérifiables, l'avis du modèle ne pesant plus qu'un dixième.
+	signaux := SignauxFiabilite{
+		AvisModele:                  ex.Confiance,
+		EcheanceExplicite:           eng.Echeance != nil && !ex.EcheanceInferee,
+		FormulationEngageante:       FormulationEstEngageante(m.Body),
+		TauxCorrectionInterlocuteur: -1,
+	}
+	if entrants, sortants, err := e.Store.MessagesDansFil(ctx, m.ThreadID); err == nil {
+		signaux.FilConversationnel = entrants > 0 && sortants > 0
+	}
+	if a := adresseDeConfiance(participants, ex.EmetteurEmail); a != "" {
+		if n, err := e.Store.EchangesAvecInterlocuteur(ctx, a); err == nil {
+			signaux.InterlocuteurConnu = n >= 3
+		}
+		if _, taux, err := e.Store.HistoriqueInterlocuteur(ctx, a, minimumHistorique); err == nil {
+			signaux.TauxCorrectionInterlocuteur = taux
+		}
+	}
+	score, detailFiabilite := CalculerFiabilite(signaux)
+	eng.Confiance = score
+
 	// priorité haute si l'interlocuteur est marqué sensible ou règle apprise
 	for _, r := range rules {
 		if r.Action == "priorite_haute" && r.PorteeType == "interlocuteur" &&
@@ -219,7 +247,12 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	if id == 0 {
 		return false // doublon : déjà extrait de ce message
 	}
-	_ = e.Store.AddEvent(ctx, id, "cree", &m.ID, map[string]any{"confiance": eng.Confiance})
+	// Le détail des signaux est conservé avec l'engagement : un score qu'on ne
+	// peut pas expliquer ne vaut pas mieux que celui qu'il remplace, et c'est
+	// ce qui permettra plus tard de le calibrer sur les corrections réelles.
+	detailFiabilite["niveau"] = NiveauFiabilite(score)
+	detailFiabilite["avis_modele_brut"] = clamp01(ex.Confiance)
+	_ = e.Store.AddEvent(ctx, id, "cree", &m.ID, detailFiabilite)
 	return true
 }
 

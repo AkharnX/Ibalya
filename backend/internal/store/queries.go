@@ -743,3 +743,55 @@ func itoaN(n int) string {
 	}
 	return strconv.Itoa(n)
 }
+
+// HistoriqueInterlocuteur renvoie ce qu'on sait des engagements déjà extraits
+// d'un interlocuteur : combien ont été créés, et quelle part le dirigeant a
+// corrigés ou abandonnés.
+//
+// C'est le seul signal de fiabilité qui apprend de l'usage réel : un
+// correspondant dont les engagements finissent systématiquement corrigés doit
+// peser à la baisse sur les suivants. Le taux vaut -1 tant que l'historique
+// est trop mince pour vouloir dire quelque chose.
+func (s *Store) HistoriqueInterlocuteur(ctx context.Context, email string, minimum int) (int, float64, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return 0, -1, nil
+	}
+	var total, rates int
+	err := s.Pool.QueryRow(ctx, `
+		SELECT count(*),
+		       count(*) FILTER (WHERE e.statut = 'abandonne'
+		                           OR EXISTS (SELECT 1 FROM engagement_events v
+		                                      WHERE v.engagement_id = e.id AND v.type = 'corrige'))
+		  FROM engagements e
+		  JOIN persons p ON p.id = e.emetteur_id
+		 WHERE lower(p.email) = $1`, email).Scan(&total, &rates)
+	if err != nil {
+		return 0, -1, err
+	}
+	if total < minimum {
+		return total, -1, nil
+	}
+	return total, float64(rates) / float64(total), nil
+}
+
+// EchangesAvecInterlocuteur compte les messages échangés avec une adresse.
+func (s *Store) EchangesAvecInterlocuteur(ctx context.Context, email string) (int, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return 0, nil
+	}
+	var n int
+	err := s.Pool.QueryRow(ctx,
+		`SELECT count(*) FROM messages WHERE lower(sender) = $1`, email).Scan(&n)
+	return n, err
+}
+
+// MessagesDansFil compte les messages d'un fil, dans les deux sens. Un fil qui
+// n'a qu'un message est une diffusion, pas une conversation.
+func (s *Store) MessagesDansFil(ctx context.Context, threadID int64) (entrants, sortants int, err error) {
+	err = s.Pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE NOT outbound), count(*) FILTER (WHERE outbound)
+		  FROM messages WHERE thread_id = $1`, threadID).Scan(&entrants, &sortants)
+	return
+}

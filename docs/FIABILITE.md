@@ -1,85 +1,112 @@
 # La fiabilité d'un engagement
 
-Chaque engagement porte un score entre 0 et 1, affiché dans l'interface sous le
-nom « fiabilité » et stocké dans `engagements.confiance`.
+Chaque engagement porte un score entre 0 et 1, affiché dans l'interface sous
+forme de niveau et stocké dans `engagements.confiance`.
 
-## Il n'y a pas de formule
+## Ce qui n'allait pas
 
-C'est le point important, et il vaut mieux le dire franchement : **le score
-n'est pas calculé**. Le modèle le déclare lui-même, en même temps qu'il extrait
-l'engagement.
+Le score était celui que le modèle déclarait sur lui-même, en une ligne
+d'instruction : « confiance : entre 0 et 1 — ta certitude qu'il s'agit d'un
+vrai engagement ». Le back-end ne faisait que le borner.
 
-L'instruction qui le lui demande tient en une ligne
-(`llm-service/app/prompts.py`) :
+Deux problèmes, tous deux mesurés sur la base de recette.
 
-> `confiance : entre 0 et 1 — ta certitude qu'il s'agit d'un vrai engagement`
+**La distribution ne séparait rien.** Toutes les valeurs étaient des multiples
+de 0,05, 0,95 revenait douze fois, et vingt engagements sur vingt-huit
+dépassaient 0,90. Le seuil de publication de 0,6 n'écartait donc presque rien.
 
-Le back-end ne fait ensuite que deux choses :
+**Le score était inversé.** Les engagements notés au-dessus de 0,90 étaient
+corrigés ou abandonnés par le dirigeant dans 43 % des cas, contre 0 % pour les
+autres. C'est le comportement attendu : demander à un modèle sa propre
+certitude mesure son aisance à formuler, pas son exactitude.
 
-| Étape | Où | Effet |
+## La formule
+
+Le score part d'une base et ajoute des signaux vérifiables **sans le modèle**,
+dont l'avis ne pèse plus qu'un dixième.
+
+| Signal | Poids | Ce qu'il vaut |
 |---|---|---|
-| Bornage | `llm-service/app/main.py` | ramène la valeur dans `[0, 1]` |
-| Bornage | `engine/extraction.go` — `clamp01` | même garde côté Go, au cas où |
+| Base | 0,35 | point de départ sans aucune preuve |
+| Échéance explicite | +0,20 | une date écrite, pas déduite |
+| Formulation engageante | +0,15 | « je vous livre jeudi », pas « il faudrait avancer » |
+| Fil conversationnel | +0,10 | au moins un aller-retour, pas une diffusion |
+| Interlocuteur connu | +0,10 | au moins trois échanges antérieurs |
+| Avis du modèle | +0,10 max | plafonné : il ne peut plus emporter la décision |
+| Corrections passées | −0,20 max | part des engagements de cet interlocuteur déjà corrigés |
 
-Aucun signal externe n'entre dans le score : ni l'ancienneté du fil, ni le
-nombre d'échanges avec l'interlocuteur, ni la présence d'une échéance explicite,
-ni l'historique des corrections du dirigeant.
+La pénalité ne s'applique qu'à partir de quatre engagements avec le même
+interlocuteur : en dessous, l'historique ne veut rien dire.
 
-## À quoi il sert
+Un engagement sans échéance, sans formulation engageante, venant d'un inconnu,
+plafonne à 0,45 même si le modèle annonce 1,00. C'est le comportement qu'on
+cherchait.
 
-Un seul usage, mais il est structurant : le **seuil de publication**, réglable
-dans Réglages, par défaut `0.6`. Sous ce seuil, un engagement n'est jamais
-présenté de lui-même — c'est le premier rempart anti-churn du CDC (7.2).
+Le détail des signaux retenus est enregistré avec l'engagement dans
+l'événement « cree » : un score qu'on ne peut pas expliquer ne vaut pas mieux
+que celui qu'il remplace.
 
-Quatre endroits appliquent ce seuil :
+## L'affichage
 
-- `engine/suivi.go` — le suivi n'affiche pas l'engagement
-- `engine/deliver.go` (deux fois) — pas de détection ni de brouillon
-- `api/server.go` — la synthèse l'ignore
+Trois niveaux, plus de pourcentage :
 
-L'engagement reste en base et consultable ; il ne remonte simplement pas tout
-seul.
-
-## Ce que valent ces scores aujourd'hui
-
-Distribution observée sur les 28 engagements de la base de recette :
-
-| Score | Nombre |
+| Niveau | Score |
 |---|---|
-| 0,98 | 1 |
-| 0,95 | 12 |
-| 0,90 | 4 |
-| 0,85 | 3 |
-| 0,80 | 3 |
-| 0,70 | 4 |
-| 0,30 | 1 |
+| Élevée | ≥ 0,75 |
+| À vérifier | ≥ 0,50 |
+| Incertaine | < 0,50 |
 
-Toutes les valeurs sont des multiples de 0,05, et 0,95 revient douze fois. Ce
-n'est pas la signature d'une estimation calibrée, c'est celle d'un modèle qui
-choisit une valeur ronde plausible. Vingt engagements sur vingt-huit sont à 0,90
-ou plus, ce qui rend le seuil de 0,6 presque inopérant : il n'écarte
-pratiquement rien.
+« 92 % » annonce une mesure calibrée. Ce score n'en est pas une : il combine
+cinq signaux pondérés à la main, et rien ne garantit encore que 0,92 se trompe
+deux fois moins que 0,84. Le niveau dit ce qu'on sait sans promettre ce qu'on
+ignore.
 
-## Le repli sans modèle
+Le seuil de publication par défaut passe de 0,6 à 0,5, pour coïncider avec la
+frontière entre « incertaine » et « à vérifier » : ce qu'on publie s'aligne
+enfin sur ce qu'on affiche.
 
-Quand le service d'inférence tourne sans fournisseur (`provider.py`), une
-extraction dégradée par mots-clés attribue `0,85` si une échéance a été trouvée,
-`0,70` sinon. C'est un repli de développement, pas une mesure.
+## Ce que ça a donné, sans embellir
 
-## Ce qu'il faudrait pour que le score veuille dire quelque chose
+Distribution avant et après recalcul des vingt-huit engagements existants :
 
-Une vraie formule combinerait la déclaration du modèle avec des signaux
-vérifiables, indépendants de lui :
+| | Avant | Après |
+|---|---|---|
+| Élevée | 23 | 15 |
+| À vérifier / Incertaine | 5 | 13 |
 
-- une échéance explicite dans le texte, plutôt qu'inférée
-- un verbe d'engagement à la première personne, plutôt qu'une tournure vague
-- l'ancienneté de la relation avec l'interlocuteur
-- le taux de corrections passées du dirigeant sur cet interlocuteur ou ce type
+Le pouvoir prédictif, lui, s'est amélioré sans devenir bon :
 
-Le dernier signal est le plus intéressant : Ibalya enregistre déjà les
-corrections (`POST /api/engagements/{id}/correct`) et les règles apprises. Un
-score qui apprend des corrections serait calibré par l'usage réel plutôt que par
-l'aplomb du modèle.
+| Part corrigée ou abandonnée | Ancien score | Nouveau score |
+|---|---|---|
+| Fiabilité haute | 43 % | 40 % |
+| Fiabilité basse | 0 % | 31 % |
 
-Tant que ce travail n'est pas fait, la fiabilité affichée doit être lue pour ce
-qu'elle est : l'avis du modèle sur son propre travail.
+L'inversion est en grande partie levée — l'écart passe de 43 points à l'envers
+à 9 — mais le score ne prédit toujours pas correctement : une fiabilité haute
+devrait être corrigée **moins** souvent qu'une basse, pas légèrement plus.
+
+Deux raisons, et aucune ne se règle par une formule plus astucieuse. Vingt-huit
+engagements ne suffisent pas à conclure quoi que ce soit. Et « corrigé »
+englobe des ajustements qui ne sont pas des erreurs, comme préciser une
+échéance.
+
+## Ce qu'il reste à faire
+
+Les poids sont posés à la main. Pour qu'ils soient ajustés sur les données il
+faut plusieurs centaines d'engagements et une distinction nette entre une
+correction qui signale une erreur et une qui complète une information. Les deux
+manquent aujourd'hui.
+
+En attendant, la formule a au moins trois vertus que l'ancienne n'avait pas :
+elle repose sur des signaux qu'on peut vérifier, elle s'explique, et l'avis du
+modèle ne peut plus la dominer.
+
+## Reprise de l'existant
+
+```
+go run ./cmd/recalibrer              # simule et montre l'effet sur chaque engagement
+go run ./cmd/recalibrer --appliquer  # réécrit les scores
+```
+
+L'avis d'origine du modèle est relu dans l'événement « cree », qui le
+conservait : la reprise ne perd rien.
