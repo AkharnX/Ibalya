@@ -478,6 +478,11 @@ func (s *Server) patchEngagement(w http.ResponseWriter, r *http.Request) {
 		Statut   *string `json:"statut"`
 		Priorite *string `json:"priorite"`
 		Echeance *string `json:"echeance"` // YYYY-MM-DD ; confirme l'échéance
+		// Verdict : l'agent avait-il raison d'extraire cet engagement ?
+		// Distinct du statut, qui dit seulement ce qu'il est devenu. Les deux
+		// étaient confondus, au point qu'un engagement livré — donc une
+		// réussite — se comptait comme une correction.
+		Verdict *string `json:"verdict_extraction"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		httpError(w, 400, err.Error())
@@ -486,6 +491,21 @@ func (s *Server) patchEngagement(w http.ResponseWriter, r *http.Request) {
 	fields := map[string]any{}
 	if body.Statut != nil {
 		fields["statut"] = *body.Statut
+		// Marquer « livré » ne se discute pas : l'engagement existait bel et
+		// bien. C'est une étiquette positive gratuite, et la seule qu'on
+		// obtienne sans rien demander au dirigeant.
+		if *body.Statut == "livre" {
+			fields["verdict_extraction"] = "juste"
+		}
+	}
+	if body.Verdict != nil {
+		switch *body.Verdict {
+		case "juste", "faux", "imprecis":
+			fields["verdict_extraction"] = *body.Verdict
+		default:
+			httpError(w, 400, "verdict_extraction : juste, faux ou imprecis")
+			return
+		}
 	}
 	if body.Priorite != nil {
 		fields["priorite"] = *body.Priorite
@@ -533,7 +553,8 @@ func (s *Server) correctEngagement(w http.ResponseWriter, r *http.Request) {
 	var rule store.LearnedRule
 	switch body.Action {
 	case "pas_un_engagement":
-		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{"statut": "abandonne"})
+		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{
+			"statut": "abandonne", "verdict_extraction": "faux"})
 		rule = store.LearnedRule{PorteeType: "engagement", PorteeCible: strconv.FormatInt(id, 10),
 			Action: "requalifier", Note: "« " + eng.Objet + " » n'est pas un engagement"}
 	case "ignorer_interlocuteur":
@@ -543,6 +564,17 @@ func (s *Server) correctEngagement(w http.ResponseWriter, r *http.Request) {
 		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{"priorite": "haute"})
 		rule = store.LearnedRule{PorteeType: "interlocuteur", PorteeCible: eng.EmetteurEmail,
 			Action: "priorite_haute", Note: "Priorité haute pour " + eng.EmetteurEmail}
+	// Engagement réel mais mal résumé : l'extraction n'est pas à jeter, elle est
+	// à corriger. Sans cette nuance, tout ce qui n'est pas parfait se retrouve
+	// compté comme un faux positif.
+	case "engagement_imprecis":
+		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{"verdict_extraction": "imprecis"})
+	// Abandon pour raison métier : l'affaire ne se fait pas, mais l'agent avait
+	// raison de l'extraire. C'est une étiquette POSITIVE, et la confondre avec
+	// un faux positif était précisément le défaut de l'étiquetage précédent.
+	case "abandon_metier":
+		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{
+			"statut": "abandonne", "verdict_extraction": "juste"})
 	case "ne_plus_alerter":
 		if eng.ThreadID != nil {
 			rule = store.LearnedRule{PorteeType: "fil", PorteeCible: strconv.FormatInt(*eng.ThreadID, 10),

@@ -1,0 +1,218 @@
+[
+  {
+    "external_id": "eval-001",
+    "thread_id": "fil-eval-001",
+    "subject": "Commande 12 vitrages doubles",
+    "sender": "commandes@vitrages-pro.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le 05/09/2026. Cordialement, Sophie Marin",
+    "attendu": {
+      "engagement": true,
+      "echeance": "2026-09-05",
+      "filtre": false,
+      "pourquoi": "promesse explicite, échéance en toutes lettres"
+    }
+  },
+  {
+    "external_id": "eval-002",
+    "thread_id": "fil-eval-002",
+    "subject": "Chantier école — pose des fenêtres",
+    "sender": "dirigeant@menuiserie-dupont.fr",
+    "sender_name": "",
+    "recipients": [
+      "client@exemple.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, je vous confirme la pose des 12 fenêtres de l'école le 08/09/2026. L'équipe sera sur place dès 8h.",
+    "attendu": {
+      "engagement": true,
+      "echeance": "2026-09-08",
+      "filtre": false,
+      "pourquoi": "engagement du dirigeant lui-même, sens sortant"
+    }
+  },
+  {
+    "external_id": "eval-003",
+    "thread_id": "fil-eval-003",
+    "subject": "RE: Devis pergola",
+    "sender": "m.leroy@particulier.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Ok pour le devis, je vous fais le virement demain.",
+    "attendu": {
+      "engagement": true,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "trois mots qui engagent ; échéance relative, donc non vérifiée"
+    }
+  },
+  {
+    "external_id": "eval-004",
+    "thread_id": "fil-eval-004",
+    "subject": "RE: Planning de la semaine",
+    "sender": "atelier@menuiserie-dupont.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bien reçu, merci.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "accusé de réception : ressemble à un accord, n'engage rien"
+    }
+  },
+  {
+    "external_id": "eval-005",
+    "thread_id": "fil-eval-005",
+    "subject": "Suite à notre échange",
+    "sender": "contact@archi-plus.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, merci pour votre temps ce matin. Nous restons à votre disposition pour toute question. Bien cordialement.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "formule de courtoisie, aucune action promise"
+    }
+  },
+  {
+    "external_id": "eval-006",
+    "thread_id": "fil-eval-006",
+    "subject": "Idées pour l'atelier",
+    "sender": "atelier@menuiserie-dupont.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Il faudrait qu'on pense à réorganiser le stock un de ces jours, ça devient compliqué de circuler.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "intention vague sans acteur ni date"
+    }
+  },
+  {
+    "external_id": "eval-007",
+    "thread_id": "fil-eval-007",
+    "subject": "Vernis teinte noyer",
+    "sender": "commandes@quincaillerie-sud.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, nous vous expédions les bidons d'ici la fin de la semaine.",
+    "attendu": {
+      "engagement": true,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "promesse réelle, échéance floue : ne doit pas être inventée"
+    }
+  },
+  {
+    "external_id": "eval-008",
+    "thread_id": "fil-eval-008",
+    "subject": "Fwd: Confirmation intervention",
+    "sender": "assistante@menuiserie-dupont.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Pour info.\n\n---------- Message transféré ----------\nDe : sav@fournisseur-x.fr\nNous interviendrons le 03/09/2026 pour le remplacement du moteur.",
+    "attendu": {
+      "engagement": true,
+      "echeance": "2026-09-03",
+      "filtre": false,
+      "pourquoi": "l'engagement est dans la partie transférée, pas dans l'entête"
+    }
+  },
+  {
+    "external_id": "eval-009",
+    "thread_id": "fil-eval-009",
+    "subject": "RE: RE: Livraison vitrages",
+    "sender": "commandes@vitrages-pro.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "C'est bien arrivé hier, merci de votre retour.\n\n> Le 22/08/2026, vitrages-pro a écrit :\n> Nous livrerons l'atelier au plus tard le 24/08/2026.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": false,
+      "pourquoi": "la promesse citée est tenue : ne pas la ré-extraire"
+    }
+  },
+  {
+    "external_id": "eval-010",
+    "thread_id": "fil-eval-010",
+    "subject": "Disponibilité pose",
+    "sender": "services-techniques@mairie-valbonne.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, pourriez-vous poser les menuiseries avant le 11/09/2026 ? Merci de me confirmer.",
+    "attendu": {
+      "engagement": true,
+      "echeance": "2026-09-11",
+      "filtre": false,
+      "pourquoi": "demande avec échéance : engage le destinataire, pas l'émetteur"
+    }
+  },
+  {
+    "external_id": "eval-011",
+    "thread_id": "fil-eval-011",
+    "subject": "Votre facture est disponible",
+    "sender": "no-reply@facturation-saas.com",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Votre facture du mois est disponible. Prélèvement le 02/09/2026.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": true,
+      "pourquoi": "expéditeur automatique : doit être écarté par le pré-filtre"
+    }
+  },
+  {
+    "external_id": "eval-012",
+    "thread_id": "fil-eval-012",
+    "subject": "Candidature poste menuisier",
+    "sender": "j.moreau@email.fr",
+    "sender_name": "",
+    "recipients": [
+      "dirigeant@menuiserie-dupont.fr"
+    ],
+    "sent_at": "-1d",
+    "body": "Bonjour, je vous transmets ma lettre de motivation et mon CV. Je reste disponible pour un entretien à partir du 04/09/2026.",
+    "attendu": {
+      "engagement": false,
+      "echeance": null,
+      "filtre": true,
+      "pourquoi": "catégorie RH : écartée avant le modèle malgré une vraie promesse"
+    }
+  }
+]
