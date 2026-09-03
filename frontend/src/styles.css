@@ -910,3 +910,7 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   border-bottom-color:var(--risk,#ef4444);
 }
 .bandeau-reconnexion a{color:inherit;font-weight:600;text-decoration:underline;}
+
+/* Lignes d'alerte cliquables : ouvrent le fil qui a déclenché l'alerte. */
+tr.cliquable{cursor:pointer;}
+tr.cliquable:hover{background:var(--secondary,#1e293b);}
