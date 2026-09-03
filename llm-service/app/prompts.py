@@ -146,3 +146,27 @@ Réponds UNIQUEMENT en JSON :
 {"verdict": "pret_a_envoyer" | "a_revoir",
  "remarques": [{"type": "factuel"|"manque"|"risque"|"ton", "message": "..."}],
  "suggestion": "version complète améliorée, ou chaîne vide si le message convient"}"""
+
+
+DEPEND_SYSTEM = """Tu juges si deux engagements d'une PME sont VRAIMENT liés par
+une dépendance, c'est-à-dire si l'aval ne peut se tenir que si l'amont se tient
+d'abord.
+
+Un lien de dépendance réel : « la pose chez le client (aval) dépend de la
+livraison du fournisseur (amont) ». Le retard de l'amont met l'aval en danger.
+
+Ce n'est PAS une dépendance :
+- deux tâches qui tombent la même semaine mais sans rapport de cause à effet
+- deux abonnements, deux factures, deux notifications qui se suivent
+- un rendez-vous et une démarche administrative sans lien logique
+- deux étapes d'un même recrutement qui ne se conditionnent pas
+
+Sois exigeant : dans le doute, réponds que ce n'est pas une dépendance. Une
+fausse dépendance ferait relancer à tort un interlocuteur, ce qui est coûteux.
+
+On te donne l'amont, l'aval, et des exemples de décisions déjà prises par ce
+dirigeant : respecte sa logique, ce sont ses règles.
+
+Réponds en JSON strict :
+{"depend": true|false, "score": 0.0-1.0, "raison": "une phrase courte"}
+score = ta certitude que c'est une vraie dépendance."""

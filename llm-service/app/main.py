@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .prompts import CAPSULE_SYSTEM, DRAFT_SYSTEM, EXTRACTION_SYSTEM, REVIEW_SYSTEM
+from .prompts import DEPEND_SYSTEM
 from .provider import get_provider
 
 logging.basicConfig(level=logging.INFO)
@@ -174,6 +175,46 @@ class ReviewRequest(BaseModel):
     contexte_client: list[str] | None = None
     thread_extraits: list[str] | None = None
     capsule: object = None
+
+
+class DependExemple(BaseModel):
+    amont: str
+    aval: str
+    verdict: str  # "dependance" ou "sans_lien"
+
+
+class DependRequest(BaseModel):
+    amont_objet: str
+    amont_echeance: str = ""
+    aval_objet: str
+    aval_echeance: str = ""
+    raison_heuristique: str = ""
+    # Décisions passées du dirigeant, réinjectées comme exemples : c'est ainsi
+    # que ses confirmations et rejets « nourrissent » le jugement, sans aucun
+    # entraînement de modèle.
+    exemples: list[DependExemple] | None = None
+
+
+@app.post("/depend")
+async def depend(req: DependRequest):
+    """Juge si l'aval dépend vraiment de l'amont. L'humain reste l'autorité :
+    ce jugement ne fait que filtrer et classer les candidats proposés."""
+    payload = req.model_dump()
+    try:
+        raw = await provider.complete_json(DEPEND_SYSTEM, json.dumps(payload, ensure_ascii=False))
+    except Exception as exc:  # noqa: BLE001
+        log.error("depend: %s", exc)
+        raise HTTPException(status_code=502, detail=f"fournisseur LLM: {exc}") from exc
+    score = raw.get("score", 0.0)
+    try:
+        score = max(0.0, min(1.0, float(score)))
+    except (TypeError, ValueError):
+        score = 0.0
+    return {
+        "depend": bool(raw.get("depend", False)),
+        "score": score,
+        "raison": str(raw.get("raison", "")).strip()[:200],
+    }
 
 
 TYPES_REMARQUE = {"factuel", "manque", "risque", "ton"}

@@ -451,10 +451,46 @@ func (s *Store) CountEventsAfterCreation(ctx context.Context, engagementID int64
 
 // --- Liens de dépendance ---
 
-func (s *Store) CreateLink(ctx context.Context, amont, aval int64, raison string) error {
-	_, err := s.Pool.Exec(ctx, `INSERT INTO dependency_links (amont_id, aval_id, raison)
-		VALUES ($1,$2,$3) ON CONFLICT (amont_id, aval_id) DO NOTHING`, amont, aval, raison)
+// DependExempleData : une décision passée sur un lien, pour l'apprentissage.
+type DependExempleData struct {
+	Amont, Aval, Verdict string
+}
+
+func (s *Store) CreateLink(ctx context.Context, amont, aval int64, raison string, score float64) error {
+	_, err := s.Pool.Exec(ctx, `INSERT INTO dependency_links (amont_id, aval_id, raison, score)
+		VALUES ($1,$2,$3,$4) ON CONFLICT (amont_id, aval_id) DO NOTHING`, amont, aval, raison, score)
 	return err
+}
+
+// ExemplesDependance renvoie les décisions déjà prises par le dirigeant sur des
+// liens : confirmés (dépendance réelle) et rejetés (sans lien). Elles servent
+// d'exemples au jugement du modèle — c'est ainsi que ses choix « nourrissent »
+// l'agent, sans aucun entraînement. On équilibre positifs et négatifs pour ne
+// pas biaiser le modèle vers un seul verdict.
+func (s *Store) ExemplesDependance(ctx context.Context, maxParClasse int) ([]DependExempleData, error) {
+	rows, err := s.Pool.Query(ctx, `
+		(SELECT ea.objet, ev.objet, 'dependance' FROM dependency_links l
+		   JOIN engagements ea ON ea.id=l.amont_id
+		   JOIN engagements ev ON ev.id=l.aval_id
+		  WHERE l.statut='confirme' ORDER BY l.id DESC LIMIT $1)
+		UNION ALL
+		(SELECT ea.objet, ev.objet, 'sans_lien' FROM dependency_links l
+		   JOIN engagements ea ON ea.id=l.amont_id
+		   JOIN engagements ev ON ev.id=l.aval_id
+		  WHERE l.statut='rejete' ORDER BY l.id DESC LIMIT $1)`, maxParClasse)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []DependExempleData
+	for rows.Next() {
+		var d DependExempleData
+		if err := rows.Scan(&d.Amont, &d.Aval, &d.Verdict); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink, error) {
