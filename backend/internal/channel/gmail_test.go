@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -57,4 +58,27 @@ func TestConnecteursRespectentLInterface(t *testing.T) {
 	var _ Reader = (*Gmail)(nil)
 	var _ Reader = (*IMAP)(nil)
 	var _ Reader = (*Fixture)(nil)
+}
+
+func TestTraduireErreurJeton(t *testing.T) {
+	src := errors.New(`auth: cannot fetch token: 400 Response: {"error":"invalid_grant","error_description":"Token has been expired or revoked."}`)
+
+	g := traduireErreurJeton("google", src)
+	if !strings.Contains(g.Error(), "Gmail") || !strings.Contains(g.Error(), "reconnecté") {
+		t.Fatalf("message peu clair pour Google : %v", g)
+	}
+	if !errors.Is(g, src) {
+		t.Fatal("l'erreur d'origine doit rester consultable (technique conservée)")
+	}
+
+	o := traduireErreurJeton("microsoft", src)
+	if !strings.Contains(o.Error(), "Outlook") {
+		t.Fatalf("message peu clair pour Microsoft : %v", o)
+	}
+
+	// Une erreur qui n'est pas un invalid_grant passe telle quelle.
+	autre := errors.New("connexion réseau interrompue")
+	if traduireErreurJeton("google", autre).Error() != autre.Error() {
+		t.Fatal("une erreur ordinaire ne doit pas être réécrite")
+	}
 }
