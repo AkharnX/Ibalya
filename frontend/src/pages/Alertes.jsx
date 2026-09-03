@@ -62,13 +62,18 @@ export default function Alertes() {
             </thead>
             <tbody>
               {visibles.map((d) => (
-                <tr key={d.id} className={(d.engagement_id || d.thread_id) ? 'cliquable' : undefined}
-                  onClick={() => (d.engagement_id || d.thread_id) && setOuverte(d)}>
+                <tr key={d.id}>
                   <td><b>{d.critique ? '⚠ ' : ''}{DET_LABELS[d.type] || d.type}</b></td>
-                  <td className="obj">{d.titre}<div className="sub">{d.detail}</div></td>
+                  <td className="obj">
+                    {(d.engagement_id || d.thread_id)
+                      ? <button className="lien-source" title="Voir la conversation d'origine"
+                          onClick={() => setOuverte(d)}>{d.titre}</button>
+                      : d.titre}
+                    <div className="sub">{d.detail}</div>
+                  </td>
                   <td><Reli value={d.score} /></td>
                   <td className="sub">{fmtDT(d.created_at)}</td>
-                  <td><button className="ghost" onClick={(e) => { e.stopPropagation(); dismiss(d.id) }}>
+                  <td><button className="ghost" onClick={() => dismiss(d.id)}>
                     <Icone nom="action-rejeter" /> Écarter</button></td>
                 </tr>
               ))}
