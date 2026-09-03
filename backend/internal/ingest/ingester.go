@@ -109,7 +109,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 // updateRhythms calcule le rythme de réponse habituel par fil : moyenne des
 // écarts entre messages d'expéditeurs différents (CDC 5.3 / détecteur 2).
 func (ing *Ingester) updateRhythms(ctx context.Context) {
-	rows, err := ing.Store.Pool.Query(ctx, `
+	rows, err := ing.Store.Q(ctx).Query(ctx, `
 		WITH gaps AS (
 		  SELECT thread_id,
 		         EXTRACT(EPOCH FROM sent_at - lag(sent_at) OVER (PARTITION BY thread_id ORDER BY sent_at))/3600.0 AS gap_h,

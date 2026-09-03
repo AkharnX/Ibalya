@@ -145,16 +145,32 @@ func (s *Server) Handler() http.Handler {
 //     scripts (make status, demo.sh) ; jamais joignable depuis Internet.
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Chaque requête authentifiée s'exécute dans le tenant de son
+		// utilisateur : les politiques RLS ne laissent alors voir et écrire que
+		// ses données. Le jeton d'administration local agit comme le
+		// propriétaire de la boîte connectée.
 		if c, err := r.Cookie(cookieSession); err == nil && c.Value != "" {
 			if u, err := s.Store.UserBySession(r.Context(), c.Value); err == nil {
-				next(w, r.WithContext(context.WithValue(r.Context(), ctxUser{}, u)))
+				ctx := context.WithValue(r.Context(), ctxUser{}, u)
+				_ = s.Store.EnTenant(ctx, u.ID, func(tctx context.Context) error {
+					next(w, r.WithContext(tctx))
+					return nil
+				})
 				return
 			}
 		}
 		token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
 		if token != "" && s.Cfg.AdminToken != "" && estLocal(r) &&
 			subtle.ConstantTimeCompare([]byte(token), []byte(s.Cfg.AdminToken)) == 1 {
-			next(w, r)
+			proprio, err := s.Store.ProprietaireParDefaut(r.Context())
+			if err != nil {
+				httpError(w, 500, "aucun propriétaire déterminé pour le jeton d'administration")
+				return
+			}
+			_ = s.Store.EnTenant(r.Context(), proprio, func(tctx context.Context) error {
+				next(w, r.WithContext(tctx))
+				return nil
+			})
 			return
 		}
 		httpError(w, 401, "authentification requise")
@@ -309,14 +325,14 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		LiensAConfirmer     int `json:"liens_a_confirmer"`
 		EcheancesAConfirmer int `json:"echeances_a_confirmer"`
 	}
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&counts.Messages)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='pending'`).Scan(&counts.EnAttente)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='excluded'`).Scan(&counts.Exclus)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM engagements`).Scan(&counts.Engagements)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM detections WHERE statut IN ('nouvelle','au_digest')`).Scan(&counts.Detections)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&counts.Brouillons)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM dependency_links WHERE statut='candidat'`).Scan(&counts.LiensAConfirmer)
-	s.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM engagements
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&counts.Messages)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='pending'`).Scan(&counts.EnAttente)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='excluded'`).Scan(&counts.Exclus)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM engagements`).Scan(&counts.Engagements)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM detections WHERE statut IN ('nouvelle','au_digest')`).Scan(&counts.Detections)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&counts.Brouillons)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM dependency_links WHERE statut='candidat'`).Scan(&counts.LiensAConfirmer)
+	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM engagements
 		WHERE echeance IS NOT NULL AND echeance_inferee AND NOT echeance_confirmee
 		  AND statut IN ('ouvert','confirme','en_retard')`).Scan(&counts.EcheancesAConfirmer)
 
@@ -1047,7 +1063,7 @@ func (s *Server) kpis(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := func(query string, args ...any) float64 {
 		var v float64
-		_ = s.Store.Pool.QueryRow(ctx, query, args...).Scan(&v)
+		_ = s.Store.Q(ctx).QueryRow(ctx, query, args...).Scan(&v)
 		return v
 	}
 

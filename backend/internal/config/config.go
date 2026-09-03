@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	DatabaseURL           string
+	AppDatabaseURL        string
 	APIAddr               string
 	AdminToken            string
 	LLMServiceURL         string
@@ -90,12 +91,21 @@ func (c Config) Verifier() error {
 	if c.AdminToken != "" && len(c.AdminToken) < 32 {
 		return fmt.Errorf("ADMIN_TOKEN fait %d caractères, 32 au minimum sur une installation publique", len(c.AdminToken))
 	}
+	// Sans rôle applicatif dédié, l'app tourne en super-utilisateur et le
+	// cloisonnement par utilisateur (RLS) est contourné : interdit dès qu'il y
+	// a plus d'un compte, car les données se mélangeraient.
+	if c.AppDatabaseURL == "" {
+		return fmt.Errorf("APP_DATABASE_URL absent : le cloisonnement par utilisateur (RLS) serait inactif sur une installation publique")
+	}
 	return nil
 }
 
 func Load() Config {
 	return Config{
-		DatabaseURL:           env("DATABASE_URL", "postgres://ibalya:ibalya_dev@127.0.0.1:5435/ibalya?sslmode=disable"),
+		DatabaseURL: env("DATABASE_URL", "postgres://ibalya:ibalya_dev@127.0.0.1:5435/ibalya?sslmode=disable"),
+		// Rôle non privilégié soumis à RLS (voir store). Vide en dev : le
+		// cloisonnement fort par la base est alors inactif.
+		AppDatabaseURL:        env("APP_DATABASE_URL", ""),
 		APIAddr:               env("API_ADDR", "127.0.0.1:9999"),
 		AdminToken:            env("ADMIN_TOKEN", ""),
 		LLMServiceURL:         env("LLM_SERVICE_URL", "http://127.0.0.1:8092"),

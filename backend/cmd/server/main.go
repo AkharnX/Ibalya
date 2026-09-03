@@ -36,7 +36,7 @@ func main() {
 	}
 	ctx := context.Background()
 
-	st, err := store.New(ctx, cfg.DatabaseURL)
+	st, err := store.New(ctx, cfg.DatabaseURL, cfg.AppDatabaseURL)
 	if err != nil {
 		log.Fatalf("base de données: %v", err)
 	}
@@ -172,33 +172,42 @@ func scheduler(ctx context.Context, cfg config.Config, st *store.Store, eng *eng
 	defer cycleTicker.Stop()
 	defer digestTicker.Stop()
 
-	connected := func() bool {
-		// Un canal à identifiants directs (IMAP, fixtures) est prêt dès le
-		// démarrage ; seul OAuth exige un raccordement préalable.
-		if cfg.Channel != "gmail" {
-			return true
+	// Propriétaire de la boîte connectée : le cycle et le digest s'exécutent
+	// dans SON tenant, sous RLS. (Le multi-boîte — un canal par utilisateur —
+	// est l'étape suivante ; pour l'instant une seule boîte est raccordée.)
+	proprio := func() (int64, bool) {
+		id, err := st.ProprietaireParDefaut(ctx)
+		if err != nil {
+			return 0, false
 		}
-		tok, _, _ := st.GetOAuthToken(ctx, "google")
-		return tok != nil
+		return id, true
 	}
 
 	for {
 		select {
 		case <-cycleTicker.C:
-			if !connected() {
+			id, ok := proprio()
+			if !ok {
 				continue
 			}
-			res := eng.RunCycle(ctx, func(ctx context.Context) (any, error) {
-				return ing.Run(ctx, time.Now().AddDate(0, 0, -2), 300)
+			_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
+				res := eng.RunCycle(tctx, func(c context.Context) (any, error) {
+					return ing.Run(c, time.Now().AddDate(0, 0, -2), 300)
+				})
+				if res.Erreur != "" {
+					log.Printf("cycle planifié: %s", res.Erreur)
+				}
+				return nil
 			})
-			if res.Erreur != "" {
-				log.Printf("cycle planifié: %s", res.Erreur)
-			}
 		case <-digestTicker.C:
-			if !connected() {
+			id, ok := proprio()
+			if !ok {
 				continue
 			}
-			maybeDailyDigest(ctx, cfg, st, eng)
+			_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
+				maybeDailyDigest(tctx, cfg, st, eng)
+				return nil
+			})
 		case <-ctx.Done():
 			return
 		}

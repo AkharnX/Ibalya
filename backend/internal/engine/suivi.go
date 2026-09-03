@@ -51,7 +51,7 @@ type EngagementSuivi struct {
 // Seuls les liens CONFIRMÉS comptent (CDC 8.1 : jamais sur un lien candidat).
 func (e *Engine) blocages(ctx context.Context) map[int64]Blocage {
 	out := map[int64]Blocage{}
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		SELECT l.aval_id, a.id, a.objet, coalesce(pe.email, ''), a.echeance
 		FROM dependency_links l
 		JOIN engagements a ON a.id = l.amont_id
@@ -255,8 +255,8 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 	}
 	s := &Synthese{Categories: map[string]CategorieBloc{}}
 	s.KPI.EngagementsSuivis = len(suivi)
-	_ = e.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&s.KPI.MessagesLus)
-	_ = e.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&s.KPI.MessagesAValider)
+	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&s.KPI.MessagesLus)
+	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&s.KPI.MessagesAValider)
 
 	parCat := map[string][]EngagementSuivi{}
 	for _, x := range suivi {

@@ -151,11 +151,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.limiteConnexion.Succes("ip:"+ip, cleCompte)
-	if ok, motif := s.sessionAutorisee(r.Context(), u.Email); !ok {
-		s.Store.Audit(r.Context(), u.Email, "session_refusee_non_proprietaire", nil)
-		httpError(w, 403, motif)
-		return
-	}
+	// Plus de garde « propriétaire unique » : en multi-utilisateur, chaque
+	// compte actif ouvre sa propre session et ne voit que ses données (RLS).
 	token, expire, err := s.Store.CreateSession(r.Context(), u.ID)
 	if err != nil {
 		httpError(w, 500, err.Error())
@@ -306,11 +303,6 @@ func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil || u == nil || !u.Actif {
 		s.Store.Audit(ctx, "anonyme", "connexion_google_refusee", map[string]string{"email": email})
 		echec("Aucun compte Ibalya n'est associé à " + email + ".")
-		return
-	}
-	if ok, motif := s.sessionAutorisee(ctx, u.Email); !ok {
-		s.Store.Audit(ctx, u.Email, "session_refusee_non_proprietaire", map[string]string{"methode": "google"})
-		echec(motif)
 		return
 	}
 	token, expire, err := s.Store.CreateSession(ctx, u.ID)

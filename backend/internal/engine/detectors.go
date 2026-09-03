@@ -77,7 +77,7 @@ func (e *Engine) capsuleParams(ctx context.Context) capsuleParams {
 }
 
 func (e *Engine) markOverdue(ctx context.Context) (int, error) {
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		UPDATE engagements SET statut='en_retard', maj_le=now()
 		WHERE statut IN ('ouvert','confirme')
 		  AND echeance IS NOT NULL AND echeance_confirmee AND echeance < CURRENT_DATE
@@ -157,7 +157,7 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 // Détecteur 2 — Silence anormal : fil avec engagement ouvert sans réponse
 // depuis plus longtemps que son rythme appris (seuil PAR FIL, anti-faux-positif).
 func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, today string) (int, error) {
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		SELECT DISTINCT t.id, t.subject, t.last_message_at, t.response_rhythm_hours,
 		       (SELECT m.sender FROM messages m WHERE m.thread_id=t.id AND NOT m.outbound ORDER BY m.sent_at DESC LIMIT 1),
 		       coalesce((SELECT m.outbound FROM messages m WHERE m.thread_id=t.id ORDER BY m.sent_at DESC LIMIT 1), false)
@@ -346,7 +346,7 @@ func (e *Engine) detectOrphelin(ctx context.Context, p capsuleParams, today stri
 // Détecteur 5 — Surcharge ponctuelle : concentration d'échéances sur un même
 // responsable / une même semaine.
 func (e *Engine) detectSurcharge(ctx context.Context, p capsuleParams, today string) (int, error) {
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		SELECT coalesce(pe.email,'(inconnu)'), date_trunc('week', e.echeance)::date, count(*)
 		FROM engagements e
 		LEFT JOIN persons pe ON pe.id = e.emetteur_id
