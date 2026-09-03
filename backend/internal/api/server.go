@@ -331,7 +331,10 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	// le temps d'agir avant la panne. Propre à Google ; IMAP et Microsoft
 	// n'ont pas cette expiration.
 	reconnexion := map[string]any{"requise": false}
-	if s.Engine.Channel.Name() == "gmail" {
+	// Le rappel n'a de sens qu'en mode Test : c'est lui qui impose l'expiration
+	// à sept jours. En production, le jeton ne meurt plus sur ce calendrier, et
+	// le bandeau serait une fausse alerte hebdomadaire.
+	if s.Engine.Channel.Name() == "gmail" && s.Store.GetSetting(ctx, "google_mode_test", "1") == "1" {
 		if connecte, jours := s.Store.EtatConnexionOAuth(ctx, "google"); connecte {
 			restant := 7 - jours
 			reconnexion = map[string]any{
@@ -807,9 +810,12 @@ func (s *Server) listAudit(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	writeJSON(w, map[string]string{
-		"seuil_publication":  s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
-		"digest_type":        s.Store.GetSetting(ctx, "digest_type", "quotidien"),
-		"digest_email":       s.Store.GetSetting(ctx, "digest_email", "0"),
+		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
+		"digest_type":       s.Store.GetSetting(ctx, "digest_type", "quotidien"),
+		"digest_email":      s.Store.GetSetting(ctx, "digest_email", "0"),
+		// Statut de publication de l'app Google : "1" = mode Test (jeton expirant
+		// à 7 jours, rappel actif), "0" = production.
+		"google_mode_test":   s.Store.GetSetting(ctx, "google_mode_test", "1"),
 		"digest_expediteur":  s.Store.GetSetting(ctx, "digest_expediteur", ""),
 		"identite_prenom":    s.Store.GetSetting(ctx, "identite_prenom", ""),
 		"identite_nom":       s.Store.GetSetting(ctx, "identite_nom", ""),
@@ -847,6 +853,12 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		case "digest_email":
 			if v != "0" && v != "1" {
 				httpError(w, 400, "digest_email: 0 ou 1")
+				return
+			}
+			s.Store.SetSetting(r.Context(), k, v)
+		case "google_mode_test":
+			if v != "0" && v != "1" {
+				httpError(w, 400, "google_mode_test: 0 ou 1")
 				return
 			}
 			s.Store.SetSetting(r.Context(), k, v)

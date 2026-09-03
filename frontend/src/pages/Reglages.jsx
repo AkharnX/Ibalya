@@ -94,6 +94,7 @@ export default function Reglages() {
     identite_signature: '',
     identite_prenom: '', identite_nom: '', identite_fonction: '', identite_societe: '',
     categories_sensibles: '{"sante":true,"rh":true,"juridique":false}',
+    google_mode_test: '1',
   })
   const [status, setStatus] = useState(null)
   const [kpis, setKpis] = useState(null)
@@ -190,6 +191,14 @@ export default function Reglages() {
               <option value="quotidien">Quotidien</option>
               <option value="hebdo">Hebdomadaire</option>
             </select>
+          </div>
+          <div className="setting">
+            <label>Mode de l'application Google</label>
+            <select value={settings.google_mode_test} onChange={set('google_mode_test')}>
+              <option value="1">Test — jeton à renouveler tous les 7 jours</option>
+              <option value="0">Production — connexion durable</option>
+            </select>
+            <p className="help">Reflète le statut de publication dans Google Cloud. En mode Test, un rappel de reconnexion s'affiche avant l'expiration.</p>
           </div>
           <div className="setting">
             <label>Recevoir le digest par email</label>
