@@ -142,7 +142,9 @@ type DigestContent struct {
 func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestContent, error) {
 	seuil := e.SeuilPublication(ctx)
 	dc := &DigestContent{GenereLe: time.Now(), Type: dtype, JoursAvantReconnexion: -1}
-	if e.Channel != nil && e.Channel.Name() == "gmail" {
+	// Rappel d'expiration : mode Test uniquement (voir status).
+	if e.Channel != nil && e.Channel.Name() == "gmail" &&
+		e.Store.GetSetting(ctx, "google_mode_test", "1") == "1" {
 		if connecte, jours := e.Store.EtatConnexionOAuth(ctx, "google"); connecte {
 			dc.JoursAvantReconnexion = 7 - jours
 		}
