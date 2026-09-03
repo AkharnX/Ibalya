@@ -326,10 +326,28 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	email, errCompte := s.Engine.Channel.AccountEmail(ctx)
 	llmOK := s.Engine.LLM.Health(ctx) == nil
 
+	// Rappel de reconnexion. En mode Test, Google révoque le jeton sept jours
+	// après le consentement : on prévient à partir du cinquième pour laisser
+	// le temps d'agir avant la panne. Propre à Google ; IMAP et Microsoft
+	// n'ont pas cette expiration.
+	reconnexion := map[string]any{"requise": false}
+	if s.Engine.Channel.Name() == "gmail" {
+		if connecte, jours := s.Store.EtatConnexionOAuth(ctx, "google"); connecte {
+			restant := 7 - jours
+			reconnexion = map[string]any{
+				"fournisseur":   "Gmail",
+				"jours_depuis":  jours,
+				"jours_restant": restant,
+				"bientot":       restant <= 2,
+			}
+		}
+	}
+
 	writeJSON(w, map[string]any{
 		"canal":             s.Engine.Channel.Name(),
 		"canal_connecte":    errCompte == nil && email != "",
 		"compte":            email,
+		"reconnexion":       reconnexion,
 		"service_llm_ok":    llmOK,
 		"dernier_cycle":     s.Store.GetSetting(ctx, "dernier_cycle", ""),
 		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),

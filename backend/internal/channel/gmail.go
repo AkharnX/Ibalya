@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
 	"net/mail"
 	"net/url"
 	"regexp"
@@ -14,6 +16,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	gmail "google.golang.org/api/gmail/v1"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -133,6 +136,50 @@ func (g *Gmail) AccountEmail(ctx context.Context) (string, error) {
 	return prof.EmailAddress, nil
 }
 
+// avecRepriseGmail rejoue un appel Gmail quand l'API refuse le débit.
+//
+// La quête d'un fil fait un appel par message ; sur une large fenêtre, le coût
+// dépasse le quota par minute et Gmail répond 403 rateLimitExceeded (ou 429).
+// Ce n'est pas une vraie erreur, juste « ralentis ». On attend, en doublant à
+// chaque fois, avec un peu de hasard pour ne pas repartir tous en même temps.
+func avecRepriseGmail[T any](ctx context.Context, appel func() (T, error)) (T, error) {
+	const tentatives = 5
+	attente := time.Second
+	var zero T
+	for i := 0; ; i++ {
+		v, err := appel()
+		if err == nil || !estLimiteDebitGmail(err) || i == tentatives-1 {
+			return v, err
+		}
+		pause := attente + time.Duration(rand.Int63n(int64(attente/2+1)))
+		select {
+		case <-time.After(pause):
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		}
+		attente *= 2
+	}
+}
+
+// estLimiteDebitGmail reconnaît un refus pour cause de débit, pas une panne.
+func estLimiteDebitGmail(err error) bool {
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) {
+		if gerr.Code == 429 {
+			return true
+		}
+		if gerr.Code == 403 {
+			for _, e := range gerr.Errors {
+				if e.Reason == "rateLimitExceeded" || e.Reason == "userRateLimitExceeded" {
+					return true
+				}
+			}
+			return strings.Contains(gerr.Message, "Quota exceeded")
+		}
+	}
+	return false
+}
+
 func (g *Gmail) FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
 	svc, err := g.service(ctx)
 	if err != nil {
@@ -148,7 +195,9 @@ func (g *Gmail) FetchSince(ctx context.Context, since time.Time, max int) ([]Mes
 		if pageToken != "" {
 			call = call.PageToken(pageToken)
 		}
-		resp, err := call.Do()
+		resp, err := avecRepriseGmail(ctx, func() (*gmail.ListMessagesResponse, error) {
+			return call.Do()
+		})
 		if err != nil {
 			return nil, fmt.Errorf("gmail list: %w", err)
 		}
@@ -156,7 +205,9 @@ func (g *Gmail) FetchSince(ctx context.Context, since time.Time, max int) ([]Mes
 			if len(out) >= max {
 				break
 			}
-			full, err := svc.Users.Messages.Get("me", ref.Id).Format("full").Context(ctx).Do()
+			full, err := avecRepriseGmail(ctx, func() (*gmail.Message, error) {
+				return svc.Users.Messages.Get("me", ref.Id).Format("full").Context(ctx).Do()
+			})
 			if err != nil {
 				continue
 			}

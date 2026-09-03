@@ -898,3 +898,15 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 .setting.bascule b{display:block;font-weight:600;}
 .setting.bascule .help{margin-top:2px;}
 .panel-actions{display:flex;align-items:flex-end;}
+
+/* Rappel de reconnexion : visible sans être anxiogène, rouge franc à l'expiration. */
+.bandeau-reconnexion{
+  padding:10px 18px;font-size:13.5px;
+  background:var(--delay-bg,#fef3c7);color:var(--delay-ink,#92400e);
+  border-bottom:1px solid var(--delay,#f59e0b);
+}
+.bandeau-reconnexion.expire{
+  background:var(--risk-bg,#fee2e2);color:var(--risk-ink,#991b1b);
+  border-bottom-color:var(--risk,#ef4444);
+}
+.bandeau-reconnexion a{color:inherit;font-weight:600;text-decoration:underline;}

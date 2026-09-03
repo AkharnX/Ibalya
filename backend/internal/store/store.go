@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -93,9 +94,12 @@ func (s *Store) SaveOAuthToken(ctx context.Context, provider string, token []byt
 	if err != nil {
 		return err
 	}
-	_, err = s.Pool.Exec(ctx, `INSERT INTO oauth_tokens (provider, token, account_email, updated_at)
-		VALUES ($1,$2,$3,now())
-		ON CONFLICT (provider) DO UPDATE SET token=EXCLUDED.token, account_email=EXCLUDED.account_email, updated_at=now()`,
+	// connecte_le=now() : c'est un consentement, le compte à rebours des sept
+	// jours repart de zéro. UpdateOAuthTokenOnly, lui, ne touche pas ce champ.
+	_, err = s.Pool.Exec(ctx, `INSERT INTO oauth_tokens (provider, token, account_email, updated_at, connecte_le)
+		VALUES ($1,$2,$3,now(),now())
+		ON CONFLICT (provider) DO UPDATE SET token=EXCLUDED.token, account_email=EXCLUDED.account_email,
+		  updated_at=now(), connecte_le=now()`,
 		provider, token, email)
 	return err
 }
@@ -208,4 +212,16 @@ func (s *Store) SetOAuthAccountEmail(ctx context.Context, provider, email string
 	_, err := s.Pool.Exec(ctx, `UPDATE oauth_tokens SET account_email=$2 WHERE provider=$1`,
 		provider, email)
 	return err
+}
+
+// EtatConnexionOAuth décrit l'ancienneté d'une connexion OAuth, pour prévenir
+// avant qu'elle n'expire. provider vide ou jamais connecté → connecte==false.
+func (s *Store) EtatConnexionOAuth(ctx context.Context, provider string) (connecte bool, depuisJours int) {
+	var connecteLe *time.Time
+	err := s.Pool.QueryRow(ctx,
+		`SELECT connecte_le FROM oauth_tokens WHERE provider=$1`, provider).Scan(&connecteLe)
+	if err != nil || connecteLe == nil {
+		return false, 0
+	}
+	return true, int(time.Since(*connecteLe).Hours() / 24)
 }

@@ -130,13 +130,23 @@ type DigestContent struct {
 	Engagements []store.Engagement `json:"engagements_a_risque"`
 	Detections  []store.Detection  `json:"detections"`
 	Brouillons  []store.Draft      `json:"brouillons_proposes"`
+	// JoursAvantReconnexion : jours restants avant que Google révoque le jeton
+	// (mode Test, sept jours après consentement). 0 ou moins = déjà expiré.
+	// -1 signifie « sans objet » (canal non concerné). Prévenir dans le digest
+	// évite de découvrir la panne par un cycle qui échoue.
+	JoursAvantReconnexion int `json:"jours_avant_reconnexion"`
 }
 
 // GenerateDigest assemble le digest : détections au-dessus du seuil uniquement
 // (règle anti-churn), engagements triés par risque, brouillons d'action.
 func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestContent, error) {
 	seuil := e.SeuilPublication(ctx)
-	dc := &DigestContent{GenereLe: time.Now(), Type: dtype}
+	dc := &DigestContent{GenereLe: time.Now(), Type: dtype, JoursAvantReconnexion: -1}
+	if e.Channel != nil && e.Channel.Name() == "gmail" {
+		if connecte, jours := e.Store.EtatConnexionOAuth(ctx, "google"); connecte {
+			dc.JoursAvantReconnexion = 7 - jours
+		}
+	}
 
 	dets, err := e.Store.ListDetections(ctx, []string{"nouvelle"}, seuil, 30)
 	if err != nil {
@@ -208,6 +218,17 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 func (e *Engine) renderDigestText(dc *DigestContent) string {
 	var b strings.Builder
 	b.WriteString("Bonjour,\n\nVoici votre point du jour.\n")
+	// Le rappel passe en tête : une connexion qui meurt arrête tout, il ne doit
+	// pas se noyer sous les alertes.
+	if r := dc.JoursAvantReconnexion; r >= 0 && r <= 2 {
+		if r <= 0 {
+			b.WriteString("\n⚠ ACTION REQUISE — votre connexion Gmail a expiré. " +
+				"Reconnectez votre boîte dans Réglages, Connexion, sans quoi l'agent ne lit plus vos mails.\n")
+		} else {
+			fmt.Fprintf(&b, "\n⚠ Votre connexion Gmail expire dans %d jour(s). "+
+				"Reconnectez votre boîte dans Réglages, Connexion, pour éviter une interruption.\n", r)
+		}
+	}
 	if len(dc.Detections) > 0 {
 		b.WriteString("\n— ALERTES —\n")
 		for _, d := range dc.Detections {

@@ -202,6 +202,24 @@ function Fraicheur() {
   )
 }
 
+// Rappel de reconnexion. Une connexion Gmail qui meurt arrête tout ; mieux vaut
+// prévenir dans l'app que laisser le dirigeant le découvrir par un cycle échoué.
+function BandeauReconnexion() {
+  const { statut } = useEtatAgent()
+  const r = statut?.reconnexion
+  if (!r || !r.bientot) return null
+  const expire = r.jours_restant <= 0
+  return (
+    <div className={'bandeau-reconnexion' + (expire ? ' expire' : '')} role="alert">
+      {expire
+        ? 'Votre connexion Gmail a expiré : l\'agent ne lit plus vos mails.'
+        : `Votre connexion Gmail expire dans ${r.jours_restant} jour(s).`}
+      {' '}
+      <Link to="/reglages">Reconnecter ma boîte</Link>
+    </div>
+  )
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')

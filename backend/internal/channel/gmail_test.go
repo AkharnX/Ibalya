@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"google.golang.org/api/googleapi"
 )
 
 // Le lien doit ouvrir le BON compte : un dirigeant connecté à plusieurs
@@ -80,5 +82,23 @@ func TestTraduireErreurJeton(t *testing.T) {
 	autre := errors.New("connexion réseau interrompue")
 	if traduireErreurJeton("google", autre).Error() != autre.Error() {
 		t.Fatal("une erreur ordinaire ne doit pas être réécrite")
+	}
+}
+
+func TestEstLimiteDebitGmail(t *testing.T) {
+	limite403 := &googleapi.Error{Code: 403, Errors: []googleapi.ErrorItem{{Reason: "rateLimitExceeded"}}}
+	if !estLimiteDebitGmail(limite403) {
+		t.Fatal("403 rateLimitExceeded doit être reconnu comme un refus de débit")
+	}
+	if !estLimiteDebitGmail(&googleapi.Error{Code: 429}) {
+		t.Fatal("429 doit être reconnu")
+	}
+	// un 403 pour permission refusée n'est PAS un problème de débit : ne pas réessayer
+	permission := &googleapi.Error{Code: 403, Errors: []googleapi.ErrorItem{{Reason: "insufficientPermissions"}}}
+	if estLimiteDebitGmail(permission) {
+		t.Fatal("un 403 de permission ne doit pas déclencher de reprise")
+	}
+	if estLimiteDebitGmail(errors.New("connexion coupée")) {
+		t.Fatal("une erreur réseau ordinaire n'est pas un refus de débit")
 	}
 }
