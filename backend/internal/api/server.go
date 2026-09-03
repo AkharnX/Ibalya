@@ -533,6 +533,27 @@ func (s *Server) patchEngagement(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
+// interlocuteurDe trouve l'autre partie d'un engagement : celle qui n'est pas
+// le dirigeant.
+//
+// Un engagement lie deux personnes. Pour une promesse que le dirigeant a prise
+// lui-même — « confirmer ma présence au rendez-vous » —, il en est l'émetteur ;
+// l'interlocuteur est alors le destinataire. Prendre l'émetteur sans réfléchir
+// faisait viser le dirigeant par ses propres règles : « ne plus rien extraire
+// de moi-même », ce qui n'a aucun sens.
+func interlocuteurDe(eng *store.Engagement, proprietaire string) string {
+	prop := normaliserEmail(proprietaire)
+	em := normaliserEmail(eng.EmetteurEmail)
+	dest := normaliserEmail(eng.DestinataireEmail)
+	if em != "" && em != prop {
+		return eng.EmetteurEmail
+	}
+	if dest != "" && dest != prop {
+		return eng.DestinataireEmail
+	}
+	return ""
+}
+
 // correctEngagement : la boucle d'apprentissage (CDC 11). Chaque correction
 // d'un geste devient une règle explicite.
 func (s *Server) correctEngagement(w http.ResponseWriter, r *http.Request) {
@@ -550,6 +571,7 @@ func (s *Server) correctEngagement(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 404, "engagement introuvable")
 		return
 	}
+	interlocuteur := interlocuteurDe(eng, s.proprietaire(ctx))
 	var rule store.LearnedRule
 	switch body.Action {
 	case "pas_un_engagement":
@@ -558,12 +580,20 @@ func (s *Server) correctEngagement(w http.ResponseWriter, r *http.Request) {
 		rule = store.LearnedRule{PorteeType: "engagement", PorteeCible: strconv.FormatInt(id, 10),
 			Action: "requalifier", Note: "« " + eng.Objet + " » n'est pas un engagement"}
 	case "ignorer_interlocuteur":
-		rule = store.LearnedRule{PorteeType: "interlocuteur", PorteeCible: eng.EmetteurEmail,
-			Action: "ignorer", Note: "Ne plus extraire d'engagements de " + eng.EmetteurEmail}
+		if interlocuteur == "" {
+			httpError(w, 400, "aucun interlocuteur distinct de vous sur cet engagement : rien à ignorer")
+			return
+		}
+		rule = store.LearnedRule{PorteeType: "interlocuteur", PorteeCible: interlocuteur,
+			Action: "ignorer", Note: "Ne plus extraire d'engagements de " + interlocuteur}
 	case "priorite_haute":
 		_ = s.Store.UpdateEngagement(ctx, id, map[string]any{"priorite": "haute"})
-		rule = store.LearnedRule{PorteeType: "interlocuteur", PorteeCible: eng.EmetteurEmail,
-			Action: "priorite_haute", Note: "Priorité haute pour " + eng.EmetteurEmail}
+		if interlocuteur == "" {
+			httpError(w, 400, "aucun interlocuteur distinct de vous sur cet engagement")
+			return
+		}
+		rule = store.LearnedRule{PorteeType: "interlocuteur", PorteeCible: interlocuteur,
+			Action: "priorite_haute", Note: "Priorité haute pour " + interlocuteur}
 	// Engagement réel mais mal résumé : l'extraction n'est pas à jeter, elle est
 	// à corriger. Sans cette nuance, tout ce qui n'est pas parfait se retrouve
 	// compté comme un faux positif.
