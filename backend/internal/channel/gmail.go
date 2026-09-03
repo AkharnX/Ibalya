@@ -63,7 +63,7 @@ type persistingTokenSource struct {
 func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 	tok, err := p.src.Token()
 	if err != nil {
-		return nil, err
+		return nil, traduireErreurJeton(p.fournisseur, err)
 	}
 	if tok.AccessToken != p.last {
 		p.last = tok.AccessToken
@@ -72,6 +72,28 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 		_ = p.store.UpdateOAuthTokenOnly(context.Background(), p.fournisseur, b)
 	}
 	return tok, nil
+}
+
+// traduireErreurJeton transforme un refus d'OAuth en consigne claire.
+//
+// « invalid_grant » signifie que le jeton de rafraîchissement est mort :
+// révoqué, ou expiré. En mode Test, Google révoque ce jeton sept jours après
+// le consentement — la panne se répète alors chaque semaine tant que l'app
+// n'est pas vérifiée. Sans traduction, le dirigeant ne voyait qu'une URL et un
+// code 400, sans savoir qu'il lui suffit de reconnecter sa boîte.
+func traduireErreurJeton(fournisseur string, err error) error {
+	boite := "votre boîte"
+	switch fournisseur {
+	case "google":
+		boite = "votre compte Gmail"
+	case "microsoft":
+		boite = "votre compte Outlook"
+	}
+	if strings.Contains(err.Error(), "invalid_grant") {
+		return fmt.Errorf("%s doit être reconnecté : l'autorisation a expiré ou été révoquée. "+
+			"Rendez-vous dans Réglages, Connexion, pour la renouveler. (%w)", boite, err)
+	}
+	return err
 }
 
 func (g *Gmail) service(ctx context.Context) (*gmail.Service, error) {
