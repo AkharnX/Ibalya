@@ -213,4 +213,71 @@ CREATE TABLE IF NOT EXISTS reports (
   content JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Multi-utilisateur, étape 1 : rattachement (additif, ne casse rien).
+--
+-- Chaque table de données reçoit un user_id. À ce stade il est NULLable et le
+-- code ne le filtre pas encore : l'application se comporte exactement comme
+-- avant. Les contraintes NOT NULL et d'unicité composite viendront avec le
+-- code de cloisonnement (étape 2), une fois toutes les lignes rattachées.
+--
+-- Le propriétaire de l'existant est dérivé du canal connecté, pas codé en dur :
+-- toute la base actuelle appartient au titulaire de la boîte Gmail raccordée.
+-- ════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE persons           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE threads           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE messages          ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE engagements       ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE engagement_events ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE dependency_links  ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE capsule           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE learned_rules     ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE detections        ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE drafts            ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE reports           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE audit_log         ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE oauth_tokens      ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+ALTER TABLE settings          ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+
+-- Rattachement de l'existant au propriétaire (titulaire du jeton Google).
+-- Si aucun jeton (installation neuve), rien à faire : pas de données à migrer.
+DO $migr$
+DECLARE proprio BIGINT;
+BEGIN
+  SELECT u.id INTO proprio
+    FROM users u
+    JOIN oauth_tokens o ON lower(o.account_email) = lower(u.email)
+   WHERE o.provider = 'google'
+   LIMIT 1;
+  IF proprio IS NOT NULL THEN
+    UPDATE persons           SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE threads           SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE messages          SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE engagements       SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE engagement_events SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE dependency_links  SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE capsule           SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE learned_rules     SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE detections        SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE drafts            SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE reports           SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE audit_log         SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE oauth_tokens      SET user_id=proprio WHERE user_id IS NULL;
+    UPDATE settings          SET user_id=proprio WHERE user_id IS NULL;
+  END IF;
+END
+$migr$;
+
+CREATE INDEX IF NOT EXISTS idx_persons_user     ON persons(user_id);
+CREATE INDEX IF NOT EXISTS idx_threads_user     ON threads(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_user    ON messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_engagements_user ON engagements(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_user      ON engagement_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_links_user       ON dependency_links(user_id);
+CREATE INDEX IF NOT EXISTS idx_rules_user       ON learned_rules(user_id);
+CREATE INDEX IF NOT EXISTS idx_detections_user  ON detections(user_id);
+CREATE INDEX IF NOT EXISTS idx_drafts_user      ON drafts(user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_user     ON reports(user_id);
 `
