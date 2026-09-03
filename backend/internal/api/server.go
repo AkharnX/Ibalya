@@ -1097,14 +1097,30 @@ func (s *Server) kpis(w http.ResponseWriter, r *http.Request) {
 
 // spaHandler sert les fichiers statiques du build et renvoie index.html pour
 // toute route inconnue (routage côté client).
+//
+// La politique de cache est le point délicat. Les fichiers du dossier assets
+// portent un condensat dans leur nom (index-AbCd12.js) : leur contenu ne change
+// jamais sans que le nom change, on peut donc les garder un an, immuables.
+//
+// index.html, lui, ne doit JAMAIS être mis en cache dur : c'est lui qui nomme
+// le bon asset. Sans cet en-tête, le navigateur gardait un ancien index.html
+// pointant vers un ancien JS, et les nouveautés n'apparaissaient qu'après un
+// vidage manuel du cache — un déploiement passait alors inaperçu.
 func spaHandler(dir string) http.Handler {
 	fs := http.FileServer(http.Dir(dir))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Join(dir, filepath.Clean("/"+r.URL.Path))
 		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				w.Header().Set("Cache-Control", "no-cache")
+			}
 			fs.ServeHTTP(w, r)
 			return
 		}
+		// index.html : toujours revalidé, jamais servi périmé.
+		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFile(w, r, filepath.Join(dir, "index.html"))
 	})
 }
