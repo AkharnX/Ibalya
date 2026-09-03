@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"ibalya/backend/internal/store"
@@ -188,6 +189,7 @@ func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, toda
 	rules, _ := e.Store.ListRules(ctx, true)
 	count := 0
 	now := time.Now()
+	silencieux := []int64{} // fils encore silencieux ce cycle
 	for _, r := range list {
 		seuil := p.SilenceDefautHeures // cold-start : défaut dérivé de la capsule
 		if r.rhythm != nil && *r.rhythm > 0 {
@@ -230,10 +232,20 @@ func (e *Engine) detectSilenceAnormal(ctx context.Context, p capsuleParams, toda
 			Payload: mustJSON(map[string]any{"interlocuteur": interlocuteur, "jours_silence": jours,
 				"dernier_sortant": r.lastOutbound}),
 		}
-		key := fmt.Sprintf("silence_anormal:%d:%s", r.id, today)
+		// Clé par fil, sans la date : une seule alerte par silence, rafraîchie
+		// chaque cycle au lieu d'être redupliquée. La date dans la clé donnait
+		// une alerte par jour et par fil — 128 pour 19 fils.
+		key := fmt.Sprintf("silence_anormal:%d", r.id)
+		silencieux = append(silencieux, r.id)
 		if id, _ := e.Store.CreateDetection(ctx, d, key); id != 0 {
 			count++
 		}
+	}
+	// Résolution automatique : une alerte de silence encore ouverte dont le fil
+	// n'est plus silencieux (réponse envoyée, échéance passée) est close. Sans
+	// cela, elle restait affichée alors que le problème était réglé.
+	if err := e.Store.ResoudreSilencesSauf(ctx, silencieux); err != nil {
+		log.Printf("silence: résolution automatique: %v", err)
 	}
 	return count, nil
 }

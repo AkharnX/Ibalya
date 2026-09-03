@@ -560,14 +560,23 @@ func (s *Store) CreateDetection(ctx context.Context, d Detection, dedupKey strin
 	if d.Payload == nil {
 		d.Payload = []byte(`{}`)
 	}
+	// Quand une alerte existe déjà pour cette clé et qu'elle est encore ouverte,
+	// on la RAFRAÎCHIT au lieu d'en créer une seconde : le détail (« depuis N
+	// jours ») reste à jour sans que l'alerte se duplique cycle après cycle.
+	// Si elle a été écartée, la clause WHERE bloque la mise à jour : on ne
+	// ressuscite pas une alerte que le dirigeant a déjà retirée.
 	var id int64
 	err := s.Pool.QueryRow(ctx, `INSERT INTO detections
 		(type, engagement_id, thread_id, score, titre, detail, critique, payload, dedup_key)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-		ON CONFLICT (dedup_key) DO NOTHING RETURNING id`,
+		ON CONFLICT (dedup_key) DO UPDATE
+		  SET titre=EXCLUDED.titre, detail=EXCLUDED.detail, score=EXCLUDED.score,
+		      payload=EXCLUDED.payload, created_at=now()
+		  WHERE detections.statut IN ('nouvelle','au_digest')
+		RETURNING id`,
 		d.Type, d.EngagementID, d.ThreadID, d.Score, d.Titre, d.Detail, d.Critique, d.Payload, dedupKey).Scan(&id)
 	if err == pgx.ErrNoRows {
-		return 0, nil
+		return 0, nil // déjà présente et écartée : on n'y touche pas
 	}
 	return id, err
 }
@@ -796,4 +805,18 @@ func (s *Store) MessagesDansFil(ctx context.Context, threadID int64) (entrants, 
 		SELECT count(*) FILTER (WHERE NOT outbound), count(*) FILTER (WHERE outbound)
 		  FROM messages WHERE thread_id = $1`, threadID).Scan(&entrants, &sortants)
 	return
+}
+
+// ResoudreSilencesSauf clôt les alertes de silence ouvertes dont le fil n'est
+// plus dans la liste passée. C'est la résolution automatique : dès que le
+// dirigeant répond (ou que l'échéance passe), le fil quitte la liste des
+// silencieux au cycle suivant et son alerte se ferme d'elle-même.
+func (s *Store) ResoudreSilencesSauf(ctx context.Context, filsSilencieux []int64) error {
+	_, err := s.Pool.Exec(ctx, `
+		UPDATE detections SET statut='traitee'
+		 WHERE type='silence_anormal'
+		   AND statut IN ('nouvelle','au_digest')
+		   AND thread_id IS NOT NULL
+		   AND NOT (thread_id = ANY($1))`, filsSilencieux)
+	return err
 }
