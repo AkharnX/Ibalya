@@ -4,11 +4,15 @@ import { Link } from 'react-router-dom'
 import { api, toast } from '../api'
 import { DET_LABELS, Empty, FiltreFiabilite, Reli, fmtDT, niveauFiabilite } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
+import SourcePanel from '../components/SourcePanel'
 
 export default function Alertes() {
   const [dets, setDets] = useState(null)
   const [enAttente, setEnAttente] = useState(0)
   const [fiabilite, setFiabilite] = useState('')
+  // Alerte ouverte : on affiche le fil qui l'a déclenchée. Une alerte porte
+  // toujours un fil, parfois un engagement ; le panneau accepte les deux.
+  const [ouverte, setOuverte] = useState(null)
 
   const load = useCallback(() => {
     api('/detections').then((r) => setDets(r || [])).catch((e) => toast(e.message, true))
