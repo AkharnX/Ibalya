@@ -911,6 +911,7 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 }
 .bandeau-reconnexion a{color:inherit;font-weight:600;text-decoration:underline;}
 
-/* Lignes d'alerte cliquables : ouvrent le fil qui a déclenché l'alerte. */
+/* Une ligne cliquable prend le curseur adéquat ; son survol reste celui,
+   partagé, de « tbody tr:hover » — même effet que les engagements, une seule
+   source de vérité pour le hover des tableaux. */
 tr.cliquable{cursor:pointer;}
-tr.cliquable:hover{background:var(--secondary,#1e293b);}
