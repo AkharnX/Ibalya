@@ -160,7 +160,9 @@ CREATE TABLE IF NOT EXISTS capsule (
   intentions JSONB NOT NULL DEFAULT '{}',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-INSERT INTO capsule (id) VALUES (1) ON CONFLICT DO NOTHING;
+-- La capsule était un singleton (id=1) pour toute l'installation. En
+-- multi-utilisateur, chacun a la sienne : le rattachement se fait par user_id
+-- (voir bloc multi-utilisateur plus bas). Plus d'INSERT d'amorçage global.
 
 CREATE TABLE IF NOT EXISTS learned_rules (
   id BIGSERIAL PRIMARY KEY,
@@ -280,4 +282,90 @@ CREATE INDEX IF NOT EXISTS idx_rules_user       ON learned_rules(user_id);
 CREATE INDEX IF NOT EXISTS idx_detections_user  ON detections(user_id);
 CREATE INDEX IF NOT EXISTS idx_drafts_user      ON drafts(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_user     ON reports(user_id);
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Multi-utilisateur, étape 2 : cloisonnement imposé par la base (RLS).
+--
+-- La base elle-même refuse de montrer ou d'écrire les données d'un autre
+-- utilisateur. Même une requête qui oublierait de filtrer ne voit rien hors de
+-- son tenant. C'est la vraie parade contre une fuite, celle qu'on a déjà eue.
+--
+-- Ce bloc s'exécute sous le rôle admin (super-utilisateur) : il n'est donc pas
+-- lui-même soumis aux politiques, et le rattachement de l'étape 1 (ci-dessus)
+-- a déjà tourné, donc plus aucune ligne sans propriétaire.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Valeur par défaut du propriétaire : le tenant courant, lu dans la variable de
+-- session. Un INSERT applicatif n'a donc pas besoin de préciser user_id.
+ALTER TABLE persons           ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE threads           ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE messages          ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE engagements       ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE engagement_events ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE dependency_links  ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE capsule           ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE learned_rules     ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE detections        ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE drafts            ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE reports           ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE settings          ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+ALTER TABLE oauth_tokens      ALTER COLUMN user_id SET DEFAULT nullif(current_setting('app.user_id', true),'')::bigint;
+
+-- Contraintes d'unicité rendues composites : deux tenants peuvent avoir la même
+-- personne, le même fil, la même clé de dédup, sans collision.
+ALTER TABLE persons DROP CONSTRAINT IF EXISTS persons_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_persons_user_email ON persons(user_id, email);
+ALTER TABLE threads DROP CONSTRAINT IF EXISTS threads_channel_external_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_threads_user_ext ON threads(user_id, channel, external_id);
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_channel_external_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_messages_user_ext ON messages(user_id, channel, external_id);
+ALTER TABLE detections DROP CONSTRAINT IF EXISTS detections_dedup_key_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_detections_user_dedup ON detections(user_id, dedup_key);
+
+-- Capsule et réglages : passage d'un singleton / clé globale à une clé par tenant.
+DELETE FROM capsule WHERE user_id IS NULL;
+ALTER TABLE capsule DROP CONSTRAINT IF EXISTS capsule_pkey;
+ALTER TABLE capsule DROP COLUMN IF EXISTS id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_capsule_user ON capsule(user_id);
+ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_pkey;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_settings_user_key ON settings(user_id, key);
+ALTER TABLE oauth_tokens DROP CONSTRAINT IF EXISTS oauth_tokens_pkey;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_oauth_user_provider ON oauth_tokens(user_id, provider);
+
+-- Propriétaire désormais obligatoire (tout est rattaché depuis l'étape 1).
+ALTER TABLE persons           ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE threads           ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE messages          ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE engagements       ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE engagement_events ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE dependency_links  ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE learned_rules     ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE detections        ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE drafts            ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE reports           ALTER COLUMN user_id SET NOT NULL;
+
+-- Droits du rôle applicatif (créé avant la migration par le code).
+DO $grant$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname='ibalya_app') THEN
+    GRANT USAGE ON SCHEMA public TO ibalya_app;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ibalya_app;
+    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ibalya_app;
+  END IF;
+END $grant$;
+
+-- Politiques d'isolation : chaque tenant ne voit et n'écrit que ses lignes.
+-- Variable de session absente = aucune ligne (fermé par défaut).
+DO $rls$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['persons','threads','messages','engagements',
+      'engagement_events','dependency_links','capsule','learned_rules',
+      'detections','drafts','reports','settings','oauth_tokens'] LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
+    EXECUTE format($p$CREATE POLICY tenant_isolation ON %I
+        USING (user_id = current_setting('app.user_id', true)::bigint)
+        WITH CHECK (user_id = current_setting('app.user_id', true)::bigint)$p$, t);
+  END LOOP;
+END $rls$;
 `

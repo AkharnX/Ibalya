@@ -41,7 +41,7 @@ func (e *Engine) GenerateMiroir(ctx context.Context) (*Miroir, error) {
 	m := &Miroir{GenereLe: time.Now(), PeriodeJours: 30,
 		Note: "Voici ce que je comprends de votre activité après lecture de vos 30 derniers jours. Corrigez-moi d'un geste : chaque correction m'apprend votre réalité."}
 
-	_ = e.Store.Pool.QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&m.MessagesLus)
+	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&m.MessagesLus)
 
 	engs, err := e.Store.ListEngagements(ctx, []string{"ouvert", "confirme", "en_retard"})
 	if err != nil {
@@ -58,7 +58,7 @@ func (e *Engine) GenerateMiroir(ctx context.Context) (*Miroir, error) {
 		}
 	}
 
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		SELECT t.id, t.subject,
 		       coalesce((SELECT m.sender FROM messages m WHERE m.thread_id=t.id AND NOT m.outbound ORDER BY m.sent_at DESC LIMIT 1), ''),
 		       EXTRACT(EPOCH FROM now() - t.last_message_at)/86400.0
@@ -92,7 +92,7 @@ func (e *Engine) GenerateMiroir(ctx context.Context) (*Miroir, error) {
 
 func (e *Engine) InferCapsule(ctx context.Context) error {
 	accountEmail, _ := e.Channel.AccountEmail(ctx)
-	rows, err := e.Store.Pool.Query(ctx, `SELECT id, sender, array_to_string(recipients, ', '), subject, left(body, 1500), sent_at
+	rows, err := e.Store.Q(ctx).Query(ctx, `SELECT id, sender, array_to_string(recipients, ', '), subject, left(body, 1500), sent_at
 		FROM messages WHERE status='analyzed' ORDER BY sent_at DESC LIMIT 40`)
 	if err != nil {
 		return err
@@ -312,7 +312,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 		}
 	}
 	if toEmail == "" && d.ThreadID != nil {
-		_ = e.Store.Pool.QueryRow(ctx,
+		_ = e.Store.Q(ctx).QueryRow(ctx,
 			`SELECT sender FROM messages WHERE thread_id=$1 AND NOT outbound ORDER BY sent_at DESC LIMIT 1`,
 			*d.ThreadID).Scan(&toEmail)
 	}
@@ -506,7 +506,7 @@ func (e *Engine) ReviewDraft(ctx context.Context, draftID int64, subject, body s
 // (double-clic) ne peuvent pas envoyer deux fois.
 func (e *Engine) SendDraft(ctx context.Context, draftID int64) error {
 	var d store.Draft
-	err := e.Store.Pool.QueryRow(ctx, `UPDATE drafts SET statut='envoye', sent_at=now()
+	err := e.Store.Q(ctx).QueryRow(ctx, `UPDATE drafts SET statut='envoye', sent_at=now()
 		WHERE id=$1 AND statut IN ('propose','valide')
 		RETURNING id, detection_id, engagement_id, to_email, subject, body`, draftID).
 		Scan(&d.ID, &d.DetectionID, &d.EngagementID, &d.ToEmail, &d.Subject, &d.Body)

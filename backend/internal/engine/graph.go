@@ -22,7 +22,7 @@ import (
 // Le jugement reçoit les décisions passées du dirigeant comme exemples : ses
 // confirmations et ses rejets orientent les suivants, sans aucun entraînement.
 func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
-	rows, err := e.Store.Pool.Query(ctx, `
+	rows, err := e.Store.Q(ctx).Query(ctx, `
 		SELECT a.id, b.id, a.objet, b.objet,
 		       to_char(a.echeance,'DD/MM/YYYY'), to_char(b.echeance,'DD/MM/YYYY'),
 		       CASE WHEN a.thread_id = b.thread_id THEN 'même fil'

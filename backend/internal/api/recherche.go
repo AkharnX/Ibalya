@@ -30,7 +30,7 @@ func (s *Server) recherche(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	ajouter := func(requete, typ string) {
-		rows, err := s.Store.Pool.Query(ctx, requete, motif)
+		rows, err := s.Store.Q(ctx).Query(ctx, requete, motif)
 		if err != nil {
 			return
 		}

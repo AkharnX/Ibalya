@@ -65,7 +65,7 @@ func (s *Server) onboardingStatus(w http.ResponseWriter, r *http.Request) {
 	// compteurs lus en direct : ils progressent pendant le traitement
 	q := func(sql string) int {
 		var n int
-		_ = s.Store.Pool.QueryRow(ctx, sql).Scan(&n)
+		_ = s.Store.Q(ctx).QueryRow(ctx, sql).Scan(&n)
 		return n
 	}
 	etat.MessagesLus = q(`SELECT count(*) FROM messages`)
