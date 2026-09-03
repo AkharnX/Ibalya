@@ -151,6 +151,8 @@ CREATE TABLE IF NOT EXISTS dependency_links (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(amont_id, aval_id)
 );
+-- Score du jugement LLM sur la dépendance (0 = heuristique seule, non jugée).
+ALTER TABLE dependency_links ADD COLUMN IF NOT EXISTS score DOUBLE PRECISION NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS capsule (
   id INT PRIMARY KEY DEFAULT 1,

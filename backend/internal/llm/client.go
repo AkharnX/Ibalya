@@ -207,3 +207,38 @@ func truncate(s string, n int) string {
 	}
 	return s
 }
+
+// --- jugement de dépendance ---
+
+// DependExemple est une décision passée du dirigeant, réinjectée comme exemple.
+type DependExemple struct {
+	Amont   string `json:"amont"`
+	Aval    string `json:"aval"`
+	Verdict string `json:"verdict"` // "dependance" ou "sans_lien"
+}
+
+type DependRequest struct {
+	AmontObjet        string          `json:"amont_objet"`
+	AmontEcheance     string          `json:"amont_echeance"`
+	AvalObjet         string          `json:"aval_objet"`
+	AvalEcheance      string          `json:"aval_echeance"`
+	RaisonHeuristique string          `json:"raison_heuristique"`
+	Exemples          []DependExemple `json:"exemples"`
+}
+
+type DependResponse struct {
+	Depend bool    `json:"depend"`
+	Score  float64 `json:"score"`
+	Raison string  `json:"raison"`
+}
+
+// JugerDependance demande au modèle si l'aval dépend vraiment de l'amont. Le
+// modèle ne décide rien : il filtre et classe des candidats que le dirigeant
+// confirmera. Les exemples portent ses décisions passées.
+func (c *Client) JugerDependance(ctx context.Context, req DependRequest) (*DependResponse, error) {
+	var resp DependResponse
+	if err := c.post(ctx, "/depend", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
