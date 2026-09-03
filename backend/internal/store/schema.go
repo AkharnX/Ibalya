@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
   account_email TEXT NOT NULL DEFAULT '',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Date du consentement, distincte de updated_at. Cette dernière bouge à chaque
+-- rafraîchissement du jeton d'accès ; le compte à rebours des sept jours du
+-- mode Test de Google part, lui, du consentement. On le suit à part pour
+-- pouvoir prévenir AVANT que la connexion meure.
+ALTER TABLE oauth_tokens ADD COLUMN IF NOT EXISTS connecte_le TIMESTAMPTZ;
+UPDATE oauth_tokens SET connecte_le=updated_at WHERE connecte_le IS NULL;
 
 CREATE TABLE IF NOT EXISTS persons (
   id BIGSERIAL PRIMARY KEY,
