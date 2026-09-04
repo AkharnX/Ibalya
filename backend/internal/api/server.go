@@ -270,14 +270,27 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": provider})
 	// J+0 → J+1 : lance l'onboarding en arrière-plan (30 jours + miroir + capsule)
-	go s.onboarding()
+	// dans le tenant de l'utilisateur qui vient de raccorder.
+	if id, ok := s.tenantID(r); ok {
+		go s.onboarding(id)
+	}
 	http.Redirect(w, r, "/app/?connected=1", http.StatusFound)
 }
 
 // --- onboarding (Miroir J+1) ---
 
-func (s *Server) onboarding() {
-	ctx := context.Background()
+// onboarding lit trente jours, génère le miroir puis la capsule — dans le
+// tenant de l'utilisateur qui vient de raccorder sa boîte. Lancé en arrière-
+// plan, il DOIT ouvrir son propre EnTenant : la requête qui l'a déclenché a
+// déjà rendu sa connexion, et sans tenant RLS ne verrait ni le jeton ni rien.
+func (s *Server) onboarding(userID int64) {
+	_ = s.Store.EnTenant(context.Background(), userID, func(ctx context.Context) error {
+		s.onboardingDans(ctx)
+		return nil
+	})
+}
+
+func (s *Server) onboardingDans(ctx context.Context) {
 	log.Println("onboarding: lecture des 30 derniers jours…")
 	s.marquerPhase(ctx, "lecture", "")
 
@@ -309,8 +322,25 @@ func (s *Server) onboarding() {
 }
 
 func (s *Server) runOnboarding(w http.ResponseWriter, r *http.Request) {
-	go s.onboarding()
+	id, ok := s.tenantID(r)
+	if !ok {
+		httpError(w, 400, "aucun utilisateur pour l'onboarding")
+		return
+	}
+	go s.onboarding(id)
 	writeJSON(w, map[string]string{"status": "onboarding lancé en arrière-plan"})
+}
+
+// tenantID résout l'utilisateur de la requête : sa session, ou le propriétaire
+// de la boîte connectée quand c'est le jeton d'administration local.
+func (s *Server) tenantID(r *http.Request) (int64, bool) {
+	if u, ok := r.Context().Value(ctxUser{}).(*store.User); ok {
+		return u.ID, true
+	}
+	if id, err := s.Store.ProprietaireParDefaut(r.Context()); err == nil {
+		return id, true
+	}
+	return 0, false
 }
 
 // --- statut & cycle ---
