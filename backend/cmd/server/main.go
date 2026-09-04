@@ -172,42 +172,39 @@ func scheduler(ctx context.Context, cfg config.Config, st *store.Store, eng *eng
 	defer cycleTicker.Stop()
 	defer digestTicker.Stop()
 
-	// Propriétaire de la boîte connectée : le cycle et le digest s'exécutent
-	// dans SON tenant, sous RLS. (Le multi-boîte — un canal par utilisateur —
-	// est l'étape suivante ; pour l'instant une seule boîte est raccordée.)
-	proprio := func() (int64, bool) {
-		id, err := st.ProprietaireParDefaut(ctx)
-		if err != nil {
-			return 0, false
-		}
-		return id, true
-	}
-
+	// Chaque utilisateur ayant raccordé une boîte a son propre cycle, dans son
+	// tenant : le canal lit SON jeton (scopé par RLS) et ingère SA messagerie.
+	// Un canal Gmail unique sert tout le monde, sans état d'un tenant à l'autre.
 	for {
 		select {
 		case <-cycleTicker.C:
-			id, ok := proprio()
-			if !ok {
+			ids, err := st.UtilisateursActifsAvecCanal(ctx)
+			if err != nil {
+				log.Printf("cycle planifié: liste des utilisateurs: %v", err)
 				continue
 			}
-			_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
-				res := eng.RunCycle(tctx, func(c context.Context) (any, error) {
-					return ing.Run(c, time.Now().AddDate(0, 0, -2), 300)
+			for _, id := range ids {
+				_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
+					res := eng.RunCycle(tctx, func(c context.Context) (any, error) {
+						return ing.Run(c, time.Now().AddDate(0, 0, -2), 300)
+					})
+					if res.Erreur != "" {
+						log.Printf("cycle planifié (utilisateur %d): %s", id, res.Erreur)
+					}
+					return nil
 				})
-				if res.Erreur != "" {
-					log.Printf("cycle planifié: %s", res.Erreur)
-				}
-				return nil
-			})
+			}
 		case <-digestTicker.C:
-			id, ok := proprio()
-			if !ok {
+			ids, err := st.UtilisateursActifsAvecCanal(ctx)
+			if err != nil {
 				continue
 			}
-			_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
-				maybeDailyDigest(tctx, cfg, st, eng)
-				return nil
-			})
+			for _, id := range ids {
+				_ = st.EnTenant(ctx, id, func(tctx context.Context) error {
+					maybeDailyDigest(tctx, cfg, st, eng)
+					return nil
+				})
+			}
 		case <-ctx.Done():
 			return
 		}

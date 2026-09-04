@@ -31,7 +31,6 @@ type TokenStore interface {
 type Gmail struct {
 	cfg   *oauth2.Config
 	store TokenStore
-	email string
 }
 
 func GmailOAuthConfig(clientID, clientSecret, redirectURL string) *oauth2.Config {
@@ -100,14 +99,13 @@ func traduireErreurJeton(fournisseur string, err error) error {
 }
 
 func (g *Gmail) service(ctx context.Context) (*gmail.Service, error) {
-	raw, email, err := g.store.GetOAuthToken(ctx, "google")
+	raw, _, err := g.store.GetOAuthToken(ctx, "google")
 	if err != nil {
 		return nil, err
 	}
 	if raw == nil {
 		return nil, fmt.Errorf("gmail non connecté : lancer le parcours OAuth")
 	}
-	g.email = email
 	var tok oauth2.Token
 	if err := json.Unmarshal(raw, &tok); err != nil {
 		return nil, err
@@ -116,9 +114,13 @@ func (g *Gmail) service(ctx context.Context) (*gmail.Service, error) {
 	return gmail.NewService(ctx, option.WithTokenSource(ts))
 }
 
+// AccountEmail lit l'adresse dans le store scopé par tenant, jamais depuis un
+// cache d'instance : un même canal Gmail sert tous les tenants (chacun lit SON
+// jeton), et un email mémorisé sur la struct fuiterait d'un utilisateur à
+// l'autre.
 func (g *Gmail) AccountEmail(ctx context.Context) (string, error) {
-	if g.email != "" {
-		return g.email, nil
+	if _, email, err := g.store.GetOAuthToken(ctx, "google"); err == nil && email != "" {
+		return email, nil
 	}
 	svc, err := g.service(ctx)
 	if err != nil {
@@ -128,10 +130,8 @@ func (g *Gmail) AccountEmail(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	g.email = prof.EmailAddress
-	// persistée ici : le tableau de bord et les liens Gmail en ont besoin,
-	// et l'appel au profil peut échouer au moment du callback (API Gmail
-	// pas encore activée, par exemple)
+	// Persistée dans le store (scopé tenant) : le tableau de bord et les liens
+	// Gmail en ont besoin, et l'appel au profil peut échouer au callback.
 	_ = g.store.SetOAuthAccountEmail(ctx, "google", prof.EmailAddress)
 	return prof.EmailAddress, nil
 }

@@ -33,7 +33,6 @@ const graphBase = "https://graph.microsoft.com/v1.0"
 type Outlook struct {
 	cfg   *oauth2.Config
 	store TokenStore
-	email string
 }
 
 // OutlookOAuthConfig décrit l'application enregistrée dans Azure. Le locataire
@@ -132,8 +131,8 @@ func (o *Outlook) appeler(ctx context.Context, methode, chemin string, corps any
 }
 
 func (o *Outlook) AccountEmail(ctx context.Context) (string, error) {
-	if o.email != "" {
-		return o.email, nil
+	if _, email, err := o.store.GetOAuthToken(ctx, "microsoft"); err == nil && email != "" {
+		return email, nil
 	}
 	var profil struct {
 		Mail              string `json:"mail"`
@@ -150,9 +149,9 @@ func (o *Outlook) AccountEmail(ctx context.Context) (string, error) {
 	if adresse == "" {
 		return "", fmt.Errorf("Graph n'a renvoyé aucune adresse pour ce compte")
 	}
-	o.email = strings.ToLower(adresse)
-	_ = o.store.SetOAuthAccountEmail(ctx, "microsoft", o.email)
-	return o.email, nil
+	adresse = strings.ToLower(adresse)
+	_ = o.store.SetOAuthAccountEmail(ctx, "microsoft", adresse)
+	return adresse, nil
 }
 
 // LienWeb : Graph fournit webLink par message, il n'y a rien à construire. Le

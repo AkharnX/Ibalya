@@ -70,7 +70,11 @@ func (s *Server) Handler() http.Handler {
 
 	// Raccordement d'une boîte : google (Gmail) ou microsoft (Outlook).
 	mux.HandleFunc("POST /api/oauth/{fournisseur}/start", s.auth(s.oauthStart))
-	mux.HandleFunc("GET /api/oauth/{fournisseur}/callback", s.oauthCallback)
+	// Le callback est authentifié : le navigateur renvoie le cookie de session
+	// (SameSite Lax sur une navigation GET), donc on sait quel utilisateur
+	// connecte et le jeton atterrit dans SON tenant. Sans cela, sous RLS, le
+	// callback ne verrait même pas son propre état OAuth.
+	mux.HandleFunc("GET /api/oauth/{fournisseur}/callback", s.auth(s.oauthCallback))
 
 	// statut & cycle
 	mux.HandleFunc("GET /api/status", s.auth(s.status))

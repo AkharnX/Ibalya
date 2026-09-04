@@ -79,6 +79,34 @@ func TestIsolationTenant(t *testing.T) {
 		}
 		return nil
 	})
+
+	// Jetons OAuth : chacun connecte SA boîte, personne ne voit celle de l'autre.
+	mustTenant(t, st, a, func(ctx context.Context) error {
+		return st.SaveOAuthToken(ctx, "google", []byte(`{"access_token":"jeton-alice"}`), "alice@gmail.com")
+	})
+	mustTenant(t, st, b, func(ctx context.Context) error {
+		return st.SaveOAuthToken(ctx, "google", []byte(`{"access_token":"jeton-bob"}`), "bob@gmail.com")
+	})
+	mustTenant(t, st, a, func(ctx context.Context) error {
+		_, email, err := st.GetOAuthToken(ctx, "google")
+		if err != nil {
+			return err
+		}
+		if email != "alice@gmail.com" {
+			t.Fatalf("Alice voit le compte %q, attendu le sien (fuite de boîte !)", email)
+		}
+		return nil
+	})
+	mustTenant(t, st, b, func(ctx context.Context) error {
+		_, email, err := st.GetOAuthToken(ctx, "google")
+		if err != nil {
+			return err
+		}
+		if email != "bob@gmail.com" {
+			t.Fatalf("Bob voit le compte %q, attendu le sien", email)
+		}
+		return nil
+	})
 }
 
 func mustTenant(t *testing.T, st *Store, userID int64, fn func(context.Context) error) {
