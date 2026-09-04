@@ -531,6 +531,12 @@ func (s *Store) GetCapsule(ctx context.Context) (*Capsule, error) {
 	var c Capsule
 	err := s.q(ctx).QueryRow(ctx, `SELECT facts, intentions, updated_at FROM capsule LIMIT 1`).
 		Scan(&c.Facts, &c.Intentions, &c.UpdatedAt)
+	// Un tenant neuf n'a pas encore de capsule : on renvoie une capsule vide
+	// plutôt qu'une erreur, sinon le tableau de bord d'un nouvel utilisateur
+	// planterait en 500 avant même qu'il ait raccordé sa boîte.
+	if err == pgx.ErrNoRows {
+		return &Capsule{Facts: json.RawMessage("{}"), Intentions: json.RawMessage("{}")}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
