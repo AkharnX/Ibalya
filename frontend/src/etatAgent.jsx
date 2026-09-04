@@ -44,7 +44,23 @@ export function FournisseurEtatAgent({ actif, children }) {
     return () => { arrete = true; clearTimeout(minuteur) }
   }, [actif, rafraichir])
 
-  const cycle = statut?.cycle || {}
+  // Le serveur ne renvoie « secondes » qu'à chaque sondage (toutes les 2 s), si
+  // bien que le compteur paraissait figé, surtout sur un cycle court. On le fait
+  // avancer localement chaque seconde, calculé depuis l'heure de début fournie
+  // par le serveur : précis et vivant, sans dérive.
+  const [, tic] = useState(0)
+  const enCours = !!statut?.cycle?.en_cours
+  useEffect(() => {
+    if (!enCours) return
+    const id = setInterval(() => tic((n) => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [enCours])
+
+  const cycleBrut = statut?.cycle || {}
+  const secondes = enCours && cycleBrut.debut
+    ? Math.max(0, Math.floor((Date.now() - new Date(cycleBrut.debut)) / 1000))
+    : cycleBrut.secondes || 0
+  const cycle = { ...cycleBrut, secondes }
   return (
     <Contexte.Provider value={{ statut, cycle, finiA, rafraichir }}>
       {children}
