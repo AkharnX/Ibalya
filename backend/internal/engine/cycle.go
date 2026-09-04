@@ -73,9 +73,12 @@ func (e *Engine) RunCycleOrigine(ctx context.Context, ingestFn func(context.Cont
 }
 
 func (e *Engine) runCycle(ctx context.Context, ingestFn func(context.Context) (any, error), origine string) CycleResult {
-	if !cycleMu.TryLock() {
-		return CycleResult{Erreur: "un cycle est déjà en cours"}
-	}
+	// Verrou bloquant, pas TryLock : en multi-utilisateur, plusieurs cycles
+	// légitimes se présentent (scheduler qui boucle sur les boîtes, onboarding
+	// d'un nouveau raccordement). Les sauter en silence faisait perdre des
+	// ingestions — un onboarding tombant pendant un cycle du scheduler ne lisait
+	// jamais ses 30 jours. Ils s'exécutent maintenant chacun leur tour.
+	cycleMu.Lock()
 	defer cycleMu.Unlock()
 
 	start := time.Now()
