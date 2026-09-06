@@ -91,7 +91,7 @@ func (e *Engine) GenerateMiroir(ctx context.Context) (*Miroir, error) {
 // --- Capsule temps 1 : inférence des faits ---
 
 func (e *Engine) InferCapsule(ctx context.Context) error {
-	accountEmail, _ := e.Channel.AccountEmail(ctx)
+	accountEmail, _ := e.Canal(ctx).AccountEmail(ctx)
 	rows, err := e.Store.Q(ctx).Query(ctx, `SELECT id, sender, array_to_string(recipients, ', '), subject, left(body, 1500), sent_at
 		FROM messages WHERE status='analyzed' ORDER BY sent_at DESC LIMIT 40`)
 	if err != nil {
@@ -143,7 +143,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	seuil := e.SeuilPublication(ctx)
 	dc := &DigestContent{GenereLe: time.Now(), Type: dtype, JoursAvantReconnexion: -1}
 	// Rappel d'expiration : mode Test uniquement (voir status).
-	if e.Channel != nil && e.Channel.Name() == "gmail" &&
+	if e.Canal(ctx) != nil && e.Canal(ctx).Name() == "gmail" &&
 		e.Store.GetSetting(ctx, "google_mode_test", "1") == "1" {
 		if connecte, jours := e.Store.EtatConnexionOAuth(ctx, "google"); connecte {
 			dc.JoursAvantReconnexion = 7 - jours
@@ -193,7 +193,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 
 	// envoi du digest par email au dirigeant si activé (Réglages)
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
-		if to, _ := e.Channel.AccountEmail(ctx); to != "" {
+		if to, _ := e.Canal(ctx).AccountEmail(ctx); to != "" {
 			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
 			// Le digest vient d'Ibalya, pas du dirigeant : il part par
 			// l'expéditeur de service quand il est configuré. Passer par sa
@@ -204,7 +204,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 				err = e.Courrier.Envoyer(ctx, to, subject, e.renderDigestText(dc))
 			} else {
 				exp := e.Store.GetSetting(ctx, "digest_expediteur", "")
-				err = e.Channel.SendFrom(ctx, exp, "Digest Ibalya", to, subject, e.renderDigestText(dc))
+				err = e.Canal(ctx).SendFrom(ctx, exp, "Digest Ibalya", to, subject, e.renderDigestText(dc))
 			}
 			if err != nil {
 				e.Store.Audit(ctx, "agent", "digest_email_echec", map[string]string{"erreur": err.Error()})
@@ -321,7 +321,7 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 			engObjet = strings.TrimPrefix(t.Subject, "RE: ")
 		}
 	}
-	accountEmail, _ := e.Channel.AccountEmail(ctx)
+	accountEmail, _ := e.Canal(ctx).AccountEmail(ctx)
 	if toEmail == "" || strings.EqualFold(toEmail, accountEmail) {
 		return nil
 	}
@@ -373,7 +373,7 @@ func (e *Engine) contexteClient(ctx context.Context, email string, excludeID int
 			ech = "échéance " + x.Echeance.Format("02/01/2006")
 		}
 		sens := "il s'est engagé"
-		if accountEmail, _ := e.Channel.AccountEmail(ctx); strings.EqualFold(x.EmetteurEmail, accountEmail) {
+		if accountEmail, _ := e.Canal(ctx).AccountEmail(ctx); strings.EqualFold(x.EmetteurEmail, accountEmail) {
 			sens = "vous vous êtes engagé"
 		}
 		out = append(out, fmt.Sprintf("  · %s (%s, %s, %s)", x.Objet, x.Type, ech, sens))
@@ -422,7 +422,7 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 		}
 		return existing, nil
 	}
-	accountEmail, _ := e.Channel.AccountEmail(ctx)
+	accountEmail, _ := e.Canal(ctx).AccountEmail(ctx)
 	if strings.EqualFold(action.ToEmail, accountEmail) {
 		return nil, fmt.Errorf("le destinataire de l'action est votre propre adresse")
 	}
@@ -516,7 +516,7 @@ func (e *Engine) SendDraft(ctx context.Context, draftID int64) error {
 	if err != nil {
 		return err
 	}
-	if err := e.Channel.Send(ctx, d.ToEmail, d.Subject, d.Body); err != nil {
+	if err := e.Canal(ctx).Send(ctx, d.ToEmail, d.Subject, d.Body); err != nil {
 		// échec d'envoi : on rend le brouillon validable à nouveau
 		_ = e.Store.SetDraftStatus(ctx, draftID, "propose", false)
 		return fmt.Errorf("envoi: %w", err)

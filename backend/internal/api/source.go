@@ -55,17 +55,17 @@ func (s *Server) filSource(ctx context.Context, threadID int64, eng *store.Engag
 	// Le lien vers l'interface du fournisseur est construit par le connecteur :
 	// tous n'en ont pas. IMAP ne désigne aucune interface web et retourne vide,
 	// auquel cas l'interface n'affiche pas de bouton.
-	compte, _ := s.Engine.Channel.AccountEmail(ctx)
-	if fil.Channel == s.Engine.Channel.Name() {
-		rep.URLGmailFil = s.Engine.Channel.LienWeb(compte, fil.ExternalID)
+	compte, _ := s.Engine.Canal(ctx).AccountEmail(ctx)
+	if fil.Channel == s.Engine.Canal(ctx).Name() {
+		rep.URLGmailFil = s.Engine.Canal(ctx).LienWeb(compte, fil.ExternalID)
 	}
 	for _, m := range msgs {
 		ms := MessageSource{Message: m}
 		if eng != nil {
 			ms.EstSource = eng.SourceMessageID != nil && *eng.SourceMessageID == m.ID
 		}
-		if m.Channel == s.Engine.Channel.Name() {
-			ms.URLGmail = s.Engine.Channel.LienWeb(compte, m.ExternalID)
+		if m.Channel == s.Engine.Canal(ctx).Name() {
+			ms.URLGmail = s.Engine.Canal(ctx).LienWeb(compte, m.ExternalID)
 		}
 		rep.Messages = append(rep.Messages, ms)
 	}

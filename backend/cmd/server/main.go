@@ -121,9 +121,30 @@ func main() {
 		log.Println("aucun expéditeur de service : le digest partira de la boîte du dirigeant")
 	}
 
+	// Résolveur de canal PAR TENANT : chaque cycle et chaque requête, exécutés
+	// dans le tenant d'un utilisateur, obtiennent SON canal — Gmail (jeton lu
+	// par tenant), IMAP ou Outlook (config lue dans ses réglages). Sans type
+	// choisi, on retombe sur le canal par défaut du déploiement.
+	resoudreCanal := func(ctx context.Context) channel.Reader {
+		switch st.GetSetting(ctx, "canal_type", "") {
+		case "gmail":
+			return channel.NewGmail(oauthCfg, st)
+		case "outlook":
+			if cfg.MicrosoftClientID != "" {
+				return channel.NewOutlook(channel.OutlookOAuthConfig(cfg.MicrosoftClientID,
+					cfg.MicrosoftClientSecret, cfg.MicrosoftTenant,
+					cfg.PublicBaseURL+"/api/oauth/microsoft/callback"), st)
+			}
+		case "imap":
+			if r, err := imapDepuisReglages(ctx, st, cfg); err == nil {
+				return r
+			}
+		}
+		return reader
+	}
 	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur,
-		BaseURL: cfg.PublicBaseURL, Courrier: envoi}
-	ing := &ingest.Ingester{Store: st, Channel: commutateur}
+		CanalPour: resoudreCanal, BaseURL: cfg.PublicBaseURL, Courrier: envoi}
+	ing := &ingest.Ingester{Store: st, Channel: commutateur, CanalPour: resoudreCanal}
 	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg,
 		Commutateur: commutateur, Coffre: coffre}
 
@@ -162,7 +183,11 @@ func imapDepuisReglages(ctx context.Context, st *store.Store, cfg config.Config)
 		Utilisateur: st.GetSetting(ctx, "imap_utilisateur", ""), MotDePasse: mdp,
 		Dossier:  st.GetSetting(ctx, "imap_dossier", "INBOX"),
 		SMTPHote: st.GetSetting(ctx, "smtp_hote", ""), SMTPPort: nombre("smtp_port", 587),
-		TLSSansVerification: cfg.IMAPTLSSansVerif,
+		// Bypass de vérification du certificat, PAR UTILISATEUR : réservé aux
+		// boîtes dont le serveur présente un certificat auto-signé ou expiré
+		// (cas d'un Plesk mal configuré). Compromis de sécurité assumé pour
+		// cette boîte seule, activé explicitement dans ses réglages.
+		TLSSansVerification: cfg.IMAPTLSSansVerif || st.GetSetting(ctx, "imap_tls_skip_verify", "0") == "1",
 	}), nil
 }
 

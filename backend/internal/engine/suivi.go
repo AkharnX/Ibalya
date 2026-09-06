@@ -85,7 +85,7 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 		return nil, err
 	}
 	blocages := e.blocages(ctx)
-	account, _ := e.Channel.AccountEmail(ctx)
+	account, _ := e.Canal(ctx).AccountEmail(ctx)
 
 	out := make([]EngagementSuivi, 0, len(engs))
 	for _, eng := range engs {

@@ -260,13 +260,14 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 		s.Store.SetSetting(ctx, "canal_type", "outlook")
 	}
 	if lecteur != nil {
-		// L'adresse est persistée ici : le tableau de bord et les liens en ont
-		// besoin, et l'appel peut échouer plus tard.
-		if email, err := lecteur.AccountEmail(context.Background()); err == nil {
+		// L'adresse est persistée ici, dans le tenant courant (ctx, pas
+		// Background) : le tableau de bord et les liens en ont besoin, et
+		// l'appel peut échouer plus tard. Pas de bascule de canal global : le
+		// résolveur par tenant lit canal_type dans les réglages de chacun.
+		if email, err := lecteur.AccountEmail(ctx); err == nil {
 			tokB, _, _ := s.Store.GetOAuthToken(ctx, provider)
 			_ = s.Store.SaveOAuthToken(ctx, provider, tokB, email)
 		}
-		s.Commutateur.Remplacer(lecteur)
 	}
 	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": provider})
 	// J+0 → J+1 : lance l'onboarding en arrière-plan (30 jours + miroir + capsule)
@@ -373,7 +374,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	// L'état du canal se lit sur le connecteur : lui seul sait s'il est
 	// utilisable. Gmail exige un jeton, IMAP des identifiants, les fixtures
 	// rien — l'ancienne lecture du jeton Google déclarait IMAP non connecté.
-	email, errCompte := s.Engine.Channel.AccountEmail(ctx)
+	email, errCompte := s.Engine.Canal(ctx).AccountEmail(ctx)
 	llmOK := s.Engine.LLM.Health(ctx) == nil
 
 	// Rappel de reconnexion. En mode Test, Google révoque le jeton sept jours
@@ -384,7 +385,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	// Le rappel n'a de sens qu'en mode Test : c'est lui qui impose l'expiration
 	// à sept jours. En production, le jeton ne meurt plus sur ce calendrier, et
 	// le bandeau serait une fausse alerte hebdomadaire.
-	if s.Engine.Channel.Name() == "gmail" && s.Store.GetSetting(ctx, "google_mode_test", "1") == "1" {
+	if s.Engine.Canal(ctx).Name() == "gmail" && s.Store.GetSetting(ctx, "google_mode_test", "1") == "1" {
 		if connecte, jours := s.Store.EtatConnexionOAuth(ctx, "google"); connecte {
 			restant := 7 - jours
 			reconnexion = map[string]any{
@@ -397,7 +398,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, map[string]any{
-		"canal":             s.Engine.Channel.Name(),
+		"canal":             s.Engine.Canal(ctx).Name(),
 		"canal_connecte":    errCompte == nil && email != "",
 		"compte":            email,
 		"reconnexion":       reconnexion,
