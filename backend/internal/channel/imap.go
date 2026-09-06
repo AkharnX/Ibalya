@@ -290,10 +290,56 @@ func (i *IMAP) SendFrom(ctx context.Context, from, fromNom, to, subject, body st
 
 	adresse := net.JoinHostPort(i.cfg.SMTPHote, strconv.Itoa(i.cfg.SMTPPort))
 	auth := smtp.PlainAuth("", i.cfg.Utilisateur, i.cfg.MotDePasse, i.cfg.SMTPHote)
+	// Le port 465 attend du TLS dès la connexion (SSL implicite) : smtp.SendMail
+	// dialogue en clair puis tente STARTTLS, ce qui échoue sur 465. On ouvre
+	// donc la connexion en TLS d'emblée. Le 587 (et autres) reste sur SendMail,
+	// qui gère STARTTLS.
+	if i.cfg.SMTPPort == 465 {
+		if err := i.envoyerTLSImplicite(adresse, auth, expediteur, to, []byte(msg)); err != nil {
+			return fmt.Errorf("envoi SMTP via %s : %w", adresse, err)
+		}
+		return nil
+	}
 	if err := smtp.SendMail(adresse, auth, expediteur, []string{to}, []byte(msg)); err != nil {
 		return fmt.Errorf("envoi SMTP via %s : %w", adresse, err)
 	}
 	return nil
+}
+
+// envoyerTLSImplicite envoie via une connexion TLS ouverte dès le départ (465).
+func (i *IMAP) envoyerTLSImplicite(adresse string, auth smtp.Auth, from, to string, msg []byte) error {
+	conn, err := tls.Dial("tcp", adresse, &tls.Config{
+		ServerName:         i.cfg.SMTPHote,
+		InsecureSkipVerify: i.cfg.TLSSansVerification, // #nosec G402 — refusé en production
+	})
+	if err != nil {
+		return err
+	}
+	c, err := smtp.NewClient(conn, i.cfg.SMTPHote)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if err := c.Auth(auth); err != nil {
+		return err
+	}
+	if err := c.Mail(from); err != nil {
+		return err
+	}
+	if err := c.Rcpt(to); err != nil {
+		return err
+	}
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(msg); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+	return c.Quit()
 }
 
 func entete(en gomail.Header, champ string) string {
