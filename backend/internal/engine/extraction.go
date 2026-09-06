@@ -18,15 +18,28 @@ import (
 )
 
 type Engine struct {
-	Store   *store.Store
-	LLM     *llm.Client
-	Channel channel.Reader
+	Store *store.Store
+	LLM   *llm.Client
+	// Channel : canal par défaut (hors tenant). En multi-utilisateur, chaque
+	// cycle et chaque requête résolvent LEUR canal via CanalPour, à partir des
+	// réglages du tenant courant — Gmail, IMAP ou Outlook, chacun ses accès.
+	Channel   channel.Reader
+	CanalPour func(context.Context) channel.Reader
 	// BaseURL sert à renvoyer vers le tableau de bord depuis le digest envoyé
 	// par email : sans lien, le dirigeant lit un constat sans pouvoir agir.
 	BaseURL string
 	// Courrier envoie les messages de service — le digest. Nil quand aucun
 	// fournisseur n'est configuré : on se rabat alors sur la boîte du dirigeant.
 	Courrier *courrier.Service
+}
+
+// Canal résout le canal du tenant courant. Sans résolveur (tests, démarrage),
+// on retombe sur le canal par défaut.
+func (e *Engine) Canal(ctx context.Context) channel.Reader {
+	if e.CanalPour != nil {
+		return e.CanalPour(ctx)
+	}
+	return e.Channel
 }
 
 // capsuleLLM assemble la capsule complète transmise au modèle : les faits
@@ -84,7 +97,7 @@ func (e *Engine) RunExtraction(ctx context.Context, batchSize int) (ExtractStats
 	var st ExtractStats
 	capsule := e.capsuleLLM(ctx)
 	rules, _ := e.Store.ListRules(ctx, true)
-	accountEmail, _ := e.Channel.AccountEmail(ctx)
+	accountEmail, _ := e.Canal(ctx).AccountEmail(ctx)
 
 	for {
 		msgs, err := e.Store.ListPendingMessages(ctx, batchSize)

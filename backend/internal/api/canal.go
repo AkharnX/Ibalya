@@ -30,6 +30,10 @@ type ConfigCanal struct {
 	// MotDePasseEnregistre signale qu'un secret existe, sans le divulguer :
 	// l'interface affiche un champ pré-rempli de points plutôt que vide.
 	MotDePasseEnregistre bool `json:"mot_de_passe_enregistre"`
+	// SansVerifCert accepte un certificat serveur non vérifiable (auto-signé,
+	// expiré). Compromis de sécurité réservé à une boîte au serveur mal
+	// configuré ; activé explicitement, jamais par défaut.
+	SansVerifCert bool `json:"tls_sans_verification"`
 }
 
 func (s *Server) lireConfigCanal(ctx context.Context) ConfigCanal {
@@ -49,6 +53,7 @@ func (s *Server) lireConfigCanal(ctx context.Context) ConfigCanal {
 		SMTPHote:             g("smtp_hote", ""),
 		SMTPPort:             n("smtp_port", 587),
 		MotDePasseEnregistre: g("imap_mot_de_passe", "") != "",
+		SansVerifCert:        g("imap_tls_skip_verify", "0") == "1",
 	}
 }
 
@@ -81,7 +86,7 @@ func (s *Server) construireIMAP(ctx context.Context, c ConfigCanal) (*channel.IM
 		Utilisateur: strings.TrimSpace(c.Utilisateur), MotDePasse: mdp,
 		Dossier:  c.Dossier,
 		SMTPHote: c.SMTPHote, SMTPPort: c.SMTPPort,
-		TLSSansVerification: s.Cfg.IMAPTLSSansVerif,
+		TLSSansVerification: s.Cfg.IMAPTLSSansVerif || c.SansVerifCert,
 	}), nil
 }
 
@@ -136,7 +141,6 @@ func (s *Server) putCanal(w http.ResponseWriter, r *http.Request) {
 	switch c.Type {
 	case "gmail":
 		s.Store.SetSetting(ctx, "canal_type", "gmail")
-		s.Commutateur.Remplacer(channel.NewGmail(s.OAuth, s.Store))
 	case "imap":
 		imap, err := s.construireIMAP(ctx, c)
 		if err != nil {
@@ -166,7 +170,7 @@ func (s *Server) putCanal(w http.ResponseWriter, r *http.Request) {
 		s.Store.SetSetting(ctx, "imap_dossier", strings.TrimSpace(c.Dossier))
 		s.Store.SetSetting(ctx, "smtp_hote", strings.TrimSpace(c.SMTPHote))
 		s.Store.SetSetting(ctx, "smtp_port", strconv.Itoa(c.SMTPPort))
-		s.Commutateur.Remplacer(imap)
+		s.Store.SetSetting(ctx, "imap_tls_skip_verify", boolStr(c.SansVerifCert))
 	default:
 		httpError(w, 400, "type de canal inconnu : gmail ou imap")
 		return
@@ -174,4 +178,11 @@ func (s *Server) putCanal(w http.ResponseWriter, r *http.Request) {
 	s.Store.Audit(ctx, acteur(r), "canal_raccorde",
 		map[string]string{"type": c.Type, "hote": c.Hote, "compte": c.Utilisateur})
 	writeJSON(w, s.lireConfigCanal(ctx))
+}
+
+func boolStr(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
 }

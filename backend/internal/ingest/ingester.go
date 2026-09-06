@@ -10,8 +10,17 @@ import (
 )
 
 type Ingester struct {
-	Store   *store.Store
-	Channel channel.Reader
+	Store     *store.Store
+	Channel   channel.Reader
+	CanalPour func(context.Context) channel.Reader
+}
+
+// canal résout le canal du tenant courant (voir Engine.Canal).
+func (ing *Ingester) canal(ctx context.Context) channel.Reader {
+	if ing.CanalPour != nil {
+		return ing.CanalPour(ctx)
+	}
+	return ing.Channel
 }
 
 type Stats struct {
@@ -30,7 +39,7 @@ type Stats struct {
 // (le taux d'exclusion est un indicateur de santé économique — CDC 6.4).
 func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, error) {
 	var st Stats
-	msgs, err := ing.Channel.FetchSince(ctx, since, max)
+	msgs, err := ing.canal(ctx).FetchSince(ctx, since, max)
 	if err != nil {
 		return st, err
 	}
@@ -42,7 +51,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
 
 	for _, cm := range msgs {
-		threadID, err := ing.Store.UpsertThread(ctx, ing.Channel.Name(), cm.ThreadExternalID, cm.Subject, cm.SentAt)
+		threadID, err := ing.Store.UpsertThread(ctx, ing.canal(ctx).Name(), cm.ThreadExternalID, cm.Subject, cm.SentAt)
 		if err != nil {
 			log.Printf("ingest: upsert thread: %v", err)
 			continue
@@ -54,7 +63,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 		m := store.Message{
 			ThreadID:        threadID,
 			ExternalID:      cm.ExternalID,
-			Channel:         ing.Channel.Name(),
+			Channel:         ing.canal(ctx).Name(),
 			Sender:          cm.Sender,
 			Recipients:      cm.Recipients,
 			SentAt:          cm.SentAt,

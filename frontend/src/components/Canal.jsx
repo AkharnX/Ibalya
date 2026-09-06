@@ -19,7 +19,7 @@ const PRESETS = [
 
 const VIDE = {
   type: 'imap', hote: '', port: 993, utilisateur: '', mot_de_passe: '',
-  dossier: 'INBOX', smtp_hote: '', smtp_port: 587,
+  dossier: 'INBOX', smtp_hote: '', smtp_port: 587, tls_sans_verification: false,
 }
 
 export default function Canal({ statut, onChange }) {
@@ -39,7 +39,8 @@ export default function Canal({ statut, onChange }) {
   if (!conf) return <p className="help">Chargement…</p>
 
   const set = (champ) => (e) => {
-    const v = e.target.type === 'number' ? Number(e.target.value) : e.target.value
+    const v = e.target.type === 'checkbox' ? e.target.checked
+      : e.target.type === 'number' ? Number(e.target.value) : e.target.value
     setConf((p) => ({ ...p, [champ]: v }))
     setEssai(null) // toute modification invalide l'épreuve précédente
   }
@@ -169,6 +170,15 @@ export default function Canal({ statut, onChange }) {
               <input id="smtpport" type="number" value={conf.smtp_port} onChange={set('smtp_port')} />
             </div>
           </div>
+
+          <label className="setting bascule">
+            <input type="checkbox" checked={!!conf.tls_sans_verification}
+              onChange={set('tls_sans_verification')} />
+            <span>
+              <b>Accepter un certificat non vérifié</b>
+              <span className="help">À n'activer que si le serveur présente un certificat auto-signé ou expiré et refuse la connexion autrement. Cela réduit la protection contre l'interception sur cette boîte.</span>
+            </span>
+          </label>
 
           <p className="help">
             La plupart des fournisseurs exigent un <b>mot de passe d’application</b>, distinct

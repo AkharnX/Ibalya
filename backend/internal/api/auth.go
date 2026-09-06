@@ -82,7 +82,7 @@ func (s *Server) proprietaire(ctx context.Context) string {
 	if s.Engine == nil || s.Engine.Channel == nil {
 		return ""
 	}
-	email, err := s.Engine.Channel.AccountEmail(ctx)
+	email, err := s.Engine.Canal(ctx).AccountEmail(ctx)
 	if err != nil {
 		return ""
 	}
