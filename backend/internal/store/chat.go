@@ -8,16 +8,23 @@ import (
 // Historique de l'assistant conversationnel. Chaque tour est une ligne
 // cloisonnée par tenant (RLS) : un utilisateur ne relit que ses conversations.
 
+// SourceChat est une source citée par l'assistant. ThreadID (quand > 0) permet
+// d'ouvrir le fil d'origine : c'est ce qui rend la source cliquable.
+type SourceChat struct {
+	Label    string `json:"label"`
+	ThreadID int64  `json:"thread_id,omitempty"`
+}
+
 type TourChat struct {
-	Role    string   `json:"role"` // "user" | "assistant"
-	Content string   `json:"content"`
-	Sources []string `json:"sources"`
+	Role    string       `json:"role"` // "user" | "assistant"
+	Content string       `json:"content"`
+	Sources []SourceChat `json:"sources"`
 }
 
 // AjouterTourChat enregistre un tour de conversation pour le tenant courant.
-func (s *Store) AjouterTourChat(ctx context.Context, role, content string, sources []string) error {
+func (s *Store) AjouterTourChat(ctx context.Context, role, content string, sources []SourceChat) error {
 	if sources == nil {
-		sources = []string{}
+		sources = []SourceChat{}
 	}
 	b, err := json.Marshal(sources)
 	if err != nil {
@@ -54,7 +61,7 @@ func (s *Store) HistoriqueChat(ctx context.Context, limit int) ([]TourChat, erro
 			_ = json.Unmarshal(brut, &t.Sources)
 		}
 		if t.Sources == nil {
-			t.Sources = []string{}
+			t.Sources = []SourceChat{}
 		}
 		out = append(out, t)
 	}

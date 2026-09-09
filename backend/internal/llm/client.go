@@ -251,6 +251,9 @@ type ChatTour struct {
 }
 
 type ChatEngagement struct {
+	// Ref identifie l'élément dans le contexte : le modèle renvoie ces refs
+	// dans `sources`, que le backend résout en liens cliquables vers le fil.
+	Ref           string `json:"ref"`
 	Objet         string `json:"objet"`
 	Statut        string `json:"statut,omitempty"`
 	Echeance      string `json:"echeance,omitempty"`
@@ -261,11 +264,13 @@ type ChatEngagement struct {
 }
 
 type ChatAlerte struct {
+	Ref   string `json:"ref"`
 	Type  string `json:"type,omitempty"`
 	Objet string `json:"objet,omitempty"`
 }
 
 type ChatMessage struct {
+	Ref     string `json:"ref"`
 	Fil     string `json:"fil,omitempty"`
 	De      string `json:"de,omitempty"`
 	Date    string `json:"date,omitempty"`

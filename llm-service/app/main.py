@@ -260,6 +260,7 @@ class ChatTour(BaseModel):
 
 
 class ChatEngagement(BaseModel):
+    ref: str = ""
     objet: str
     statut: str = ""
     echeance: str = ""
@@ -268,11 +269,13 @@ class ChatEngagement(BaseModel):
 
 
 class ChatAlerte(BaseModel):
+    ref: str = ""
     type: str = ""
     objet: str = ""
 
 
 class ChatMessage(BaseModel):
+    ref: str = ""
     fil: str = ""
     de: str = ""
     date: str = ""

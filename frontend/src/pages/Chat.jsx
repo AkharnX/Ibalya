@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import Icone from '../components/Icone'
+import SourcePanel from '../components/SourcePanel'
 
 // Rendu markdown minimal et sûr : le modèle répond avec du gras (**…**), des
 // listes à puces (- …) et des paragraphes. On construit des éléments React
@@ -45,6 +46,7 @@ export default function Chat() {
   const [question, setQuestion] = useState('')
   const [busy, setBusy] = useState(false)
   const [charge, setCharge] = useState(false) // historique chargé ?
+  const [filSource, setFilSource] = useState(null) // fil ouvert dans le panneau
   const finRef = useRef(null)
   const champRef = useRef(null)
 
@@ -135,7 +137,15 @@ export default function Chat() {
             {t.role === 'assistant' && t.sources?.length > 0 && (
               <div className="chat-sources">
                 <span className="chat-sources-lbl">Sources</span>
-                {t.sources.map((s, j) => <span key={j} className="chat-source">{s}</span>)}
+                {t.sources.map((s, j) => s.thread_id ? (
+                  <button key={j} className="chat-source lien"
+                    title="Voir la conversation d'origine"
+                    onClick={() => setFilSource(s.thread_id)}>
+                    {s.label}
+                  </button>
+                ) : (
+                  <span key={j} className="chat-source">{s.label}</span>
+                ))}
               </div>
             )}
           </div>
@@ -166,6 +176,10 @@ export default function Chat() {
       <p className="help chat-avertissement">
         L’assistant peut se tromper : vérifie les points importants dans le fil source.
       </p>
+
+      {filSource && (
+        <SourcePanel threadId={filSource} onClose={() => setFilSource(null)} />
+      )}
     </div>
   )
 }

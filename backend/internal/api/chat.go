@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"ibalya/backend/internal/llm"
+	"ibalya/backend/internal/store"
 )
 
 // Assistant conversationnel : le dirigeant interroge sa boîte en langage
@@ -17,10 +19,18 @@ import (
 // déjà extraites et stockées (engagements, alertes, messages). Le contexte est
 // assemblé ICI, dans la connexion du tenant courant : RLS garantit qu'on ne
 // rassemble que la boîte de l'utilisateur. Le modèle informe, il n'agit jamais.
+//
+// Chaque élément de contexte porte une `ref` ; le modèle renvoie les refs qu'il
+// a utilisées, que le backend résout en sources cliquables (lien vers le fil).
 
 type chatReq struct {
 	Question   string         `json:"question"`
 	Historique []llm.ChatTour `json:"historique,omitempty"`
+}
+
+type chatResponse struct {
+	Reponse string             `json:"reponse"`
+	Sources []store.SourceChat `json:"sources"`
 }
 
 // POST /api/chat
@@ -37,24 +47,25 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	engagements := s.chatEngagements(ctx)
-	alertes := s.chatAlertes(ctx)
-	messages := s.chatMessages(ctx, in.Question)
+	// refs : ref d'un élément de contexte -> source cliquable correspondante.
+	refs := map[string]store.SourceChat{}
+	engagements := s.chatEngagements(ctx, refs)
+	alertes := s.chatAlertes(ctx, refs)
+	messages := s.chatMessages(ctx, in.Question, refs)
 
-	var resp *llm.ChatResponse
+	var reponse string
+	var sources []store.SourceChat
 	// Garde-fou anti-hallucination : sans aucune donnée, on ne consulte PAS le
 	// modèle. Un LLM à qui l'on ne fournit aucun contexte comble le vide en
 	// inventant (faux devis, faux clients). Le seul cas sûr est de répondre
 	// nous-mêmes que la boîte n'a rien à analyser. C'est le cas typique d'un
 	// nouvel utilisateur qui n'a pas encore raccordé sa boîte.
 	if len(engagements) == 0 && len(alertes) == 0 && len(messages) == 0 {
-		resp = &llm.ChatResponse{
-			Reponse: "Je n'ai encore aucune donnée à analyser : ta boîte n'est pas raccordée, " +
-				"ou aucun cycle de lecture n'a encore tourné. Va dans Réglages → Connexion pour " +
-				"raccorder ta boîte, puis reviens me poser tes questions. Je ne réponds qu'à partir " +
-				"de tes vrais échanges, jamais d'exemples inventés.",
-			Sources: []string{},
-		}
+		reponse = "Je n'ai encore aucune donnée à analyser : ta boîte n'est pas raccordée, " +
+			"ou aucun cycle de lecture n'a encore tourné. Va dans Réglages → Connexion pour " +
+			"raccorder ta boîte, puis reviens me poser tes questions. Je ne réponds qu'à partir " +
+			"de tes vrais échanges, jamais d'exemples inventés."
+		sources = []store.SourceChat{}
 	} else {
 		req := llm.ChatRequest{
 			Question:    in.Question,
@@ -69,15 +80,39 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "assistant indisponible", http.StatusBadGateway)
 			return
 		}
-		resp = r2
+		reponse = r2.Reponse
+		sources = resoudreSources(r2.Sources, refs)
 	}
 
 	// Historisation : on conserve le tour (question puis réponse). Un échec
 	// d'écriture ne doit pas priver l'utilisateur de sa réponse.
 	_ = s.Store.AjouterTourChat(ctx, "user", in.Question, nil)
-	_ = s.Store.AjouterTourChat(ctx, "assistant", resp.Reponse, resp.Sources)
+	_ = s.Store.AjouterTourChat(ctx, "assistant", reponse, sources)
 
-	writeJSON(w, resp)
+	writeJSON(w, chatResponse{Reponse: reponse, Sources: sources})
+}
+
+// resoudreSources traduit les refs renvoyées par le modèle en sources
+// cliquables, en ignorant celles qu'il aurait inventées et en dédoublonnant.
+func resoudreSources(refsModele []string, refs map[string]store.SourceChat) []store.SourceChat {
+	out := []store.SourceChat{}
+	vus := map[string]bool{}
+	for _, ref := range refsModele {
+		src, ok := refs[strings.TrimSpace(ref)]
+		if !ok {
+			continue // ref hors contexte : jamais inventer un lien
+		}
+		cle := fmt.Sprintf("%s|%d", src.Label, src.ThreadID)
+		if vus[cle] {
+			continue
+		}
+		vus[cle] = true
+		out = append(out, src)
+		if len(out) >= 8 {
+			break
+		}
+	}
+	return out
 }
 
 // GET /api/chat/historique — relit la conversation persistée du tenant.
@@ -108,14 +143,15 @@ func bornerHistorique(h []llm.ChatTour, max int) []llm.ChatTour {
 	return h
 }
 
-func (s *Server) chatEngagements(ctx context.Context) []llm.ChatEngagement {
+func (s *Server) chatEngagements(ctx context.Context, refs map[string]store.SourceChat) []llm.ChatEngagement {
 	out := []llm.ChatEngagement{}
 	rows, err := s.Store.Q(ctx).Query(ctx, `
 		SELECT e.objet, e.statut,
 		       coalesce(to_char(e.echeance,'DD/MM/YYYY'),''),
 		       coalesce(nullif(pd.name,''), pd.email, ''),
 		       (e.echeance IS NOT NULL AND e.echeance < current_date
-		        AND e.statut NOT IN ('livre','abandonne')) AS en_retard
+		        AND e.statut NOT IN ('livre','abandonne')) AS en_retard,
+		       e.thread_id
 		  FROM engagements e
 		  LEFT JOIN persons pd ON pd.id = e.destinataire_id
 		 WHERE e.statut <> 'abandonne'
@@ -125,22 +161,31 @@ func (s *Server) chatEngagements(ctx context.Context) []llm.ChatEngagement {
 		return out
 	}
 	defer rows.Close()
+	n := 0
 	for rows.Next() {
 		var e llm.ChatEngagement
 		var enRetard *bool
-		if err := rows.Scan(&e.Objet, &e.Statut, &e.Echeance, &e.Interlocuteur, &enRetard); err != nil {
+		var threadID *int64
+		if err := rows.Scan(&e.Objet, &e.Statut, &e.Echeance, &e.Interlocuteur, &enRetard, &threadID); err != nil {
 			return out
 		}
 		e.EnRetard = enRetard != nil && *enRetard
+		n++
+		e.Ref = fmt.Sprintf("e%d", n)
+		label := e.Objet
+		if e.Interlocuteur != "" {
+			label += " — " + e.Interlocuteur
+		}
+		refs[e.Ref] = store.SourceChat{Label: label, ThreadID: deref(threadID)}
 		out = append(out, e)
 	}
 	return out
 }
 
-func (s *Server) chatAlertes(ctx context.Context) []llm.ChatAlerte {
+func (s *Server) chatAlertes(ctx context.Context, refs map[string]store.SourceChat) []llm.ChatAlerte {
 	out := []llm.ChatAlerte{}
 	rows, err := s.Store.Q(ctx).Query(ctx, `
-		SELECT type, titre FROM detections
+		SELECT type, titre, thread_id FROM detections
 		 WHERE statut = 'nouvelle'
 		 ORDER BY critique DESC, created_at DESC
 		 LIMIT 30`)
@@ -148,11 +193,16 @@ func (s *Server) chatAlertes(ctx context.Context) []llm.ChatAlerte {
 		return out
 	}
 	defer rows.Close()
+	n := 0
 	for rows.Next() {
 		var a llm.ChatAlerte
-		if err := rows.Scan(&a.Type, &a.Objet); err != nil {
+		var threadID *int64
+		if err := rows.Scan(&a.Type, &a.Objet, &threadID); err != nil {
 			return out
 		}
+		n++
+		a.Ref = fmt.Sprintf("a%d", n)
+		refs[a.Ref] = store.SourceChat{Label: a.Objet, ThreadID: deref(threadID)}
 		out = append(out, a)
 	}
 	return out
@@ -162,7 +212,7 @@ func (s *Server) chatAlertes(ctx context.Context) []llm.ChatAlerte {
 // par recherche de mots-clés (ILIKE). MVP : suffisant pour retrouver un dossier
 // par nom d'interlocuteur ou par sujet. On passera au plein-texte (tsvector)
 // si le rappel « par sens » manque.
-func (s *Server) chatMessages(ctx context.Context, question string) []llm.ChatMessage {
+func (s *Server) chatMessages(ctx context.Context, question string, refs map[string]store.SourceChat) []llm.ChatMessage {
 	out := []llm.ChatMessage{}
 	motifs := motsClesMotifs(question)
 	if len(motifs) == 0 {
@@ -172,7 +222,8 @@ func (s *Server) chatMessages(ctx context.Context, question string) []llm.ChatMe
 		SELECT coalesce(nullif(t.subject,''),'(sans objet)'),
 		       m.sender,
 		       coalesce(to_char(m.sent_at,'DD/MM/YYYY'),''),
-		       left(m.body, 300)
+		       left(m.body, 300),
+		       t.id
 		  FROM messages m
 		  JOIN threads t ON t.id = m.thread_id
 		 WHERE lower(m.subject || ' ' || m.body) LIKE ANY($1)
@@ -182,15 +233,31 @@ func (s *Server) chatMessages(ctx context.Context, question string) []llm.ChatMe
 		return out
 	}
 	defer rows.Close()
+	n := 0
 	for rows.Next() {
 		var m llm.ChatMessage
-		if err := rows.Scan(&m.Fil, &m.De, &m.Date, &m.Extrait); err != nil {
+		var threadID int64
+		if err := rows.Scan(&m.Fil, &m.De, &m.Date, &m.Extrait, &threadID); err != nil {
 			return out
 		}
 		m.Extrait = strings.Join(strings.Fields(m.Extrait), " ") // aplatit les blancs
+		n++
+		m.Ref = fmt.Sprintf("m%d", n)
+		label := "Fil « " + m.Fil + " »"
+		if m.Date != "" {
+			label += " — " + m.Date
+		}
+		refs[m.Ref] = store.SourceChat{Label: label, ThreadID: threadID}
 		out = append(out, m)
 	}
 	return out
+}
+
+func deref(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 // motsClesMotifs extrait de la question les mots discriminants (≥ 4 lettres,

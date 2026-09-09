@@ -953,3 +953,8 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   color:var(--muted-foreground);padding:6px 11px;font-size:12.5px;cursor:pointer;transition:border-color .12s,color .12s;}
 .chat-nouvelle:hover{border-color:var(--primary);color:var(--foreground);}
 .chat-nouvelle:disabled{opacity:.5;cursor:default;}
+
+/* Source cliquable : ouvre le fil d'origine. */
+button.chat-source{font:inherit;}
+.chat-source.lien{cursor:pointer;color:var(--foreground);transition:border-color .12s,color .12s;}
+.chat-source.lien:hover{border-color:var(--primary);color:var(--primary);}
