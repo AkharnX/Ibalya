@@ -344,6 +344,20 @@ ALTER TABLE detections        ALTER COLUMN user_id SET NOT NULL;
 ALTER TABLE drafts            ALTER COLUMN user_id SET NOT NULL;
 ALTER TABLE reports           ALTER COLUMN user_id SET NOT NULL;
 
+-- Historique de l'assistant conversationnel : chaque tour (question du
+-- dirigeant, réponse de l'agent) est conservé, cloisonné par tenant. C'est ce
+-- qui rend les conversations persistantes d'une session à l'autre.
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id)
+    DEFAULT NULLIF(current_setting('app.user_id', true), '')::bigint,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  sources JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id, created_at);
+
 -- Droits du rôle applicatif (créé avant la migration par le code).
 DO $grant$ BEGIN
   IF EXISTS (SELECT FROM pg_roles WHERE rolname='ibalya_app') THEN
@@ -360,7 +374,8 @@ DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['persons','threads','messages','engagements',
       'engagement_events','dependency_links','capsule','learned_rules',
-      'detections','drafts','reports','settings','oauth_tokens'] LOOP
+      'detections','drafts','reports','settings','oauth_tokens',
+      'chat_messages'] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
     EXECUTE format($p$CREATE POLICY tenant_isolation ON %I

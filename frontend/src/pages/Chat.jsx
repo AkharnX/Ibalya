@@ -44,12 +44,29 @@ export default function Chat() {
   const [tours, setTours] = useState([]) // { role: 'user'|'assistant', content, sources? }
   const [question, setQuestion] = useState('')
   const [busy, setBusy] = useState(false)
+  const [charge, setCharge] = useState(false) // historique chargé ?
   const finRef = useRef(null)
   const champRef = useRef(null)
+
+  // Historisation : au chargement, on relit la conversation persistée côté
+  // serveur pour la restaurer telle quelle après un rechargement de page.
+  useEffect(() => {
+    api('/chat/historique')
+      .then((h) => setTours(Array.isArray(h) ? h : []))
+      .catch(() => {})
+      .finally(() => setCharge(true))
+  }, [])
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [tours, busy])
+
+  const nouvelleConversation = async () => {
+    if (busy) return
+    try { await api('/chat/historique', { method: 'DELETE' }) } catch (e) { /* on efface localement quand même */ }
+    setTours([])
+    champRef.current?.focus()
+  }
 
   const envoyer = async (texte) => {
     const q = (texte ?? question).trim()
@@ -86,8 +103,15 @@ export default function Chat() {
 
   return (
     <div className="chat">
+      {tours.length > 0 && (
+        <div className="chat-entete">
+          <button className="chat-nouvelle" onClick={nouvelleConversation} disabled={busy}>
+            <Icone nom="action-rejeter" taille={14} /> Nouvelle conversation
+          </button>
+        </div>
+      )}
       <div className="chat-fil">
-        {tours.length === 0 && (
+        {charge && tours.length === 0 && (
           <div className="chat-accueil">
             <div className="chat-accueil-ic"><Icone nom="nav-assistant" taille={28} /></div>
             <h2>Pose ta question sur ta boîte</h2>

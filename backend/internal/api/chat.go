@@ -41,37 +41,62 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	alertes := s.chatAlertes(ctx)
 	messages := s.chatMessages(ctx, in.Question)
 
+	var resp *llm.ChatResponse
 	// Garde-fou anti-hallucination : sans aucune donnée, on ne consulte PAS le
 	// modèle. Un LLM à qui l'on ne fournit aucun contexte comble le vide en
 	// inventant (faux devis, faux clients). Le seul cas sûr est de répondre
 	// nous-mêmes que la boîte n'a rien à analyser. C'est le cas typique d'un
 	// nouvel utilisateur qui n'a pas encore raccordé sa boîte.
 	if len(engagements) == 0 && len(alertes) == 0 && len(messages) == 0 {
-		writeJSON(w, llm.ChatResponse{
+		resp = &llm.ChatResponse{
 			Reponse: "Je n'ai encore aucune donnée à analyser : ta boîte n'est pas raccordée, " +
 				"ou aucun cycle de lecture n'a encore tourné. Va dans Réglages → Connexion pour " +
 				"raccorder ta boîte, puis reviens me poser tes questions. Je ne réponds qu'à partir " +
 				"de tes vrais échanges, jamais d'exemples inventés.",
 			Sources: []string{},
-		})
-		return
+		}
+	} else {
+		req := llm.ChatRequest{
+			Question:    in.Question,
+			Aujourdhui:  time.Now().Format("2006-01-02"),
+			Engagements: engagements,
+			Alertes:     alertes,
+			Messages:    messages,
+			Historique:  bornerHistorique(in.Historique, 8),
+		}
+		r2, err := s.Engine.LLM.Chat(ctx, req)
+		if err != nil {
+			http.Error(w, "assistant indisponible", http.StatusBadGateway)
+			return
+		}
+		resp = r2
 	}
 
-	req := llm.ChatRequest{
-		Question:    in.Question,
-		Aujourdhui:  time.Now().Format("2006-01-02"),
-		Engagements: engagements,
-		Alertes:     alertes,
-		Messages:    messages,
-		Historique:  bornerHistorique(in.Historique, 8),
-	}
+	// Historisation : on conserve le tour (question puis réponse). Un échec
+	// d'écriture ne doit pas priver l'utilisateur de sa réponse.
+	_ = s.Store.AjouterTourChat(ctx, "user", in.Question, nil)
+	_ = s.Store.AjouterTourChat(ctx, "assistant", resp.Reponse, resp.Sources)
 
-	resp, err := s.Engine.LLM.Chat(ctx, req)
-	if err != nil {
-		http.Error(w, "assistant indisponible", http.StatusBadGateway)
-		return
-	}
 	writeJSON(w, resp)
+}
+
+// GET /api/chat/historique — relit la conversation persistée du tenant.
+func (s *Server) chatHistorique(w http.ResponseWriter, r *http.Request) {
+	tours, err := s.Store.HistoriqueChat(r.Context(), 200)
+	if err != nil {
+		http.Error(w, "historique indisponible", http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, tours)
+}
+
+// DELETE /api/chat/historique — efface la conversation (« nouvelle conversation »).
+func (s *Server) chatEffacer(w http.ResponseWriter, r *http.Request) {
+	if err := s.Store.EffacerHistoriqueChat(r.Context()); err != nil {
+		http.Error(w, "effacement impossible", http.StatusBadGateway)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // bornerHistorique ne garde que les derniers tours : au-delà, le contexte
@@ -89,7 +114,8 @@ func (s *Server) chatEngagements(ctx context.Context) []llm.ChatEngagement {
 		SELECT e.objet, e.statut,
 		       coalesce(to_char(e.echeance,'DD/MM/YYYY'),''),
 		       coalesce(nullif(pd.name,''), pd.email, ''),
-		       (e.echeance < current_date AND e.statut = 'ouvert') AS en_retard
+		       (e.echeance IS NOT NULL AND e.echeance < current_date
+		        AND e.statut NOT IN ('livre','abandonne')) AS en_retard
 		  FROM engagements e
 		  LEFT JOIN persons pd ON pd.id = e.destinataire_id
 		 WHERE e.statut <> 'abandonne'
