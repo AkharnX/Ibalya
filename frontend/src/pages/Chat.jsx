@@ -2,6 +2,32 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import Icone from '../components/Icone'
 
+// Rendu markdown minimal et sûr : le modèle répond avec du gras (**…**), des
+// listes à puces (- …) et des paragraphes. On construit des éléments React
+// (jamais de HTML injecté) : pas de dépendance, aucun risque XSS.
+function enGras(texte) {
+  // Les segments impairs de la découpe sur **…** sont le contenu à mettre en gras.
+  return texte.split(/\*\*(.+?)\*\*/g).map((seg, i) =>
+    i % 2 === 1 ? <strong key={i}>{seg}</strong> : seg)
+}
+
+function renduMarkdown(texte) {
+  const blocs = []
+  let puces = null
+  const viderPuces = (cle) => { if (puces) { blocs.push(<ul key={cle}>{puces}</ul>); puces = null } }
+  texte.split('\n').forEach((ligne, idx) => {
+    const puce = ligne.match(/^\s*[-*]\s+(.*)$/)
+    if (puce) {
+      ;(puces ||= []).push(<li key={'li' + idx}>{enGras(puce[1])}</li>)
+      return
+    }
+    viderPuces('ul' + idx)
+    if (ligne.trim() !== '') blocs.push(<p key={'p' + idx}>{enGras(ligne)}</p>)
+  })
+  viderPuces('ul-fin')
+  return blocs
+}
+
 // Assistant conversationnel : le dirigeant interroge sa boîte en langage
 // naturel. L'assistant répond à partir des données déjà extraites (engagements,
 // alertes, messages), cloisonnées par tenant côté serveur. Il informe, il
@@ -79,7 +105,9 @@ export default function Chat() {
 
         {tours.map((t, i) => (
           <div key={i} className={'chat-bulle ' + t.role}>
-            <div className="chat-texte">{t.content}</div>
+            <div className="chat-texte">
+              {t.role === 'assistant' ? renduMarkdown(t.content) : t.content}
+            </div>
             {t.role === 'assistant' && t.sources?.length > 0 && (
               <div className="chat-sources">
                 <span className="chat-sources-lbl">Sources</span>

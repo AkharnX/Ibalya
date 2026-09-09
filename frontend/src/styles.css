@@ -938,3 +938,11 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
   padding:10px 12px;font-family:inherit;font-size:14px;line-height:1.5;max-height:140px;}
 .chat-saisie textarea:focus{outline:none;border-color:var(--primary);}
 .chat-avertissement{text-align:center;margin:8px 0 0;font-size:11.5px;}
+
+/* Rendu markdown des réponses de l'assistant : blocs propres, pas de pre-wrap. */
+.chat-bulle.assistant .chat-texte{white-space:normal;}
+.chat-texte p{margin:0 0 8px;}
+.chat-texte p:last-child{margin-bottom:0;}
+.chat-texte ul{margin:6px 0;padding-left:20px;}
+.chat-texte li{margin:3px 0;}
+.chat-texte strong{font-weight:600;}
