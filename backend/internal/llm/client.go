@@ -276,10 +276,12 @@ type ChatRequest struct {
 	Question string `json:"question"`
 	// Aujourdhui ancre le raisonnement temporel (« cette semaine », « depuis
 	// 10 jours ») : sans elle le modèle ignore la date du jour.
-	Aujourdhui  string           `json:"aujourd_hui,omitempty"`
-	Engagements []ChatEngagement `json:"engagements,omitempty"`
-	Alertes     []ChatAlerte     `json:"alertes,omitempty"`
-	Messages    []ChatMessage    `json:"messages,omitempty"`
+	Aujourdhui string `json:"aujourd_hui,omitempty"`
+	// Toujours sérialisées, même vides : le modèle doit voir `[]` (« aucun
+	// élément ») plutôt qu'un champ absent, qu'il comblerait en inventant.
+	Engagements []ChatEngagement `json:"engagements"`
+	Alertes     []ChatAlerte     `json:"alertes"`
+	Messages    []ChatMessage    `json:"messages"`
 	Historique  []ChatTour       `json:"historique,omitempty"`
 }
 

@@ -37,12 +37,32 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
+	engagements := s.chatEngagements(ctx)
+	alertes := s.chatAlertes(ctx)
+	messages := s.chatMessages(ctx, in.Question)
+
+	// Garde-fou anti-hallucination : sans aucune donnée, on ne consulte PAS le
+	// modèle. Un LLM à qui l'on ne fournit aucun contexte comble le vide en
+	// inventant (faux devis, faux clients). Le seul cas sûr est de répondre
+	// nous-mêmes que la boîte n'a rien à analyser. C'est le cas typique d'un
+	// nouvel utilisateur qui n'a pas encore raccordé sa boîte.
+	if len(engagements) == 0 && len(alertes) == 0 && len(messages) == 0 {
+		writeJSON(w, llm.ChatResponse{
+			Reponse: "Je n'ai encore aucune donnée à analyser : ta boîte n'est pas raccordée, " +
+				"ou aucun cycle de lecture n'a encore tourné. Va dans Réglages → Connexion pour " +
+				"raccorder ta boîte, puis reviens me poser tes questions. Je ne réponds qu'à partir " +
+				"de tes vrais échanges, jamais d'exemples inventés.",
+			Sources: []string{},
+		})
+		return
+	}
+
 	req := llm.ChatRequest{
 		Question:    in.Question,
 		Aujourdhui:  time.Now().Format("2006-01-02"),
-		Engagements: s.chatEngagements(ctx),
-		Alertes:     s.chatAlertes(ctx),
-		Messages:    s.chatMessages(ctx, in.Question),
+		Engagements: engagements,
+		Alertes:     alertes,
+		Messages:    messages,
 		Historique:  bornerHistorique(in.Historique, 8),
 	}
 
