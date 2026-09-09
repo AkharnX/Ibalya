@@ -1,0 +1,34 @@
+[Unit]
+Description=Ibalya TEST — backend Go (API et tableau de bord, port 9998)
+After=network-online.target docker.service ibalya-llm-test.service
+Wants=network-online.target ibalya-llm-test.service
+
+[Service]
+OOMScoreAdjust=-400
+Type=simple
+User=akharn
+Group=akharn
+WorkingDirectory=/home/akharn/agnet-ia-test
+EnvironmentFile=/home/akharn/agnet-ia-test/.env
+Environment=CHANNEL=gmail
+ExecStart=/home/akharn/agnet-ia-test/backend/bin/ibalya
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/akharn/agnet-ia-test/logs
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ibalya-backend-test
+
+[Install]
+WantedBy=multi-user.target

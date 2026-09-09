@@ -25,6 +25,7 @@ export const ICONES = {
   "etat-ouvert": { titre: "Ouvert", corps: "<circle cx=\"12\" cy=\"12\" r=\"8.5\"/> <path d=\"M10 8.5L15.5 12L10 15.5Z\"/>" },
   "nav-a-valider": { titre: "\u00c0 valider", corps: "<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\"/> <path d=\"M7.5 12.5L10.5 15.5L16.5 8.5\"/>" },
   "nav-alertes": { titre: "Alertes", corps: "<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\"/> <path d=\"M12 7V13\"/> <path d=\"M12 16.5V17\"/>" },
+  "nav-assistant": { titre: "Assistant", corps: "<path d=\"M4 4.5H20V15.5H10L6 19V15.5H4Z\"/> <path d=\"M8 10H8.01\"/> <path d=\"M12 10H12.01\"/> <path d=\"M16 10H16.01\"/>" },
   "nav-dependances": { titre: "D\u00e9pendances", corps: "<rect x=\"3.5\" y=\"5\" width=\"7\" height=\"7\"/> <rect x=\"13.5\" y=\"12\" width=\"7\" height=\"7\"/> <path d=\"M10.5 8.5H14.5V12\"/> <path d=\"M13.5 15.5H9.5V12\"/>" },
   "nav-digest": { titre: "Digest", corps: "<rect x=\"4\" y=\"3.5\" width=\"16\" height=\"17\"/> <path d=\"M7 8H17M7 12H17M7 16H13\"/>" },
   "nav-engagements": { titre: "Engagements", corps: "<path d=\"M6 3.5V20.5\"/> <path d=\"M6 5H17L14.5 9L17 13H6\"/> <path d=\"M4 20.5H10\"/>" },

@@ -242,3 +242,59 @@ func (c *Client) JugerDependance(ctx context.Context, req DependRequest) (*Depen
 	}
 	return &resp, nil
 }
+
+// --- assistant conversationnel ---
+
+type ChatTour struct {
+	Role    string `json:"role"` // "user" | "assistant"
+	Content string `json:"content"`
+}
+
+type ChatEngagement struct {
+	Objet         string `json:"objet"`
+	Statut        string `json:"statut,omitempty"`
+	Echeance      string `json:"echeance,omitempty"`
+	Interlocuteur string `json:"interlocuteur,omitempty"`
+	// EnRetard est calculé côté serveur (échéance dépassée et engagement encore
+	// ouvert) : le modèle ne fait pas d'arithmétique de dates, source d'erreurs.
+	EnRetard bool `json:"en_retard,omitempty"`
+}
+
+type ChatAlerte struct {
+	Type  string `json:"type,omitempty"`
+	Objet string `json:"objet,omitempty"`
+}
+
+type ChatMessage struct {
+	Fil     string `json:"fil,omitempty"`
+	De      string `json:"de,omitempty"`
+	Date    string `json:"date,omitempty"`
+	Extrait string `json:"extrait,omitempty"`
+}
+
+type ChatRequest struct {
+	Question string `json:"question"`
+	// Aujourdhui ancre le raisonnement temporel (« cette semaine », « depuis
+	// 10 jours ») : sans elle le modèle ignore la date du jour.
+	Aujourdhui  string           `json:"aujourd_hui,omitempty"`
+	Engagements []ChatEngagement `json:"engagements,omitempty"`
+	Alertes     []ChatAlerte     `json:"alertes,omitempty"`
+	Messages    []ChatMessage    `json:"messages,omitempty"`
+	Historique  []ChatTour       `json:"historique,omitempty"`
+}
+
+type ChatResponse struct {
+	Reponse string   `json:"reponse"`
+	Sources []string `json:"sources"`
+}
+
+// Chat répond à une question du dirigeant sur sa boîte. Le contexte est
+// assemblé et cloisonné (RLS) par le backend : le modèle ne voit que les
+// données du tenant courant, et n'agit jamais — il informe.
+func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
+	var resp ChatResponse
+	if err := c.post(ctx, "/chat", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

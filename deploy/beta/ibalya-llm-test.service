@@ -1,0 +1,32 @@
+[Unit]
+Description=Ibalya TEST — service d'inférence (Python, 127.0.0.1:8093, jamais exposé)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+OOMScoreAdjust=-400
+Type=simple
+User=akharn
+Group=akharn
+WorkingDirectory=/home/akharn/agnet-ia-test/llm-service
+EnvironmentFile=/home/akharn/agnet-ia-test/.env
+ExecStart=/home/akharn/app/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8093
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ibalya-llm-test
+
+[Install]
+WantedBy=multi-user.target

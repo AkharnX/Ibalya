@@ -12,6 +12,7 @@ import Interlocuteurs from './pages/Interlocuteurs'
 import AValider from './pages/AValider'
 import Alertes from './pages/Alertes'
 import Agent from './pages/Agent'
+import Chat from './pages/Chat'
 import Reglages from './pages/Reglages'
 
 function Toaster() {
@@ -108,6 +109,7 @@ function Login({ onConnecte }) {
 const NAV = [
   ['Opérations', [
     ['/', 'Synthèse', null, 'nav-synthese'],
+    ['/assistant', 'Assistant', null, 'nav-assistant'],
     ['/miroir', 'Miroir d’activité', null, 'nav-miroir-activite'],
     ['/a-valider', 'À valider', 'messages_a_valider', 'nav-a-valider'],
   ]],
@@ -124,7 +126,7 @@ const NAV = [
 ]
 
 const TITRES = {
-  '/': 'Synthèse', '/miroir': 'Miroir d’activité',
+  '/': 'Synthèse', '/assistant': 'Assistant', '/miroir': 'Miroir d’activité',
   '/a-valider': 'À valider', '/suivi': 'Engagements', '/alertes': 'Alertes',
   '/liens': 'Dépendances', '/agent': 'Règles métier',
   '/interlocuteurs': 'Interlocuteurs', '/reglages': 'Réglages',
@@ -311,6 +313,7 @@ export default function App() {
             <Route path="/interlocuteurs" element={<Interlocuteurs />} />
             <Route path="/alertes" element={<Alertes />} />
             <Route path="/agent" element={<Agent />} />
+            <Route path="/assistant" element={<Chat />} />
             <Route path="/reglages" element={<Reglages />} />
             <Route path="*" element={<Synthese />} />
           </Routes>

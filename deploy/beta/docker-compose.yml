@@ -1,0 +1,24 @@
+# Ibalya — environnement de test (beta.ibalya.com)
+# Base PostgreSQL DÉDIÉE, totalement séparée de la prod (conteneur, volume et
+# port distincts). Rien n'est partagé avec ibalya-db.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ibalya-db-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ibalya
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ibalya_test}
+      POSTGRES_DB: ibalya
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - ibalya_pgdata_test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ibalya"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ibalya_pgdata_test:
