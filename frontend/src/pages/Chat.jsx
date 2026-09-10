@@ -49,6 +49,20 @@ export default function Chat() {
   const [filSource, setFilSource] = useState(null) // fil ouvert dans le panneau
   const finRef = useRef(null)
   const champRef = useRef(null)
+  const filRef = useRef(null)
+  const defileTimer = useRef(null)
+
+  // La barre de défilement reste masquée au repos ; elle apparaît au survol
+  // (CSS) et pendant qu'on défile : on marque le fil « defile » le temps du
+  // geste, puis on l'efface après une courte inactivité.
+  const surDefilement = () => {
+    const el = filRef.current
+    if (!el) return
+    el.classList.add('defile')
+    clearTimeout(defileTimer.current)
+    defileTimer.current = setTimeout(() => el.classList.remove('defile'), 900)
+  }
+  useEffect(() => () => clearTimeout(defileTimer.current), [])
 
   // Historisation : au chargement, on relit la conversation persistée côté
   // serveur pour la restaurer telle quelle après un rechargement de page.
@@ -112,7 +126,8 @@ export default function Chat() {
           </button>
         </div>
       )}
-      <div className="chat-fil">
+      <div className="chat-fil" ref={filRef} onScroll={surDefilement}>
+       <div className="chat-messages">
         {charge && tours.length === 0 && (
           <div className="chat-accueil">
             <div className="chat-accueil-ic"><Icone nom="nav-assistant" taille={28} /></div>
@@ -157,6 +172,7 @@ export default function Chat() {
           </div>
         )}
         <div ref={finRef} />
+       </div>
       </div>
 
       <div className="chat-saisie">
