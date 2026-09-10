@@ -242,3 +242,78 @@ func (c *Client) JugerDependance(ctx context.Context, req DependRequest) (*Depen
 	}
 	return &resp, nil
 }
+
+// --- assistant conversationnel ---
+
+type ChatTour struct {
+	Role    string `json:"role"` // "user" | "assistant"
+	Content string `json:"content"`
+}
+
+type ChatEngagement struct {
+	// Ref identifie l'élément dans le contexte : le modèle renvoie ces refs
+	// dans `sources`, que le backend résout en liens cliquables vers le fil.
+	Ref           string `json:"ref"`
+	Objet         string `json:"objet"`
+	Type          string `json:"type,omitempty"`
+	Statut        string `json:"statut,omitempty"`
+	Echeance      string `json:"echeance,omitempty"`
+	Interlocuteur string `json:"interlocuteur,omitempty"`
+	// EnRetard est calculé côté serveur (échéance dépassée et engagement encore
+	// ouvert) : le modèle ne fait pas d'arithmétique de dates, source d'erreurs.
+	EnRetard bool `json:"en_retard,omitempty"`
+}
+
+type ChatAlerte struct {
+	Ref   string `json:"ref"`
+	Type  string `json:"type,omitempty"`
+	Objet string `json:"objet,omitempty"`
+}
+
+type ChatMessage struct {
+	Ref     string `json:"ref"`
+	Fil     string `json:"fil,omitempty"`
+	De      string `json:"de,omitempty"`
+	Date    string `json:"date,omitempty"`
+	Extrait string `json:"extrait,omitempty"`
+}
+
+// ChatStats porte des décomptes EXACTS calculés en base. Le modèle compte mal
+// dès qu'il y a beaucoup d'items : on lui donne les nombres tout faits, il ne
+// fait plus que les formuler.
+type ChatStats struct {
+	EngagementsEnCours int            `json:"engagements_en_cours"` // statut ouvert|en_retard
+	EnRetard           int            `json:"en_retard"`
+	Alertes            int            `json:"alertes"`
+	ParTypeEnCours     map[string]int `json:"par_type_en_cours"` // devis/livraison/... parmi les en cours
+}
+
+type ChatRequest struct {
+	Question string `json:"question"`
+	// Aujourdhui ancre le raisonnement temporel (« cette semaine », « depuis
+	// 10 jours ») : sans elle le modèle ignore la date du jour.
+	Aujourdhui string     `json:"aujourd_hui,omitempty"`
+	Stats      *ChatStats `json:"stats,omitempty"`
+	// Toujours sérialisées, même vides : le modèle doit voir `[]` (« aucun
+	// élément ») plutôt qu'un champ absent, qu'il comblerait en inventant.
+	Engagements []ChatEngagement `json:"engagements"`
+	Alertes     []ChatAlerte     `json:"alertes"`
+	Messages    []ChatMessage    `json:"messages"`
+	Historique  []ChatTour       `json:"historique,omitempty"`
+}
+
+type ChatResponse struct {
+	Reponse string   `json:"reponse"`
+	Sources []string `json:"sources"`
+}
+
+// Chat répond à une question du dirigeant sur sa boîte. Le contexte est
+// assemblé et cloisonné (RLS) par le backend : le modèle ne voit que les
+// données du tenant courant, et n'agit jamais — il informe.
+func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
+	var resp ChatResponse
+	if err := c.post(ctx, "/chat", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

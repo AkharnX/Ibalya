@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .prompts import CAPSULE_SYSTEM, DRAFT_SYSTEM, EXTRACTION_SYSTEM, REVIEW_SYSTEM
-from .prompts import DEPEND_SYSTEM
+from .prompts import DEPEND_SYSTEM, CHAT_SYSTEM
 from .provider import get_provider
 
 logging.basicConfig(level=logging.INFO)
@@ -250,3 +250,65 @@ async def review(req: ReviewRequest):
     if suggestion and suggestion.split() == req.body.split():
         suggestion = ""
     return {"verdict": verdict, "remarques": remarques, "suggestion": suggestion}
+
+
+# --- Assistant conversationnel ---
+
+class ChatTour(BaseModel):
+    role: str  # "user" ou "assistant"
+    content: str
+
+
+class ChatEngagement(BaseModel):
+    ref: str = ""
+    objet: str
+    type: str = ""
+    statut: str = ""
+    echeance: str = ""
+    interlocuteur: str = ""
+    en_retard: bool = False
+
+
+class ChatAlerte(BaseModel):
+    ref: str = ""
+    type: str = ""
+    objet: str = ""
+
+
+class ChatMessage(BaseModel):
+    ref: str = ""
+    fil: str = ""
+    de: str = ""
+    date: str = ""
+    extrait: str = ""
+
+
+class ChatRequest(BaseModel):
+    question: str
+    aujourd_hui: str = ""  # date du jour (YYYY-MM-DD), ancre temporelle
+    stats: dict | None = None  # décomptes EXACTS calculés en base
+    # Contexte déjà cloisonné (RLS) et filtré côté backend Go.
+    engagements: list[ChatEngagement] | None = None
+    alertes: list[ChatAlerte] | None = None
+    messages: list[ChatMessage] | None = None
+    # Tours précédents, pour les questions de suivi (« et pour Martin ? »).
+    historique: list[ChatTour] | None = None
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    """Répond à une question du dirigeant sur sa boîte, à partir du seul contexte
+    fourni. N'agit pas : informe. Le cloisonnement est garanti en amont."""
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question vide")
+    payload = req.model_dump(exclude_none=True)
+    try:
+        raw = await provider.complete_json(CHAT_SYSTEM, json.dumps(payload, ensure_ascii=False))
+    except Exception as exc:  # noqa: BLE001
+        log.error("chat: %s", exc)
+        raise HTTPException(status_code=502, detail=f"fournisseur LLM: {exc}") from exc
+    reponse = str(raw.get("reponse", "")).strip()
+    if not reponse:
+        reponse = "Je n'ai pas trouvé d'élément pour répondre à ça dans tes échanges."
+    sources = [str(s).strip() for s in (raw.get("sources") or []) if str(s).strip()][:8]
+    return {"reponse": reponse, "sources": sources}
