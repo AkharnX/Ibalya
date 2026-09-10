@@ -262,6 +262,7 @@ class ChatTour(BaseModel):
 class ChatEngagement(BaseModel):
     ref: str = ""
     objet: str
+    type: str = ""
     statut: str = ""
     echeance: str = ""
     interlocuteur: str = ""
@@ -285,6 +286,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     question: str
     aujourd_hui: str = ""  # date du jour (YYYY-MM-DD), ancre temporelle
+    stats: dict | None = None  # décomptes EXACTS calculés en base
     # Contexte déjà cloisonné (RLS) et filtré côté backend Go.
     engagements: list[ChatEngagement] | None = None
     alertes: list[ChatAlerte] | None = None

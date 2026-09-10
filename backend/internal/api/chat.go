@@ -67,9 +67,11 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 			"de tes vrais échanges, jamais d'exemples inventés."
 		sources = []store.SourceChat{}
 	} else {
+		stats := s.chatStats(ctx)
 		req := llm.ChatRequest{
 			Question:    in.Question,
 			Aujourdhui:  time.Now().Format("2006-01-02"),
+			Stats:       &stats,
 			Engagements: engagements,
 			Alertes:     alertes,
 			Messages:    messages,
@@ -146,7 +148,7 @@ func bornerHistorique(h []llm.ChatTour, max int) []llm.ChatTour {
 func (s *Server) chatEngagements(ctx context.Context, refs map[string]store.SourceChat) []llm.ChatEngagement {
 	out := []llm.ChatEngagement{}
 	rows, err := s.Store.Q(ctx).Query(ctx, `
-		SELECT e.objet, e.statut,
+		SELECT e.objet, e.type, e.statut,
 		       coalesce(to_char(e.echeance,'DD/MM/YYYY'),''),
 		       coalesce(nullif(pd.name,''), pd.email, ''),
 		       (e.echeance IS NOT NULL AND e.echeance < current_date
@@ -166,7 +168,7 @@ func (s *Server) chatEngagements(ctx context.Context, refs map[string]store.Sour
 		var e llm.ChatEngagement
 		var enRetard *bool
 		var threadID *int64
-		if err := rows.Scan(&e.Objet, &e.Statut, &e.Echeance, &e.Interlocuteur, &enRetard, &threadID); err != nil {
+		if err := rows.Scan(&e.Objet, &e.Type, &e.Statut, &e.Echeance, &e.Interlocuteur, &enRetard, &threadID); err != nil {
 			return out
 		}
 		e.EnRetard = enRetard != nil && *enRetard
@@ -180,6 +182,35 @@ func (s *Server) chatEngagements(ctx context.Context, refs map[string]store.Sour
 		out = append(out, e)
 	}
 	return out
+}
+
+// chatStats calcule en base les décomptes exacts (le LLM compte mal sur de
+// grandes listes). « En cours » = statut ouvert ou en_retard.
+func (s *Server) chatStats(ctx context.Context) llm.ChatStats {
+	st := llm.ChatStats{ParTypeEnCours: map[string]int{}}
+	q := s.Store.Q(ctx)
+	_ = q.QueryRow(ctx, `
+		SELECT
+		  count(*) FILTER (WHERE statut IN ('ouvert','en_retard')),
+		  count(*) FILTER (WHERE echeance IS NOT NULL AND echeance < current_date
+		                   AND statut NOT IN ('livre','abandonne'))
+		  FROM engagements`).Scan(&st.EngagementsEnCours, &st.EnRetard)
+	_ = q.QueryRow(ctx, `SELECT count(*) FROM detections WHERE statut='nouvelle'`).Scan(&st.Alertes)
+
+	rows, err := q.Query(ctx, `
+		SELECT type, count(*) FROM engagements
+		 WHERE statut IN ('ouvert','en_retard') GROUP BY type`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var t string
+			var n int
+			if rows.Scan(&t, &n) == nil {
+				st.ParTypeEnCours[t] = n
+			}
+		}
+	}
+	return st
 }
 
 func (s *Server) chatAlertes(ctx context.Context, refs map[string]store.SourceChat) []llm.ChatAlerte {

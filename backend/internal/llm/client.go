@@ -255,6 +255,7 @@ type ChatEngagement struct {
 	// dans `sources`, que le backend résout en liens cliquables vers le fil.
 	Ref           string `json:"ref"`
 	Objet         string `json:"objet"`
+	Type          string `json:"type,omitempty"`
 	Statut        string `json:"statut,omitempty"`
 	Echeance      string `json:"echeance,omitempty"`
 	Interlocuteur string `json:"interlocuteur,omitempty"`
@@ -277,11 +278,22 @@ type ChatMessage struct {
 	Extrait string `json:"extrait,omitempty"`
 }
 
+// ChatStats porte des décomptes EXACTS calculés en base. Le modèle compte mal
+// dès qu'il y a beaucoup d'items : on lui donne les nombres tout faits, il ne
+// fait plus que les formuler.
+type ChatStats struct {
+	EngagementsEnCours int            `json:"engagements_en_cours"` // statut ouvert|en_retard
+	EnRetard           int            `json:"en_retard"`
+	Alertes            int            `json:"alertes"`
+	ParTypeEnCours     map[string]int `json:"par_type_en_cours"` // devis/livraison/... parmi les en cours
+}
+
 type ChatRequest struct {
 	Question string `json:"question"`
 	// Aujourdhui ancre le raisonnement temporel (« cette semaine », « depuis
 	// 10 jours ») : sans elle le modèle ignore la date du jour.
-	Aujourdhui string `json:"aujourd_hui,omitempty"`
+	Aujourdhui string     `json:"aujourd_hui,omitempty"`
+	Stats      *ChatStats `json:"stats,omitempty"`
 	// Toujours sérialisées, même vides : le modèle doit voir `[]` (« aucun
 	// élément ») plutôt qu'un champ absent, qu'il comblerait en inventant.
 	Engagements []ChatEngagement `json:"engagements"`
