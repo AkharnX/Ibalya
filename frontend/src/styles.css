@@ -996,7 +996,7 @@ button.chat-source{font:inherit;}
   scrollbar-color: transparent transparent;   /* Firefox : invisible au repos */
   transition: scrollbar-color .2s;
 }
-.chat-fil:hover, .chat-fil.defile { scrollbar-color: var(--primary) transparent; }
+.chat-fil.survol-barre, .chat-fil.defile { scrollbar-color: var(--primary) transparent; }
 
 .chat-fil::-webkit-scrollbar { width: 12px; }
 .chat-fil::-webkit-scrollbar-track { background: transparent; }
@@ -1006,7 +1006,7 @@ button.chat-source{font:inherit;}
   background-clip: padding-box;
   transition: background .2s;
 }
-.chat-fil:hover::-webkit-scrollbar-thumb,
+.chat-fil.survol-barre::-webkit-scrollbar-thumb,
 .chat-fil.defile::-webkit-scrollbar-thumb {
   background: var(--primary);
   background-clip: padding-box;

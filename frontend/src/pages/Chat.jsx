@@ -64,6 +64,16 @@ export default function Chat() {
   }
   useEffect(() => () => clearTimeout(defileTimer.current), [])
 
+  // Révèle la barre seulement quand le curseur est sur elle (bord droit), pas
+  // dès qu'on survole la fenêtre de conversation.
+  const surSurvol = (e) => {
+    const el = filRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    el.classList.toggle('survol-barre', e.clientX >= r.right - 18)
+  }
+  const finSurvol = () => filRef.current?.classList.remove('survol-barre')
+
   // Historisation : au chargement, on relit la conversation persistée côté
   // serveur pour la restaurer telle quelle après un rechargement de page.
   useEffect(() => {
@@ -126,7 +136,8 @@ export default function Chat() {
           </button>
         </div>
       )}
-      <div className="chat-fil" ref={filRef} onScroll={surDefilement}>
+      <div className="chat-fil" ref={filRef} onScroll={surDefilement}
+        onMouseMove={surSurvol} onMouseLeave={finSurvol}>
        <div className="chat-messages">
         {charge && tours.length === 0 && (
           <div className="chat-accueil">
