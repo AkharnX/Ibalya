@@ -131,9 +131,11 @@ export default function Chat() {
     <div className="chat">
       {tours.length > 0 && (
         <div className="chat-entete">
-          <button className="chat-nouvelle" onClick={nouvelleConversation} disabled={busy}>
-            <Icone nom="action-rejeter" taille={14} /> Nouvelle conversation
-          </button>
+          <div className="chat-barre-inner">
+            <button className="chat-nouvelle" onClick={nouvelleConversation} disabled={busy}>
+              <Icone nom="action-rejeter" taille={14} /> Nouvelle conversation
+            </button>
+          </div>
         </div>
       )}
       <div className="chat-fil" ref={filRef} onScroll={surDefilement}
@@ -187,18 +189,20 @@ export default function Chat() {
       </div>
 
       <div className="chat-saisie">
-        <textarea
-          ref={champRef}
-          rows={1}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={surTouche}
-          placeholder="Ex. Quels engagements sont en retard cette semaine ?"
-          disabled={busy}
-        />
-        <button className="primary" onClick={() => envoyer()} disabled={busy || !question.trim()}>
-          {busy ? '…' : 'Demander'}
-        </button>
+        <div className="chat-barre-inner">
+          <textarea
+            ref={champRef}
+            rows={1}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={surTouche}
+            placeholder="Ex. Quels engagements sont en retard cette semaine ?"
+            disabled={busy}
+          />
+          <button className="primary" onClick={() => envoyer()} disabled={busy || !question.trim()}>
+            {busy ? '…' : 'Demander'}
+          </button>
+        </div>
       </div>
       <p className="help chat-avertissement">
         L’assistant peut se tromper : vérifie les points importants dans le fil source.
