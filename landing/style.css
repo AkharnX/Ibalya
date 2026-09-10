@@ -105,8 +105,10 @@ a{color:inherit;}
 .lp-section-tete{max-width:44em;margin:0 auto clamp(36px,5vw,56px);text-align:center;}
 .lp-section-tete h2{font-size:clamp(25px,3.2vw,34px);font-weight:700;letter-spacing:-.03em;margin-bottom:14px;}
 .lp-section-tete p{color:var(--muted);}
-.lp-cartes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.lp-cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;}
 @media (max-width:900px){ .lp-cartes{grid-template-columns:1fr;} }
+/* Colonne de démonstration du chat : lisible et centrée. */
+.lp-chat-fil{max-width:640px;margin:0 auto;}
 .lp-carte{border:1px solid var(--border);background:var(--card);padding:30px 26px;position:relative;transition:border-color .18s;}
 .lp-carte:hover{border-color:var(--primary);}
 .lp-numero{
