@@ -958,3 +958,37 @@ a:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 button.chat-source{font:inherit;}
 .chat-source.lien{cursor:pointer;color:var(--foreground);transition:border-color .12s,color .12s;}
 .chat-source.lien:hover{border-color:var(--primary);color:var(--primary);}
+
+/* ── Barre de défilement personnalisée ──
+   La barre native (grise, épaisse) cassait le parti pris de l'app. Ici : fine,
+   discrète, aux couleurs du thème, angles droits comme le reste du design.
+   Le liseré transparent + background-clip donne un pouce inséré, donc léger. */
+/* Propriétés STANDARD : colorent et affinent la barre sur Chrome 121+ et
+   Firefox. C'est ce qui restyle la barre par défaut (grise, épaisse) que
+   montrait le navigateur. */
+* { scrollbar-width: thin; scrollbar-color: var(--muted-foreground) transparent; }
+
+/* Secours pour les moteurs webkit anciens (Safari) qui ignorent les props
+   standard : mêmes couleurs via les pseudo-éléments. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border: 3px solid var(--background);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--foreground); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Fenêtre de conversation : défilement soigné, pouce cobalt ── */
+.chat-fil {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;          /* pas de rebond qui déborde sur la page */
+  scrollbar-color: var(--primary) transparent;
+  padding-right: 6px;
+}
+.chat-fil::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border: 3px solid var(--background);
+  background-clip: padding-box;
+}
