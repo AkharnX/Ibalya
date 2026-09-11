@@ -64,7 +64,10 @@ export default function Canal({ statut, onChange }) {
   const tester = async () => {
     setBusy('test'); setEssai(null)
     try {
-      const r = await api('/canal/tester', { method: 'POST', body: JSON.stringify(conf) })
+      // Le `type` doit suivre le fournisseur SÉLECTIONNÉ (mode), pas celui chargé
+      // depuis le canal existant : sinon on teste « gmail » alors qu'on remplit
+      // le formulaire IMAP, et le serveur refuse (« seul le canal IMAP se teste »).
+      const r = await api('/canal/tester', { method: 'POST', body: JSON.stringify({ ...conf, type: mode }) })
       setEssai({ ok: true, message: r.message })
     } catch (e) {
       setEssai({ ok: false, message: e.message })
@@ -74,7 +77,7 @@ export default function Canal({ statut, onChange }) {
   const enregistrer = async () => {
     setBusy('save')
     try {
-      const r = await api('/canal', { method: 'PUT', body: JSON.stringify(conf) })
+      const r = await api('/canal', { method: 'PUT', body: JSON.stringify({ ...conf, type: mode }) })
       setConf({ ...VIDE, ...r, mot_de_passe: '' })
       setEssai({ ok: true, message: 'Boîte raccordée. L’agent la lit dès le prochain cycle.' })
       toast('Boîte raccordée')
