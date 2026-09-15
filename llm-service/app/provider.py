@@ -14,6 +14,24 @@ import httpx
 
 logger = logging.getLogger("llm-service")
 
+# Throttle global du fournisseur. Mistral renvoie 429 dès que les appels
+# arrivent en rafale (onboarding, gros cycle : extraction + dépendances +
+# capsule). On SÉRIALISE tous les appels et on impose un intervalle minimal
+# entre deux : une rafale devient une file lente, mais sans 429. Un seul point
+# de contrôle car tout le service passe par complete_json().
+_verrou_debit = asyncio.Lock()
+_dernier_appel = 0.0
+INTERVALLE_MIN = float(os.environ.get("LLM_INTERVALLE_MIN", "1.2"))
+
+
+async def _attendre_creneau() -> None:
+    global _dernier_appel
+    maintenant = asyncio.get_event_loop().time()
+    ecoule = maintenant - _dernier_appel
+    if ecoule < INTERVALLE_MIN:
+        await asyncio.sleep(INTERVALLE_MIN - ecoule)
+    _dernier_appel = asyncio.get_event_loop().time()
+
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -41,14 +59,19 @@ class MistralProvider(LLMProvider):
     #
     # L'attente double à chaque tentative, et l'en-tête Retry-After prime quand
     # le fournisseur l'envoie : il sait mieux que nous quand réessayer.
-    TENTATIVES = 4
+    TENTATIVES = 6
     ATTENTE_INITIALE = 2.0
 
     async def complete_json(self, system: str, user: str) -> dict:
         attente = self.ATTENTE_INITIALE
         derniere: Exception | None = None
-        async with httpx.AsyncClient(timeout=90) as client:
+        # Sérialisation globale : un seul appel Mistral en vol à la fois, espacé
+        # d'au moins INTERVALLE_MIN. Tenir le verrou pendant les reprises est
+        # voulu : sous 429, on veut que TOUT le service ralentisse, pas qu'il
+        # continue d'envoyer des rafales.
+        async with _verrou_debit, httpx.AsyncClient(timeout=90) as client:
             for tentative in range(1, self.TENTATIVES + 1):
+                await _attendre_creneau()
                 resp = await client.post(
                     self.BASE_URL,
                     headers={"Authorization": f"Bearer {self.api_key}"},
