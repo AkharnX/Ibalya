@@ -226,7 +226,7 @@ export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')
   const [user, setUser] = useState(null)
-  const [dark, setDark] = useState(() => localStorage.getItem('ibalya_theme') !== 'light')
+  const [dark, setDark] = useState(() => localStorage.getItem('ibalya_theme') === 'dark')
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
 

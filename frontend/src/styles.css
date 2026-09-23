@@ -1126,3 +1126,27 @@ button:hover, .btn:hover { transform: translateY(-1px); transition: transform .1
 button, .btn { padding: 9px 15px; font-weight: 500; }
 .btn.primary:hover { opacity: 1; filter: brightness(1.08); }
 .chat-saisie textarea { border-radius: 12px; }
+
+/* ── Encore plus doux : pastilles au lieu de liserés, densité, icônes rondes ── */
+
+/* 1) Liserés colorés en haut des cartes -> pastille discrète près du titre */
+.kpi.flag::before { display: none !important; }
+.kpi .lbl { display: flex; align-items: center; gap: 7px; }
+.kpi.warn .lbl::before, .kpi.risk .lbl::before, .kpi.accent .lbl::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
+}
+.kpi.warn .lbl::before { background: var(--delay); }
+.kpi.risk .lbl::before { background: var(--risk); }
+.kpi.accent .lbl::before { background: var(--primary); }
+.cat-card.encours, .cat-card.retard, .cat-card.risque {
+  border-top: 1px solid var(--border);   /* on garde la pastille déjà présente près du titre */
+}
+
+/* 2) Densité : un peu plus grand, un peu plus d'air */
+body { font-size: 15px; line-height: 1.55; }
+.cat-name { font-size: 13px; }
+.nav-item { font-size: 14px; }
+main { padding: 36px; }
+
+/* 3) Icônes adoucies : extrémités et jointures arrondies (au lieu de coupées) */
+.ic { stroke-linecap: round; stroke-linejoin: round; }
