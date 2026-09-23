@@ -303,3 +303,13 @@ a{color:inherit;}
 @media (max-width:760px){
   .lp-demo{grid-template-columns:1fr;}
 }
+
+/* ═══ Identité : accent bleu-canard + titres serif (auto-hébergé, CSP-safe) ═══ */
+@font-face { font-family:"Fraunces"; font-weight:600; font-display:swap;
+  src:url('/fonts/fraunces-600.woff2') format('woff2'); }
+@font-face { font-family:"Fraunces"; font-weight:700; font-display:swap;
+  src:url('/fonts/fraunces-700.woff2') format('woff2'); }
+:root { --primary:#22a4c4; }   /* teal éclairci pour le fond sombre de la landing */
+.lp-hero h1, .lp-section-tete h2, .lp-logo { font-family:"Fraunces", Georgia, serif; letter-spacing:-.01em; }
+.lp-logo { font-weight:600; }
+.lp-securite h2, .lp-cta h2, .lp-bandeau-texte b { font-family:"Fraunces", Georgia, serif; }

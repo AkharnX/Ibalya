@@ -1171,3 +1171,28 @@ button:hover, .btn:hover { transform: none; }     /* pas d'effet de survol gadge
 /* Caractère assumé : les CHIFFRES en monospace (données), les libellés en sans.
    Le mono ponctuel = intentionnel ; le mono partout = « terminal ». */
 .kpi .num, .cat-count, .chat .num { font-family: var(--font-mono); }
+
+/* ═══ Identité : accent bleu-canard + titres en serif Fraunces (auto-hébergé) ═══ */
+@font-face { font-family:"Fraunces"; font-style:normal; font-weight:600; font-display:swap;
+  src:url('./assets/fonts/fraunces-600.woff2') format('woff2'); }
+@font-face { font-family:"Fraunces"; font-style:normal; font-weight:700; font-display:swap;
+  src:url('./assets/fonts/fraunces-700.woff2') format('woff2'); }
+:root { --font-serif:"Fraunces", Georgia, "Times New Roman", serif; }
+
+/* accent bleu-canard (distinctif, non « IA », ne colle pas au sens ambre/vert/rouge) */
+:root { --primary:#0e7490; }
+:root.light { --primary:#0e7490; }
+:root:not(.light) { --primary:#2ca6c9; }   /* plus clair pour rester lisible sur fond sombre */
+
+/* Signature typographique : gros titres et logo en serif éditorial */
+.page-head h1, .page-head h2 { font-family:var(--font-serif); font-weight:600; letter-spacing:-.005em; font-size:26px; }
+.logo span { font-family:var(--font-serif); font-weight:600; letter-spacing:0; }
+.login-box .logo span { font-size:22px; }
+
+/* Logo monochrome ink (le mark bleu jurait avec l'accent teal) */
+:root { --logo-ink:#17151c; }
+:root:not(.light) { --logo-ink:#f4f2f0; }
+
+/* Mark du logo en teal (cohérent app + landing + accent) */
+:root { --logo-ink:#2ca6c9; }
+:root.light { --logo-ink:#0e7490; }
