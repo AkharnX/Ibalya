@@ -1034,3 +1034,165 @@ button.chat-source{font:inherit;}
   white-space:normal;letter-spacing:normal;z-index:40;opacity:0;pointer-events:none;transition:opacity .12s;
   box-shadow:0 8px 24px rgba(0,0,0,.35);}
 .aide:hover::after,.aide:focus::after{opacity:1;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VARIANTE CHALEUREUSE (beta) — réponse au « trop froid / nerdy »
+   Bloc d'override en fin de fichier : se retire d'un coup si non retenu.
+   Trois leviers : neutres réchauffés, coins arrondis, moins de monospace.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* neutres dé-bleuis, réchauffés */
+  --background: #17151c;
+  --foreground: #f4f2f0;
+  --card: #221f2a;
+  --secondary: #2c2836;
+  --muted-foreground: #a8a2b0;
+  --border: #39333f;
+  --sidebar: #131117;
+  --sidebar-foreground: #f4f2f0;
+  --sidebar-muted: #9a94a4;
+  --sidebar-item: #cec8d6;
+  --sidebar-hover: #221f2a;
+  --sidebar-border: #2a2732;
+  --logo-ink: #f4f2f0;
+  /* accent indigo plus doux/chaleureux que le cobalt */
+  --primary: #7c83ff;
+  --primary-foreground: #ffffff;
+  --radius: 10px;
+}
+:root.light {
+  --background: #faf7f5;   /* blanc cassé chaud plutôt que gris bleu */
+  --card: #ffffff;
+  --secondary: #f4efeb;
+  --border: #e7e0da;
+  --muted-foreground: #6b6470;
+  --primary: #5b61e6;
+  --sidebar: #ffffff;
+  --sidebar-hover: #f4efeb;
+  --sidebar-border: #ece5df;
+}
+
+/* Coins arrondis sur les surfaces (la « signature angles droits » adoucie) */
+.panel, .kpi, .card, .lp-carte, .badge, button, .btn, .btn-icon,
+.search-wrap input, input, textarea, select, .chat-bulle, .chat-source,
+.chat-chip, .nav-item, .nav-count, .aide, .essai-canal, .source-panel,
+.draft-panel, .cat, .empty, .tbl-wrap {
+  border-radius: var(--radius);
+}
+.badge, .nav-count { border-radius: 999px; }         /* pastilles = pilules */
+.aide { border-radius: 50%; }                         /* la pastille d'aide reste ronde */
+.chat-bulle { border-radius: 14px; }
+
+/* Moins de monospace majuscule : des libellés humains, pas « terminal » */
+.nav-group {
+  font-family: var(--font-sans); text-transform: none; letter-spacing: .01em;
+  font-size: 11px; font-weight: 600; color: var(--sidebar-muted);
+}
+.kpi .lbl, .cat-name, .page-head .surtitre {
+  font-family: var(--font-sans); text-transform: none; letter-spacing: normal;
+}
+h3, .section-title h2 { text-transform: none; letter-spacing: normal; font-size: 13px; }
+.agent-live { font-family: var(--font-sans); }
+
+/* Un peu d'air et des ombres douces sur les cartes */
+.panel, .kpi, .card { box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+button:hover, .btn:hover { transform: translateY(-1px); transition: transform .1s, border-color .12s; }
+
+/* ── Sidebar plus douce : entrées en pastilles, sans barre qui dépasse ── */
+.sidebar-nav { padding: 10px 10px; }
+.nav-item {
+  margin: 2px 2px; padding: 10px 12px; border-radius: 10px; gap: 12px;
+  transition: background .12s, color .12s;
+}
+/* La barre latérale de l'entrée active dépassait de la pastille arrondie. */
+.nav-item::before, .nav-item.active::before { display: none !important; }
+.nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-foreground); }
+.nav-item.active {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--sidebar-foreground); font-weight: 600;
+}
+.nav-item.active .ic { color: var(--primary); }
+.nav-group {
+  padding: 14px 12px 0; margin: 10px 0 6px; border-top: none; /* moins de filets = plus léger */
+}
+.sidebar-nav > div + div .nav-group { border-top: 1px solid var(--sidebar-border); padding-top: 14px; }
+
+/* ── Un cran plus accueillant : champs et cartes plus doux, plus d'air ── */
+.search-wrap input { border-radius: 999px; background: var(--secondary); border-color: transparent; }
+.search-wrap input:focus { border-color: var(--primary); background: var(--card); }
+.topbar { border-bottom: 1px solid var(--border); }
+.panel, .kpi, .card { padding: 20px; }
+.kpi .num { font-weight: 500; }
+button, .btn { padding: 9px 15px; font-weight: 500; }
+.btn.primary:hover { opacity: 1; filter: brightness(1.08); }
+.chat-saisie textarea { border-radius: 12px; }
+
+/* ── Encore plus doux : pastilles au lieu de liserés, densité, icônes rondes ── */
+
+/* 1) Liserés colorés en haut des cartes -> pastille discrète près du titre */
+.kpi.flag::before { display: none !important; }
+.kpi .lbl { display: flex; align-items: center; gap: 7px; }
+.kpi.warn .lbl::before, .kpi.risk .lbl::before, .kpi.accent .lbl::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
+}
+.kpi.warn .lbl::before { background: var(--delay); }
+.kpi.risk .lbl::before { background: var(--risk); }
+.kpi.accent .lbl::before { background: var(--primary); }
+.cat-card.encours, .cat-card.retard, .cat-card.risque {
+  border-top: 1px solid var(--border);   /* on garde la pastille déjà présente près du titre */
+}
+
+/* 2) Densité : un peu plus grand, un peu plus d'air */
+body { font-size: 15px; line-height: 1.55; }
+.cat-name { font-size: 13px; }
+.nav-item { font-size: 14px; }
+main { padding: 36px; }
+
+/* 3) Icônes adoucies : extrémités et jointures arrondies (au lieu de coupées) */
+.ic { stroke-linecap: round; stroke-linejoin: round; }
+
+/* ═══ Dé-« IA » : retirer les tells du SaaS généré ═══
+   (indigo/violet, ombres flottantes partout, tout arrondi au même rayon,
+   effets gadget). On garde la chaleur, mais un rendu éditorial et assumé. */
+:root { --primary: #2563eb; --radius: 6px; }      /* bleu franc, PAS indigo/violet */
+:root.light { --primary: #1d4ed8; }
+:root:not(.light) { --primary: #4a86ff; }         /* lisible sur fond sombre */
+
+/* Structure par bordures nettes, pas par ombres douces de cartes flottantes */
+.panel, .kpi, .card, .cat-card { box-shadow: none; }
+button:hover, .btn:hover { transform: none; }     /* pas d'effet de survol gadget */
+
+/* Arrondis sobres et non uniformes (le « tout en 12-14px » fait template) */
+.chat-bulle { border-radius: 10px; }
+.search-wrap input { border-radius: 6px; }
+.badge, .nav-count { border-radius: 4px; }
+.nav-item { border-radius: 6px; }
+
+/* Caractère assumé : les CHIFFRES en monospace (données), les libellés en sans.
+   Le mono ponctuel = intentionnel ; le mono partout = « terminal ». */
+.kpi .num, .cat-count, .chat .num { font-family: var(--font-mono); }
+
+/* ═══ Identité : accent bleu-canard + titres en serif Fraunces (auto-hébergé) ═══ */
+@font-face { font-family:"Fraunces"; font-style:normal; font-weight:600; font-display:swap;
+  src:url('./assets/fonts/fraunces-600.woff2') format('woff2'); }
+@font-face { font-family:"Fraunces"; font-style:normal; font-weight:700; font-display:swap;
+  src:url('./assets/fonts/fraunces-700.woff2') format('woff2'); }
+:root { --font-serif:"Fraunces", Georgia, "Times New Roman", serif; }
+
+/* accent bleu-canard (distinctif, non « IA », ne colle pas au sens ambre/vert/rouge) */
+:root { --primary:#0e7490; }
+:root.light { --primary:#0e7490; }
+:root:not(.light) { --primary:#2ca6c9; }   /* plus clair pour rester lisible sur fond sombre */
+
+/* Signature typographique : gros titres et logo en serif éditorial */
+.page-head h1, .page-head h2 { font-family:var(--font-serif); font-weight:600; letter-spacing:-.005em; font-size:26px; }
+.logo span { font-family:var(--font-serif); font-weight:600; letter-spacing:0; }
+.login-box .logo span { font-size:22px; }
+
+/* Logo monochrome ink (le mark bleu jurait avec l'accent teal) */
+:root { --logo-ink:#17151c; }
+:root:not(.light) { --logo-ink:#f4f2f0; }
+
+/* Mark du logo en teal (cohérent app + landing + accent) */
+:root { --logo-ink:#2ca6c9; }
+:root.light { --logo-ink:#0e7490; }
