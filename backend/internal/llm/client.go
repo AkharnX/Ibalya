@@ -294,6 +294,10 @@ type ChatRequest struct {
 	// 10 jours ») : sans elle le modèle ignore la date du jour.
 	Aujourdhui string     `json:"aujourd_hui,omitempty"`
 	Stats      *ChatStats `json:"stats,omitempty"`
+	// AdressesSoi : toutes les adresses du dirigeant (boîte connectée, login,
+	// alias). Le modèle ne doit jamais traiter l'une d'elles comme un
+	// interlocuteur externe.
+	AdressesSoi []string `json:"adresses_soi,omitempty"`
 	// Toujours sérialisées, même vides : le modèle doit voir `[]` (« aucun
 	// élément ») plutôt qu'un champ absent, qu'il comblerait en inventant.
 	Engagements []ChatEngagement `json:"engagements"`

@@ -1021,3 +1021,16 @@ button.chat-source{font:inherit;}
   border-color: var(--primary);
   background-clip: padding-box;
 }
+
+/* ── Pastille d'aide + infobulle au survol ── */
+.aide{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:6px;
+  border:1px solid var(--border);border-radius:50%;font-size:9px;font-style:italic;font-weight:700;
+  color:var(--muted-foreground);cursor:help;position:relative;vertical-align:middle;line-height:1;
+  font-family:var(--font-mono);transition:color .12s,border-color .12s;}
+.aide:hover,.aide:focus{color:var(--foreground);border-color:var(--primary);outline:none;}
+.aide::after{content:attr(data-aide);position:absolute;top:150%;left:50%;transform:translateX(-50%);
+  width:230px;max-width:60vw;background:var(--card);border:1px solid var(--border);color:var(--foreground);
+  padding:9px 11px;font-size:12px;font-style:normal;font-weight:400;line-height:1.45;text-align:left;
+  white-space:normal;letter-spacing:normal;z-index:40;opacity:0;pointer-events:none;transition:opacity .12s;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.aide:hover::after,.aide:focus::after{opacity:1;}

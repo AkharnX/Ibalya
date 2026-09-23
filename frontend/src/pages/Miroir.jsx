@@ -60,6 +60,15 @@ export default function Miroir() {
   }, [])
   useEffect(load, [load])
 
+  // Le miroir est rafraîchi à chaque cycle côté serveur (données SQL). On le
+  // recharge au retour sur l'onglet et périodiquement, pour qu'il ne reste
+  // jamais figé sans que l'utilisateur ait à cliquer « Régénérer ».
+  useEffect(() => {
+    const id = setInterval(load, 3 * 60 * 1000)
+    window.addEventListener('focus', load)
+    return () => { clearInterval(id); window.removeEventListener('focus', load) }
+  }, [load])
+
   const generer = async () => {
     if (busy) return
     setBusy(true)

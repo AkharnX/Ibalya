@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"ibalya/backend/internal/channel"
@@ -50,6 +51,12 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 	}
 	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
 
+	// Ensemble des adresses « moi » (boîte connectée + login + alias) : un
+	// message dont l'expéditeur est le dirigeant est SORTANT, même s'il arrive
+	// par une autre de ses adresses. Sinon il serait pris pour un interlocuteur.
+	compteCanal, _ := ing.canal(ctx).AccountEmail(ctx)
+	soi := ing.Store.AdressesSoi(ctx, compteCanal)
+
 	for _, cm := range msgs {
 		threadID, err := ing.Store.UpsertThread(ctx, ing.canal(ctx).Name(), cm.ThreadExternalID, cm.Subject, cm.SentAt)
 		if err != nil {
@@ -69,7 +76,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			SentAt:          cm.SentAt,
 			Subject:         cm.Subject,
 			Body:            cm.Body,
-			Outbound:        cm.Outbound,
+			Outbound:        cm.Outbound || soi[strings.ToLower(strings.TrimSpace(cm.Sender))],
 			ListUnsubscribe: cm.ListUnsubscribe,
 		}
 		// Les catégories sensibles se décident AVANT l'écriture : le contenu
@@ -113,6 +120,39 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 
 	ing.Store.Audit(ctx, "agent", "ingestion_cycle", st)
 	return st, nil
+}
+
+// ScanContexte lit l'historique en MÉTADONNÉES seules (expéditeur,
+// destinataires, date, objet) et en reconstruit le contexte : carnet de
+// contacts et fils connus. Aucun corps n'est téléchargé ni stocké (agrégats
+// seulement), aucun engagement n'est extrait — l'extraction, coûteuse, reste
+// bornée à la fenêtre récente. Peu coûteux (SQL/heuristique, zéro LLM) et
+// propre côté RGPD. Règle deux retours de Stewe : « connais tous mes contacts »
+// et « pas d'alertes de vieux mails ».
+func (ing *Ingester) ScanContexte(ctx context.Context, since time.Time, max int) (int, error) {
+	msgs, err := ing.canal(ctx).FetchMetaSince(ctx, since, max)
+	if err != nil {
+		return 0, err
+	}
+	compteCanal, _ := ing.canal(ctx).AccountEmail(ctx)
+	soi := ing.Store.AdressesSoi(ctx, compteCanal)
+	nom := ing.canal(ctx).Name()
+
+	for _, cm := range msgs {
+		// On n'ajoute jamais le dirigeant à son propre carnet de contacts.
+		if s := strings.ToLower(strings.TrimSpace(cm.Sender)); s != "" && !soi[s] {
+			ing.Store.UpsertPerson(ctx, cm.Sender, cm.SenderName)
+		}
+		for _, r := range cm.Recipients {
+			if n := strings.ToLower(strings.TrimSpace(r)); n != "" && !soi[n] {
+				ing.Store.UpsertPerson(ctx, r, "")
+			}
+		}
+		if cm.ThreadExternalID != "" {
+			ing.Store.UpsertThread(ctx, nom, cm.ThreadExternalID, cm.Subject, cm.SentAt)
+		}
+	}
+	return len(msgs), nil
 }
 
 // updateRhythms calcule le rythme de réponse habituel par fil : moyenne des

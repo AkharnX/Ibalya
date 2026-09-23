@@ -181,6 +181,16 @@ func estLimiteDebitGmail(err error) bool {
 }
 
 func (g *Gmail) FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	return g.fetch(ctx, since, max, "full")
+}
+
+// FetchMetaSince ne demande que les en-têtes (format « metadata ») : pas de
+// corps téléchargé, donc rien à stocker et un coût réseau moindre.
+func (g *Gmail) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	return g.fetch(ctx, since, max, "metadata")
+}
+
+func (g *Gmail) fetch(ctx context.Context, since time.Time, max int, format string) ([]Message, error) {
 	svc, err := g.service(ctx)
 	if err != nil {
 		return nil, err
@@ -206,7 +216,11 @@ func (g *Gmail) FetchSince(ctx context.Context, since time.Time, max int) ([]Mes
 				break
 			}
 			full, err := avecRepriseGmail(ctx, func() (*gmail.Message, error) {
-				return svc.Users.Messages.Get("me", ref.Id).Format("full").Context(ctx).Do()
+				req := svc.Users.Messages.Get("me", ref.Id).Format(format).Context(ctx)
+				if format == "metadata" {
+					req = req.MetadataHeaders("From", "To", "Cc", "Date", "Subject")
+				}
+				return req.Do()
 			})
 			if err != nil {
 				continue

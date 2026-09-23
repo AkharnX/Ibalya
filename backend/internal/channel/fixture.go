@@ -97,6 +97,15 @@ func (f *Fixture) FetchSince(ctx context.Context, since time.Time, max int) ([]M
 	return out, nil
 }
 
+// FetchMetaSince : mêmes messages, sans le corps (simulation du mode métadonnées).
+func (f *Fixture) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	out, err := f.FetchSince(ctx, since, max)
+	for i := range out {
+		out[i].Body = ""
+	}
+	return out, err
+}
+
 func (f *Fixture) Send(ctx context.Context, to, subject, body string) error {
 	f.sent = append(f.sent, map[string]string{"to": to, "subject": subject, "body": body})
 	fmt.Printf("[fixture] message envoyé à %s : %s\n", to, subject)

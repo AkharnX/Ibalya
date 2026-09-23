@@ -27,8 +27,14 @@ type Reader interface {
 	Name() string
 	// AccountEmail retourne l'adresse du compte connecté.
 	AccountEmail(ctx context.Context) (string, error)
-	// FetchSince récupère les messages depuis une date (fenêtre d'historique).
+	// FetchSince récupère les messages depuis une date (fenêtre d'historique),
+	// corps complet inclus — c'est ce qui alimente l'extraction (coûteuse).
 	FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error)
+	// FetchMetaSince récupère uniquement les MÉTADONNÉES (expéditeur,
+	// destinataires, date, objet), sans le corps. Sert au scan de contexte sur
+	// tout l'historique : reconstruire contacts et fils sans coût LLM ni
+	// stockage de vieux mails. Le Body des messages renvoyés est vide.
+	FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error)
 	// Send envoie un message sortant (marche 3 — uniquement après validation explicite).
 	Send(ctx context.Context, to, subject, body string) error
 	// SendFrom envoie depuis une adresse donnée. Vide, l'adresse du compte est
