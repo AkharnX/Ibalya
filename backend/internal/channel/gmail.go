@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/mail"
 	"net/url"
 	"regexp"
@@ -111,8 +112,21 @@ func (g *Gmail) service(ctx context.Context) (*gmail.Service, error) {
 		return nil, err
 	}
 	ts := &persistingTokenSource{src: g.cfg.TokenSource(ctx, &tok), store: g.store, fournisseur: "google"}
-	return gmail.NewService(ctx, option.WithTokenSource(ts))
+	// Client HTTP AVEC timeout. Sans lui, Gmail hérite du client par défaut
+	// (Timeout nul) ; une connexion qui se fige côté Google — requête partie,
+	// réponse jamais reçue — suspend alors l'appel POUR TOUJOURS. Comme
+	// l'onboarding tourne sous context.Background() (aucune deadline), c'est
+	// tout le cycle qui gèle sans erreur ni reprise. Un plafond par requête
+	// transforme ce gel en échec bref, que avecRepriseGmail retente.
+	client := oauth2.NewClient(ctx, ts)
+	client.Timeout = dureeRequeteGmail
+	return gmail.NewService(ctx, option.WithHTTPClient(client))
 }
+
+// dureeRequeteGmail plafonne chaque appel Gmail (aller-retour complet, corps
+// compris). Large pour une API normalement en dessous de la seconde ; il ne
+// mord que sur un blocage réseau, qu'il fait échouer au lieu de figer.
+const dureeRequeteGmail = 45 * time.Second
 
 // AccountEmail lit l'adresse dans le store scopé par tenant, jamais depuis un
 // cache d'instance : un même canal Gmail sert tous les tenants (chacun lit SON
@@ -148,7 +162,7 @@ func avecRepriseGmail[T any](ctx context.Context, appel func() (T, error)) (T, e
 	var zero T
 	for i := 0; ; i++ {
 		v, err := appel()
-		if err == nil || !estLimiteDebitGmail(err) || i == tentatives-1 {
+		if err == nil || !(estLimiteDebitGmail(err) || estReseauTemporaire(err)) || i == tentatives-1 {
 			return v, err
 		}
 		pause := attente + time.Duration(rand.Int63n(int64(attente/2+1)))
@@ -159,6 +173,20 @@ func avecRepriseGmail[T any](ctx context.Context, appel func() (T, error)) (T, e
 		}
 		attente *= 2
 	}
+}
+
+// estReseauTemporaire reconnaît un blocage réseau passager — délai dépassé
+// (dont le plafond dureeRequeteGmail) ou connexion figée — qu'il vaut la peine
+// de retenter, plutôt que d'abandonner tout l'onboarding sur un aléa réseau.
+func estReseauTemporaire(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
 }
 
 // estLimiteDebitGmail reconnaît un refus pour cause de débit, pas une panne.

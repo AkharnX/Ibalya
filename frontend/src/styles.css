@@ -598,6 +598,11 @@ label{
   letter-spacing:-.5px;line-height:1.1;
 }
 .onb-compteurs span{display:block;font-size:11.5px;color:var(--muted-foreground);margin-top:3px;}
+/* La pastille d'aide est un <span> DANS ce libellé : sans cette règle, le
+   sélecteur descendant « .onb-compteurs span » (plus spécifique que « .aide »)
+   lui impose display:block et la renvoie seule à la ligne, sous le libellé.
+   On la remet en flux, à sa taille propre, collée au texte. */
+.onb-compteurs span .aide{display:inline-flex;font-size:10px;margin-top:0;}
 
 /* ── écrans livrés en complément du CDC ── */
 
