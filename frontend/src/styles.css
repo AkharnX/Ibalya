@@ -1150,3 +1150,24 @@ main { padding: 36px; }
 
 /* 3) Icônes adoucies : extrémités et jointures arrondies (au lieu de coupées) */
 .ic { stroke-linecap: round; stroke-linejoin: round; }
+
+/* ═══ Dé-« IA » : retirer les tells du SaaS généré ═══
+   (indigo/violet, ombres flottantes partout, tout arrondi au même rayon,
+   effets gadget). On garde la chaleur, mais un rendu éditorial et assumé. */
+:root { --primary: #2563eb; --radius: 6px; }      /* bleu franc, PAS indigo/violet */
+:root.light { --primary: #1d4ed8; }
+:root:not(.light) { --primary: #4a86ff; }         /* lisible sur fond sombre */
+
+/* Structure par bordures nettes, pas par ombres douces de cartes flottantes */
+.panel, .kpi, .card, .cat-card { box-shadow: none; }
+button:hover, .btn:hover { transform: none; }     /* pas d'effet de survol gadget */
+
+/* Arrondis sobres et non uniformes (le « tout en 12-14px » fait template) */
+.chat-bulle { border-radius: 10px; }
+.search-wrap input { border-radius: 6px; }
+.badge, .nav-count { border-radius: 4px; }
+.nav-item { border-radius: 6px; }
+
+/* Caractère assumé : les CHIFFRES en monospace (données), les libellés en sans.
+   Le mono ponctuel = intentionnel ; le mono partout = « terminal ». */
+.kpi .num, .cat-count, .chat .num { font-family: var(--font-mono); }
