@@ -93,6 +93,7 @@ export default function Reglages() {
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
     identite_signature: '',
     identite_prenom: '', identite_nom: '', identite_fonction: '', identite_societe: '',
+    adresses_soi: '',
     categories_sensibles: '{"sante":true,"rh":true,"juridique":false}',
     google_mode_test: '1',
   })
@@ -177,6 +178,13 @@ export default function Reglages() {
             </div>
           </div>
           <EditeurSignature s={settings} onChange={(v) => setSettings((p) => ({ ...p, identite_signature: v }))} />
+          <div className="setting">
+            <label htmlFor="adresses_soi">Mes autres adresses</label>
+            <textarea id="adresses_soi" rows={2} value={settings.adresses_soi} onChange={set('adresses_soi')}
+              placeholder="perso@gmail.com&#10;prenom.nom@autre.fr" />
+            <p className="help">Vos autres adresses (perso, alias), une par ligne. L’agent ne vous
+              prendra plus pour un interlocuteur quand vous apparaissez via l’une d’elles.</p>
+          </div>
           <button className="primary" onClick={save}>Enregistrer</button>
         </div>
         <div className="panel">

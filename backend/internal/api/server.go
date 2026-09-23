@@ -876,6 +876,9 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"identite_fonction":  s.Store.GetSetting(ctx, "identite_fonction", ""),
 		"identite_societe":   s.Store.GetSetting(ctx, "identite_societe", ""),
 		"identite_signature": s.Store.GetSetting(ctx, "identite_signature", ""),
+		// Autres adresses du dirigeant (perso, alias) : ne jamais le traiter en
+		// interlocuteur externe quand il apparaît via l'une d'elles.
+		"adresses_soi": s.Store.GetSetting(ctx, "adresses_soi", ""),
 		// Catégories sensibles écartées avant toute inférence (CDC : filtres
 		// RH, juridique, santé, exclusion configurable).
 		ingest.CleReglageCategories: ingest.EcrireCategories(
@@ -941,6 +944,22 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.Store.SetSetting(r.Context(), k, v)
+		// Autres adresses du dirigeant (perso, alias). Elles évitent qu'il soit
+		// pris pour un interlocuteur externe quand il apparaît via une autre
+		// adresse que la boîte connectée. On ne garde que ce qui ressemble à
+		// une adresse, une par ligne.
+		case "adresses_soi":
+			if len(v) > 600 {
+				httpError(w, 400, "adresses_soi : 600 caractères au maximum")
+				return
+			}
+			var propres []string
+			for _, a := range strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == ';' || r == '\n' || r == '\r' || r == ' ' || r == '\t' }) {
+				if strings.Contains(a, "@") {
+					propres = append(propres, strings.ToLower(a))
+				}
+			}
+			s.Store.SetSetting(r.Context(), k, strings.Join(propres, "\n"))
 		// Catégories sensibles. Le réglage est réécrit à partir des catégories
 		// connues : une clé inventée par le client ne doit pas se retrouver
 		// stockée, et une valeur illisible ne doit pas désactiver le filtre en

@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"ibalya/backend/internal/channel"
@@ -50,6 +51,12 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 	}
 	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
 
+	// Ensemble des adresses « moi » (boîte connectée + login + alias) : un
+	// message dont l'expéditeur est le dirigeant est SORTANT, même s'il arrive
+	// par une autre de ses adresses. Sinon il serait pris pour un interlocuteur.
+	compteCanal, _ := ing.canal(ctx).AccountEmail(ctx)
+	soi := ing.Store.AdressesSoi(ctx, compteCanal)
+
 	for _, cm := range msgs {
 		threadID, err := ing.Store.UpsertThread(ctx, ing.canal(ctx).Name(), cm.ThreadExternalID, cm.Subject, cm.SentAt)
 		if err != nil {
@@ -69,7 +76,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			SentAt:          cm.SentAt,
 			Subject:         cm.Subject,
 			Body:            cm.Body,
-			Outbound:        cm.Outbound,
+			Outbound:        cm.Outbound || soi[strings.ToLower(strings.TrimSpace(cm.Sender))],
 			ListUnsubscribe: cm.ListUnsubscribe,
 		}
 		// Les catégories sensibles se décident AVANT l'écriture : le contenu

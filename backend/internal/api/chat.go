@@ -68,10 +68,17 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		sources = []store.SourceChat{}
 	} else {
 		stats := s.chatStats(ctx)
+		compteCanal, _ := s.Engine.Canal(ctx).AccountEmail(ctx)
+		soi := s.Store.AdressesSoi(ctx, compteCanal)
+		adressesSoi := make([]string, 0, len(soi))
+		for a := range soi {
+			adressesSoi = append(adressesSoi, a)
+		}
 		req := llm.ChatRequest{
 			Question:    in.Question,
 			Aujourdhui:  time.Now().Format("2006-01-02"),
 			Stats:       &stats,
+			AdressesSoi: adressesSoi,
 			Engagements: engagements,
 			Alertes:     alertes,
 			Messages:    messages,
