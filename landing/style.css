@@ -313,3 +313,11 @@ a{color:inherit;}
 .lp-hero h1, .lp-section-tete h2, .lp-logo { font-family:"Fraunces", Georgia, serif; letter-spacing:-.01em; }
 .lp-logo { font-weight:600; }
 .lp-securite h2, .lp-cta h2, .lp-bandeau-texte b { font-family:"Fraunces", Georgia, serif; }
+
+/* ═══ Landing réchauffée : fond charcoal dé-bleui (au lieu du bleu-noir froid) ═══ */
+:root {
+  --background:#17151c; --foreground:#f4f2f0; --card:#221f2a;
+  --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
+}
+.lp-config { background:#131117; }
+.lp-c-mot { color:#7dd3fc; }   /* le violet du bloc code faisait « IA » -> bleu clair */
