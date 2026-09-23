@@ -4,6 +4,7 @@
 // prouve que le travail avance.
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Aide from './Aide'
 import { api } from '../api'
 
 const ETAPES = ['lecture', 'analyse', 'miroir', 'capsule']
@@ -65,10 +66,10 @@ export default function Onboarding() {
       )}
 
       <div className="onb-compteurs">
-        <div><b>{etat.messages_lus}</b><span>messages lus</span></div>
-        <div><b>{etat.messages_filtres}</b><span>filtrés sans coût d’IA</span></div>
-        <div><b>{etat.messages_analyses}</b><span>analysés</span></div>
-        <div><b>{etat.engagements}</b><span>engagements extraits</span></div>
+        <div><b>{etat.messages_lus}</b><span>messages lus<Aide texte="Messages parcourus sur les 30 derniers jours de votre boîte." /></span></div>
+        <div><b>{etat.messages_filtres}</b><span>filtrés sans coût d’IA<Aide texte="Messages écartés en amont (newsletters, notifications automatiques…) sans appeler l’IA : ils n’ont aucun coût d’analyse." /></span></div>
+        <div><b>{etat.messages_analyses}</b><span>analysés<Aide texte="Messages réellement passés à l’IA pour en extraire des engagements." /></span></div>
+        <div><b>{etat.engagements}</b><span>engagements extraits<Aide texte="Promesses et échéances détectées dans les messages analysés (qui a promis quoi, à qui, pour quand)." /></span></div>
       </div>
     </div>
   )

@@ -127,6 +127,15 @@ func (e *Engine) runCycle(ctx context.Context, ingestFn func(context.Context) (a
 	}
 	res.Detection = det
 
+	// Rafraîchit le miroir d'activité s'il existe déjà. Il est purement calculé
+	// (SQL, sans appel LLM), donc peu coûteux ; le figer à l'onboarding le
+	// rendait périmé au fil des nouveaux messages (retour de Stewe).
+	if rep, _ := e.Store.LatestReport(ctx, "miroir"); rep != nil {
+		if _, err := e.GenerateMiroir(ctx); err != nil {
+			log.Printf("cycle: rafraîchissement miroir: %v", err)
+		}
+	}
+
 	res.Duree = time.Since(start).Round(time.Millisecond).String()
 	res.TermineLe = time.Now()
 	e.Store.SetSetting(ctx, "dernier_cycle", res.TermineLe.Format(time.RFC3339))
