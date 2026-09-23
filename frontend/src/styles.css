@@ -1097,3 +1097,32 @@ h3, .section-title h2 { text-transform: none; letter-spacing: normal; font-size:
 /* Un peu d'air et des ombres douces sur les cartes */
 .panel, .kpi, .card { box-shadow: 0 1px 2px rgba(0,0,0,.18); }
 button:hover, .btn:hover { transform: translateY(-1px); transition: transform .1s, border-color .12s; }
+
+/* ── Sidebar plus douce : entrées en pastilles, sans barre qui dépasse ── */
+.sidebar-nav { padding: 10px 10px; }
+.nav-item {
+  margin: 2px 2px; padding: 10px 12px; border-radius: 10px; gap: 12px;
+  transition: background .12s, color .12s;
+}
+/* La barre latérale de l'entrée active dépassait de la pastille arrondie. */
+.nav-item::before, .nav-item.active::before { display: none !important; }
+.nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-foreground); }
+.nav-item.active {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--sidebar-foreground); font-weight: 600;
+}
+.nav-item.active .ic { color: var(--primary); }
+.nav-group {
+  padding: 14px 12px 0; margin: 10px 0 6px; border-top: none; /* moins de filets = plus léger */
+}
+.sidebar-nav > div + div .nav-group { border-top: 1px solid var(--sidebar-border); padding-top: 14px; }
+
+/* ── Un cran plus accueillant : champs et cartes plus doux, plus d'air ── */
+.search-wrap input { border-radius: 999px; background: var(--secondary); border-color: transparent; }
+.search-wrap input:focus { border-color: var(--primary); background: var(--card); }
+.topbar { border-bottom: 1px solid var(--border); }
+.panel, .kpi, .card { padding: 20px; }
+.kpi .num { font-weight: 500; }
+button, .btn { padding: 9px 15px; font-weight: 500; }
+.btn.primary:hover { opacity: 1; filter: brightness(1.08); }
+.chat-saisie textarea { border-radius: 12px; }
