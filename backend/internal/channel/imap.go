@@ -178,6 +178,82 @@ func (i *IMAP) convertir(buf *imapclient.FetchMessageBuffer) (Message, error) {
 	return i.convertirBrut(brut, buf.InternalDate)
 }
 
+// FetchMetaSince ne récupère que l'enveloppe (expéditeur, destinataires, date,
+// objet) — aucun corps n'est téléchargé. Sert au scan de contexte sur tout
+// l'historique.
+func (i *IMAP) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	c, err := i.connecter()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = c.Logout().Wait() }()
+
+	if _, err := c.Select(i.cfg.Dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
+		return nil, fmt.Errorf("dossier %q : %w", i.cfg.Dossier, err)
+	}
+	res, err := c.Search(&imap.SearchCriteria{Since: since.AddDate(0, 0, -1)}, nil).Wait()
+	if err != nil {
+		return nil, fmt.Errorf("recherche : %w", err)
+	}
+	nums := res.AllSeqNums()
+	if len(nums) == 0 {
+		return []Message{}, nil
+	}
+	if len(nums) > max && max > 0 {
+		nums = nums[len(nums)-max:]
+	}
+	var set imap.SeqSet
+	set.AddNum(nums...)
+	// Envelope seul : pas de BodySection, donc pas de corps rapatrié.
+	cmd := c.Fetch(set, &imap.FetchOptions{Envelope: true, InternalDate: true})
+	defer cmd.Close()
+
+	out := make([]Message, 0, len(nums))
+	for {
+		msg := cmd.Next()
+		if msg == nil {
+			break
+		}
+		buf, err := msg.Collect()
+		if err != nil || buf.Envelope == nil {
+			continue
+		}
+		out = append(out, i.depuisEnveloppe(buf.Envelope, buf.InternalDate))
+	}
+	return out, cmd.Close()
+}
+
+// depuisEnveloppe construit un message SANS corps à partir de l'enveloppe IMAP.
+func (i *IMAP) depuisEnveloppe(env *imap.Envelope, recu time.Time) Message {
+	adr := func(a imap.Address) string {
+		if a.Mailbox == "" || a.Host == "" {
+			return ""
+		}
+		return strings.ToLower(a.Mailbox + "@" + a.Host)
+	}
+	m := Message{ExternalID: env.MessageID, Subject: decoder(env.Subject), SentAt: recu, Recipients: []string{}}
+	if !env.Date.IsZero() {
+		m.SentAt = env.Date
+	}
+	if len(env.From) > 0 {
+		m.Sender = adr(env.From[0])
+		m.SenderName = env.From[0].Name
+	}
+	for _, a := range append(append([]imap.Address{}, env.To...), env.Cc...) {
+		if e := adr(a); e != "" {
+			m.Recipients = append(m.Recipients, e)
+		}
+	}
+	m.ThreadExternalID = strings.Trim(m.ExternalID, "<>")
+	if len(env.InReplyTo) > 0 {
+		if r := strings.Trim(strings.TrimSpace(env.InReplyTo[0]), "<>"); r != "" {
+			m.ThreadExternalID = r
+		}
+	}
+	m.Outbound = strings.EqualFold(m.Sender, i.cfg.Utilisateur)
+	return m
+}
+
 // convertirBrut transforme un message RFC 5322 en forme normalisée. Séparée de
 // la lecture réseau pour être testable sur des messages bruts : c'est ici que
 // se joue le vrai risque du connecteur — l'analyse MIME et la reconstruction

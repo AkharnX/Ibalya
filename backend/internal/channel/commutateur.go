@@ -46,6 +46,10 @@ func (c *Commutateur) FetchSince(ctx context.Context, since time.Time, max int) 
 	return c.Actif().FetchSince(ctx, since, max)
 }
 
+func (c *Commutateur) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	return c.Actif().FetchMetaSince(ctx, since, max)
+}
+
 func (c *Commutateur) Send(ctx context.Context, to, subject, body string) error {
 	return c.Actif().Send(ctx, to, subject, body)
 }

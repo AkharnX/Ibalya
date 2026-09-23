@@ -308,6 +308,15 @@ func (s *Server) onboardingDans(ctx context.Context) {
 		return
 	}
 
+	// Scan de contexte : tout l'historique en métadonnées seules (contacts et
+	// fils), sans corps ni LLM. Non bloquant — un échec ne prive pas le
+	// dirigeant de son miroir ni de ses engagements récents.
+	if n, err := s.Ingester.ScanContexte(ctx, time.Now().AddDate(-1, 0, 0), 2000); err != nil {
+		log.Printf("onboarding: scan contexte: %v", err)
+	} else {
+		log.Printf("onboarding: scan contexte: %d messages parcourus (métadonnées, sans corps)", n)
+	}
+
 	s.marquerPhase(ctx, "miroir", "")
 	if _, err := s.Engine.GenerateMiroir(ctx); err != nil {
 		log.Printf("onboarding: miroir: %v", err)

@@ -187,6 +187,16 @@ type adresseGraph struct {
 }
 
 func (o *Outlook) FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	return o.fetch(ctx, since, max, "id,conversationId,subject,receivedDateTime,bodyPreview,body,from,sender,toRecipients,ccRecipients")
+}
+
+// FetchMetaSince ne sélectionne pas le corps : Graph ne renvoie que les
+// en-têtes, rien à stocker.
+func (o *Outlook) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
+	return o.fetch(ctx, since, max, "id,conversationId,subject,receivedDateTime,from,sender,toRecipients,ccRecipients")
+}
+
+func (o *Outlook) fetch(ctx context.Context, since time.Time, max int, selection string) ([]Message, error) {
 	compte, err := o.AccountEmail(ctx)
 	if err != nil {
 		return nil, err
@@ -202,7 +212,7 @@ func (o *Outlook) FetchSince(ctx context.Context, since time.Time, max int) ([]M
 	q.Set("$filter", "receivedDateTime ge "+since.UTC().Format(time.RFC3339))
 	q.Set("$orderby", "receivedDateTime desc")
 	q.Set("$top", strconv.Itoa(max))
-	q.Set("$select", "id,conversationId,subject,receivedDateTime,bodyPreview,body,from,sender,toRecipients,ccRecipients")
+	q.Set("$select", selection)
 	chemin := "/me/messages?" + strings.ReplaceAll(q.Encode(), "+", "%20")
 
 	var page struct {
