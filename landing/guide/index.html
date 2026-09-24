@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide Ibalya</title>
+<meta name="description" content="Guide utilisateur d'Ibalya : premiers pas, connexion de la boîte, tous les écrans, lexique et confidentialité.">
+<link rel="icon" href="/favicon.svg">
+<style>
+  @font-face{font-family:"Fraunces";font-weight:400;font-display:swap;src:url('/fonts/fraunces-400.woff2') format('woff2')}
+  @font-face{font-family:"Fraunces";font-weight:600;font-display:swap;src:url('/fonts/fraunces-600.woff2') format('woff2')}
+  @font-face{font-family:"Fraunces";font-weight:700;font-display:swap;src:url('/fonts/fraunces-700.woff2') format('woff2')}
+  :root{
+    --paper:#f7f4f1;
+    --surface:#ffffff;
+    --ink:#22272e;
+    --ink-soft:#3f454d;
+    --muted:#77707a;
+    --faint:#a49da8;
+    --line:#e6ded7;
+    --line-strong:#d8cfc6;
+    --teal:#0e7490;
+    --teal-ink:#0b5f78;
+    --amber:#a86523;
+    --red:#a8442c;
+    --green:#3a7d5c;
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --paper:#16141a;--surface:#1d1b23;--ink:#e8e3ec;--ink-soft:#c7c1cf;--muted:#948da0;--faint:#6b6478;
+      --line:#2c2833;--line-strong:#3a3543;--teal:#39aecb;--teal-ink:#5cc3dc;--amber:#d09a53;--red:#dd8168;--green:#5fc296;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --paper:#16141a;--surface:#1d1b23;--ink:#e8e3ec;--ink-soft:#c7c1cf;--muted:#948da0;--faint:#6b6478;
+    --line:#2c2833;--line-strong:#3a3543;--teal:#39aecb;--teal-ink:#5cc3dc;--amber:#d09a53;--red:#dd8168;--green:#5fc296;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
+  html::-webkit-scrollbar{width:0;height:0;display:none}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased;scrollbar-width:none}
+  body::-webkit-scrollbar{width:0;height:0;display:none}
+  a{color:var(--teal-ink);text-decoration:none}
+  a:hover{text-decoration:underline}
+  h1,h2,h3,h4{margin:0;font-weight:600;line-height:1.22}
+  p{margin:0}
+  strong{font-weight:600;color:var(--ink)}
+
+  .masthead{border-bottom:1px solid var(--line-strong);background:var(--surface)}
+  .masthead .in{max-width:1180px;margin:0 auto;padding:22px 24px;display:flex;align-items:center;
+    justify-content:space-between;gap:16px}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo svg{width:25px;height:25px;color:var(--teal)}
+  .logo b{font-family:var(--serif);font-size:20px;font-weight:600}
+  .logo span{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line-strong);
+    border-radius:4px;padding:2px 8px;margin-left:2px}
+  .theme{background:none;border:1px solid var(--line-strong);color:var(--muted);border-radius:6px;
+    height:34px;padding:0 13px;cursor:pointer;font-family:var(--mono);font-size:12px}
+  .theme:hover{color:var(--ink);border-color:var(--faint)}
+
+  .layout{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:236px 1fr;
+    gap:72px;align-items:start}
+  @media (max-width:900px){.layout{grid-template-columns:1fr;gap:0}}
+
+  aside{position:sticky;top:0;align-self:start;padding-block:40px;max-height:100vh;overflow-y:auto;
+    scrollbar-width:none;-ms-overflow-style:none}
+  aside::-webkit-scrollbar{width:0;height:0;display:none}
+  @media (max-width:900px){aside{position:static;max-height:none;padding-block:22px 10px;border-bottom:1px solid var(--line)}}
+  aside .grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--faint);margin:26px 0 8px;padding-left:12px}
+  aside .grp:first-child{margin-top:0}
+  aside a{display:block;color:var(--ink-soft);font-size:14px;padding:6px 12px;border-radius:6px;
+    border-left:2px solid transparent}
+  aside a:hover{background:color-mix(in srgb,var(--teal) 8%,transparent);text-decoration:none;color:var(--ink)}
+  aside a.on{border-left-color:var(--teal);color:var(--ink);font-weight:500}
+  @media (max-width:900px){
+    aside nav{display:flex;flex-wrap:wrap;gap:5px}
+    aside .grp{width:100%;margin:14px 0 3px;padding-left:0}
+    aside a{border-left:none;padding:5px 11px;background:color-mix(in srgb,var(--teal) 6%,transparent)}
+    aside a.on{background:var(--teal);color:#fff}
+  }
+
+  main{padding-block:52px 100px;min-width:0}
+
+  .intro-block{max-width:60ch;padding-bottom:8px}
+  .intro-block h1{font-family:var(--serif);font-size:clamp(30px,4.6vw,44px);letter-spacing:-.005em;line-height:1.1}
+  .intro-block .sub{margin-top:20px;font-size:18px;color:var(--muted)}
+  .intro-block .note{margin-top:22px;font-family:var(--mono);font-size:12px;color:var(--faint)}
+
+  .chunk{padding-block:60px;border-top:1px solid var(--line);max-width:72ch}
+  .chunk:first-of-type{border-top:none}
+  .chunk > .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--teal-ink);margin-bottom:12px}
+  .chunk > h2{font-family:var(--serif);font-size:clamp(24px,3.2vw,31px);letter-spacing:-.005em}
+  .chunk > .say{margin-top:16px;color:var(--ink-soft);font-size:17px}
+  .chunk > .say + .say{margin-top:14px}
+
+  .screen{padding-block:40px;border-top:1px solid var(--line)}
+  .screen:first-of-type{border-top:none}
+  .screen h3{font-family:var(--serif);font-size:21px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+  .screen h3 .route{font-family:var(--mono);font-size:12px;color:var(--faint);font-weight:400}
+  .screen .desc{margin-top:12px;color:var(--ink-soft);font-size:16px;max-width:66ch}
+  .screen .lead{margin-top:22px}
+  .screen .lead .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);display:block;margin-bottom:9px}
+  .screen ul{margin:0;padding-left:1.1em}
+  .screen li{margin:.5em 0;font-size:15.5px;color:var(--ink-soft)}
+  .screen li strong{color:var(--ink)}
+
+  .ex{margin-top:22px;padding:2px 0 2px 18px;border-left:2px solid var(--line-strong);max-width:64ch}
+  .ex .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--teal-ink);display:block;margin-bottom:5px}
+  .ex p{color:var(--muted);font-size:15px;font-style:italic}
+
+  .read{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:28px;border:1px solid var(--line);
+    background:var(--line);border-radius:8px;overflow:hidden}
+  @media (max-width:560px){.read{grid-template-columns:1fr}}
+  .read > div{background:var(--surface);padding:22px 24px}
+  .read h4{font-family:var(--serif);font-size:17px}
+  .read .span{font-family:var(--mono);font-size:12px;color:var(--teal-ink);margin-top:5px}
+  .read p{margin-top:12px;font-size:14.5px;color:var(--muted)}
+
+  .phases{display:flex;flex-wrap:wrap;gap:10px 12px;margin-top:26px;font-family:var(--mono);font-size:13px}
+  .phases span{display:inline-flex;align-items:center;gap:8px;color:var(--ink-soft)}
+  .phases b{width:22px;height:22px;border:1px solid var(--line-strong);border-radius:50%;display:inline-flex;
+    align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+  .phases .arw{color:var(--faint)}
+
+  ol.days{list-style:none;margin:26px 0 0;padding:0;counter-reset:d}
+  ol.days li{counter-increment:d;position:relative;padding:20px 0 20px 52px;border-top:1px solid var(--line)}
+  ol.days li:last-child{border-bottom:1px solid var(--line)}
+  ol.days li::before{content:counter(d);position:absolute;left:0;top:18px;width:30px;height:30px;
+    border:1px solid var(--line-strong);border-radius:50%;font-family:var(--mono);font-size:13px;color:var(--teal-ink);
+    display:flex;align-items:center;justify-content:center}
+  ol.days b{font-family:var(--serif);font-weight:600;font-size:17px;display:block;margin-bottom:4px}
+  ol.days p{color:var(--muted);font-size:15px}
+
+  .rule{margin-top:30px;border-top:1px solid var(--line)}
+  .rule .row{display:grid;grid-template-columns:170px 1fr;gap:20px;padding:20px 0;border-bottom:1px solid var(--line)}
+  @media (max-width:560px){.rule .row{grid-template-columns:1fr;gap:6px}}
+  .rule .row .name{font-family:var(--serif);font-size:17px;display:flex;align-items:center;gap:10px}
+  .sq{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .sq.teal{background:var(--teal)} .sq.amber{background:var(--amber)}
+  .sq.red{background:var(--red)} .sq.green{background:var(--green)} .sq.muted{background:var(--faint)}
+  .rule .row p{color:var(--muted);font-size:15px}
+  .rule .row p em{font-style:italic;color:var(--ink-soft)}
+
+  dl{margin:28px 0 0}
+  dl > div{display:grid;grid-template-columns:190px 1fr;gap:22px;padding:20px 0;border-top:1px solid var(--line)}
+  dl > div:last-child{border-bottom:1px solid var(--line)}
+  @media (max-width:560px){dl > div{grid-template-columns:1fr;gap:6px}}
+  dt{font-family:var(--serif);font-size:18px}
+  dd{margin:0;color:var(--muted);font-size:15.5px}
+
+  .qa{padding:22px 0;border-top:1px solid var(--line)}
+  .qa:last-child{border-bottom:1px solid var(--line)}
+  .qa .q{font-family:var(--serif);font-size:17.5px;margin-bottom:8px}
+  .qa .a{color:var(--muted);font-size:15.5px;max-width:66ch}
+
+  .aside-note{margin-top:26px;padding:18px 20px;border:1px solid var(--line-strong);border-radius:8px;
+    background:color-mix(in srgb,var(--teal) 5%,var(--surface));font-size:15.5px;color:var(--ink-soft)}
+  .aside-note b{color:var(--teal-ink);font-weight:600}
+  .aside-note.plain{background:var(--surface)}
+
+  footer{max-width:1180px;margin:0 auto;padding:30px 24px 70px;border-top:1px solid var(--line);
+    color:var(--faint);font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="in">
+    <a class="logo" href="/">
+      <svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
+        <path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/>
+      </svg>
+      <b>Ibalya</b><span>Guide</span>
+    </a>
+    <button class="theme" id="themeBtn" aria-label="Basculer le thème">thème</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <nav id="toc">
+      <div class="grp">Découvrir</div>
+      <a href="#essentiel">L'essentiel</a>
+      <a href="#premiers-jours">Vos premiers jours</a>
+      <a href="#demarrage">Premier démarrage</a>
+      <a href="#connexion">Connecter la boîte</a>
+      <div class="grp">Opérations</div>
+      <a href="#synthese">Synthèse</a>
+      <a href="#assistant">Assistant</a>
+      <a href="#miroir">Miroir d'activité</a>
+      <a href="#a-valider">À valider</a>
+      <div class="grp">Extraction</div>
+      <a href="#engagements">Engagements</a>
+      <a href="#alertes">Alertes</a>
+      <a href="#dependances">Dépendances</a>
+      <div class="grp">Système</div>
+      <a href="#regles">Règles métier</a>
+      <a href="#interlocuteurs">Interlocuteurs</a>
+      <a href="#reglages">Réglages</a>
+      <div class="grp">Repères</div>
+      <a href="#lexique">Lexique</a>
+      <a href="#confidentialite">Confidentialité</a>
+      <a href="#faq">Questions fréquentes</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="intro-block">
+      <h1>Prendre en main votre agent</h1>
+      <p class="sub">Ibalya lit votre boîte mail, en extrait les engagements (qui a promis quoi, à qui, pour quand),
+        surveille les échéances et vous prépare les relances. Vous gardez la main : rien ne part sans votre validation.</p>
+      <p class="note">Guide utilisateur, à jour de la version en ligne. Quinze minutes de lecture.</p>
+    </div>
+
+    <div class="chunk" id="essentiel">
+      <div class="kicker">Découvrir</div>
+      <h2>Ce qu'Ibalya fait pour vous</h2>
+      <p class="say">Un engagement, c'est une promesse prise au fil d'un mail : un devis annoncé pour vendredi, une
+        livraison due le 15, un rappel que vous avez promis de passer. Ces promesses se dispersent dans des dizaines de
+        conversations, et c'est là qu'elles se perdent.</p>
+      <p class="say">Ibalya les retrouve à votre place. Il lit vos échanges, repère chaque promesse et chaque échéance,
+        vous prévient quand une situation dérape, et rédige les messages de relance. Vous relisez, vous validez, il
+        envoie. En trois temps :</p>
+      <div class="rule" style="margin-top:26px">
+        <div class="row"><div class="name"><span class="sq teal"></span>Il lit et comprend</div>
+          <p>À la connexion, il parcourt vos derniers messages, en tire vos engagements et dresse un premier bilan de
+          votre activité, sans que vous saisissiez quoi que ce soit.</p></div>
+        <div class="row"><div class="name"><span class="sq amber"></span>Il surveille</div>
+          <p>Il relit votre boîte toutes les quinze minutes et vous prévient dans cinq situations précises : échéance à
+          risque, silence anormal, contradiction, oubli, semaine surchargée.</p></div>
+        <div class="row"><div class="name"><span class="sq green"></span>Il propose, vous décidez</div>
+          <p>Chaque alerte fiable arrive avec un message prêt à envoyer. Vous le relisez, le corrigez si besoin, puis
+          vous validez. Ibalya n'envoie jamais rien seul.</p></div>
+      </div>
+      <div class="aside-note"><b>Le principe cardinal.</b> Rien ne quitte votre boîte sans un clic de votre part.
+        Ibalya prépare tout, vous restez la seule signature.</div>
+    </div>
+
+    <div class="chunk" id="premiers-jours">
+      <div class="kicker">Découvrir</div>
+      <h2>Vos premiers jours, pas à pas</h2>
+      <p class="say">Pour qu'Ibalya soit utile vite, cinq gestes suffisent. Les deux premiers se font le jour de la
+        connexion, les autres quand vous avez cinq minutes.</p>
+      <ol class="days">
+        <li><b>Connectez votre boîte</b><p>Dans les Réglages, choisissez Gmail, Outlook ou IMAP. La première lecture
+          démarre aussitôt.</p></li>
+        <li><b>Laissez la première lecture finir, puis ouvrez le Miroir d'activité</b><p>C'est le premier bilan de ce
+          qu'Ibalya a compris. Parcourez-le : c'est le meilleur moyen de voir tout de suite ce qu'il sait faire.</p></li>
+        <li><b>Corrigez ce qui est faux</b><p>Un engagement mal compris, un contact mal rangé ? Corrigez-le d'un geste.
+          Chaque correction devient une règle : l'agent ne refera pas l'erreur.</p></li>
+        <li><b>Renseignez votre identité</b><p>Dans les Réglages : prénom, nom, fonction, société. Sans elle, les
+          messages préparés seraient signés d'un nom inventé.</p></li>
+        <li><b>Dites vos priorités</b><p>Dans Règles métier, indiquez ce qui compte en ce moment et qui surveiller. Vos
+          réponses pèsent sur l'ordre des alertes. Ensuite, votre quotidien tient dans deux écrans : À valider et
+          Alertes.</p></li>
+      </ol>
+    </div>
+
+    <div class="chunk" id="demarrage">
+      <div class="kicker">Découvrir</div>
+      <h2>Ce qui se passe à la première lecture</h2>
+      <p class="say">Dès le raccordement, Ibalya lance une première lecture de votre historique. Un bandeau affiche
+        l'avancement avec de vrais compteurs qui montent, plutôt qu'une animation : messages lus, filtrés sans coût
+        d'IA (les newsletters et notifications écartées d'emblée), analysés (ceux réellement passés à l'IA), et
+        engagements extraits. Comptez quelques minutes sur une vraie boîte, et vous pouvez continuer à naviguer
+        pendant ce temps.</p>
+      <p class="say">La lecture passe par quatre étapes visibles :</p>
+      <div class="phases">
+        <span><b>1</b>Lecture</span><span class="arw">›</span>
+        <span><b>2</b>Analyse</span><span class="arw">›</span>
+        <span><b>3</b>Miroir</span><span class="arw">›</span>
+        <span><b>4</b>Compréhension</span>
+      </div>
+      <p class="say" style="margin-top:24px">Ibalya ne traite pas tout votre historique de la même façon. Deux fenêtres,
+        pour deux besoins :</p>
+      <div class="read">
+        <div><h4>Engagements</h4><div class="span">30 derniers jours, contenu complet</div>
+          <p>La fenêtre sur laquelle les promesses et échéances sont réellement extraites, jusqu'à 1000 messages. C'est
+          le contenu des mails qui est lu ici.</p></div>
+        <div><h4>Contexte</h4><div class="span">1 an, métadonnées seules</div>
+          <p>Uniquement les en-têtes (expéditeurs, dates, objets), sur un an. Sert à reconstruire votre carnet de
+          contacts et vos fils de discussion. Aucun contenu lu, aucun coût d'analyse.</p></div>
+      </div>
+      <div class="aside-note plain">Autrement dit : Ibalya extrait vos engagements sur 30 jours, mais connaît vos
+        interlocuteurs sur un an. Entre les deux, il ne lit que les en-têtes. Au delà d'un an, il ne lit rien. Vous
+        pouvez relancer cette première lecture à tout moment depuis les Réglages.</div>
+    </div>
+
+    <div class="chunk" id="connexion">
+      <div class="kicker">Découvrir</div>
+      <h2>Connecter votre messagerie</h2>
+      <p class="say">Le raccordement se fait dans les Réglages. Trois façons, selon votre boîte. Dans tous les cas,
+        l'état de connexion s'affiche (connecté, avec le fournisseur et l'adresse) et vous pouvez vous déconnecter
+        quand vous voulez.</p>
+
+      <div class="screen"><h3>Gmail <span class="route">recommandé</span></h3>
+        <p class="desc">Connexion par autorisation Google. Ibalya n'a jamais votre mot de passe, seulement une
+          autorisation que vous pouvez retirer à tout moment depuis votre compte Google. Un clic sur « Connecter
+          Gmail », puis vous validez l'accès sur l'écran de Google.</p></div>
+
+      <div class="screen"><h3>Outlook</h3>
+        <p class="desc">Autorisation Microsoft, pour les comptes professionnels comme personnels. Même principe que
+          Gmail : pas de mot de passe transmis. Sur un compte d'entreprise, votre administrateur informatique peut
+          devoir approuver l'accès une première fois.</p></div>
+
+      <div class="screen"><h3>Autre boîte, en IMAP</h3>
+        <p class="desc">Pour toute autre messagerie (OVH, Gandi, Yahoo, Orange, Free et les autres). Des préréglages
+          remplissent automatiquement les serveurs des fournisseurs courants.</p>
+        <div class="lead"><span class="lb">Ce que vous fournissez</span>
+          <ul>
+            <li>Le serveur et le port IMAP (lecture), votre adresse, et un mot de passe.</li>
+            <li>Le plus souvent, ce n'est pas le mot de passe de votre boîte mais un <strong>mot de passe
+              d'application</strong> dédié, à générer dans les réglages de sécurité de votre messagerie.</li>
+            <li>Le serveur et le port SMTP (envoi), puis <strong>Tester la connexion</strong> et
+              <strong>Enregistrer et raccorder</strong>.</li>
+          </ul></div></div>
+
+      <div class="aside-note plain">Outlook professionnel n'accepte plus l'IMAP par mot de passe : utilisez le
+        raccordement Outlook dédié plus haut. En mode Google « Test », l'autorisation se renouvelle tous les sept
+        jours ; un bandeau vous prévient avant qu'elle n'expire, il suffit de recliquer pour la prolonger.</div>
+    </div>
+
+    <div class="chunk" id="operations">
+      <div class="kicker">Opérations</div>
+      <h2>Les écrans du quotidien</h2>
+      <p class="say">Une fois l'agent en route, tout se joue dans ces quatre écrans. Les deux qui comptent au jour le
+        jour sont À valider et, un cran plus loin, les Alertes.</p>
+
+      <div class="screen" id="synthese"><h3>Synthèse <span class="route">écran d'accueil</span></h3>
+        <p class="desc">Votre point du matin. L'essentiel en un coup d'œil : ce qui bloque, ce qui arrive, ce que vous
+          pouvez traiter sans quitter la page. En haut, cinq indicateurs cliquables ; en dessous, la liste de ce qui
+          demande une décision maintenant, du plus urgent au moins urgent.</p>
+        <div class="lead"><span class="lb">Les cinq indicateurs</span>
+          <ul>
+            <li><strong>Actifs</strong> : les engagements en cours de suivi.</li>
+            <li><strong>En retard</strong> : échéance passée sans signe de livraison.</li>
+            <li><strong>Critiques</strong> : engagements jugés à risque.</li>
+            <li><strong>À valider</strong> : messages prêts qui attendent votre feu vert.</li>
+            <li><strong>Messages lus sur 30 jours</strong> : le volume traité par l'agent.</li>
+          </ul></div>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li><strong>Analyser</strong> : déclencher tout de suite une nouvelle lecture (sinon, l'agent relit
+              automatiquement toutes les 15 minutes).</li>
+            <li>Sur chaque priorité : la marquer résolue, préparer un message, ou ouvrir la conversation d'origine.</li>
+          </ul></div>
+        <div class="ex"><span class="lb">Bon à savoir</span>
+          <p>Une même cause n'est comptée qu'une fois. Un retard fournisseur qui menace plusieurs de vos engagements
+          génère une seule relance à envoyer, pas une alerte par engagement touché.</p></div></div>
+
+      <div class="screen" id="assistant"><h3>Assistant</h3>
+        <p class="desc">Interrogez votre boîte en langage naturel. L'assistant répond à partir de ce qu'Ibalya a déjà
+          lu (vos engagements, relances, silences, dossiers). Il informe seulement : il n'envoie jamais rien.</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li>Poser une question dans le champ, comme à un assistant.</li>
+            <li>Ouvrir les sources citées sous chaque réponse (le fil d'origine, en un clic).</li>
+            <li>Démarrer une nouvelle conversation ; sinon l'historique est conservé.</li>
+          </ul></div>
+        <div class="ex"><span class="lb">Exemples de questions</span>
+          <p>« Combien de devis sont en attente ? » · « Qui ne m'a pas répondu depuis plus d'une semaine ? » · « Quels
+          engagements sont en retard ? » · « Où en est mon dossier le plus urgent ? »</p></div></div>
+
+      <div class="screen" id="miroir"><h3>Miroir d'activité</h3>
+        <p class="desc">Le premier rapport de ce qu'Ibalya a compris des 30 derniers jours, sans aucune saisie de votre
+          part. Quatre compteurs (messages lus, engagements en cours, retards probables, fils sans réponse) et trois
+          listes : les engagements en cours, les retards probables (échéance passée sans livraison), et les fils sans
+          réponse (conversations où plus personne n'a écrit depuis un moment).</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li><strong>Régénérer</strong> le miroir pour relire les 30 derniers jours.</li>
+            <li>Ouvrir n'importe quel engagement ou fil pour voir la conversation d'origine.</li>
+          </ul></div>
+        <div class="ex"><span class="lb">À faire une fois</span>
+          <p>C'est votre point de départ. Parcourez-le à la connexion et corrigez ce qui est faux : c'est comme ça que
+          l'agent se cale sur votre activité.</p></div></div>
+
+      <div class="screen" id="a-valider"><h3>À valider <span class="route">file de validation</span></h3>
+        <p class="desc">La file des messages qu'Ibalya a pré-rédigés à partir de vos engagements : le destinataire, le
+          message proposé, et le motif. C'est ici que vous transformez une alerte en action, sans repartir de zéro.
+          Rien ne part sans votre accord.</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li><strong>Relire et envoyer</strong> : ouvre le brouillon (aperçu, modification, avis de l'agent), puis
+              « Valider et envoyer ».</li>
+            <li><strong>Rejeter</strong> un message que vous ne voulez pas envoyer.</li>
+          </ul></div></div>
+    </div>
+
+    <div class="chunk" id="extraction">
+      <div class="kicker">Extraction</div>
+      <h2>Ce qu'Ibalya a détecté</h2>
+      <p class="say">Le détail de ce que l'agent a tiré de vos échanges : la liste complète de vos engagements, les
+        alertes qu'il en déduit, et les dépendances entre engagements.</p>
+
+      <div class="screen" id="engagements"><h3>Engagements</h3>
+        <p class="desc">La liste de tout ce qui a été promis, par vous ou à vous, avec le sens de chaque promesse
+          (émetteur vers destinataire), son échéance, sa fiabilité et son statut. Vous filtrez par catégorie, par type
+          (livraison, devis, facturation, rendez-vous, prise de contact), par niveau de fiabilité et par client.</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li>Préparer un message lié à l'engagement, le marquer livré, ouvrir la conversation d'origine.</li>
+            <li><strong>Confirmer une échéance</strong> quand l'agent l'a déduite plutôt que lue : tant qu'elle n'est
+              pas confirmée, elle ne déclenche pas d'alerte. C'est le seul endroit pour le faire.</li>
+            <li><strong>Corriger l'agent</strong> d'un geste. Chaque correction devient une règle explicite, visible et
+              réversible dans Règles métier.</li>
+          </ul></div>
+        <div class="lead"><span class="lb">Les corrections possibles</span>
+          <ul>
+            <li>Ce n'est pas un engagement (faux positif).</li>
+            <li>Engagement réel, mais mal résumé.</li>
+            <li>Abandonné, mais l'agent avait raison de le détecter.</li>
+            <li>Priorité haute pour cet interlocuteur.</li>
+            <li>Ne plus rien extraire de cet interlocuteur.</li>
+            <li>Ne plus m'alerter sur ce fil.</li>
+          </ul></div></div>
+
+      <div class="screen" id="alertes"><h3>Alertes</h3>
+        <p class="desc">L'agent surveille vos engagements en continu et vous signale cinq situations. Chaque alerte
+          fiable arrive, quand c'est possible, avec un message prêt à envoyer (dans À valider). Vous pouvez filtrer par
+          fiabilité, ouvrir la conversation d'origine, ou écarter une alerte.</p>
+        <div class="rule">
+          <div class="row"><div class="name"><span class="sq amber"></span>Échéance à risque</div>
+            <p>Une promesse arrive à échéance sans signe d'avancement récent. <em>Exemple : un devis promis pour
+            vendredi, et rien n'a bougé depuis lundi.</em></p></div>
+          <div class="row"><div class="name"><span class="sq muted"></span>Silence anormal</div>
+            <p>Un fil avec engagement en cours reste sans réponse plus longtemps que son rythme habituel, que le retour
+            attendu vienne de l'interlocuteur ou de vous. <em>Exemple : ce client répond d'ordinaire en un jour, et
+            cela fait cinq jours.</em></p></div>
+          <div class="row"><div class="name"><span class="sq red"></span>Contradiction</div>
+            <p>Une promesse faite à un client devient intenable à cause d'un retard amont. <em>Exemple : votre
+            fournisseur a pris du retard, et vous avez promis la livraison au client pour le 15.</em></p></div>
+          <div class="row"><div class="name"><span class="sq teal"></span>Orphelin</div>
+            <p>Une promesse jamais suivie d'effet : ni confirmation, ni livraison, ni relance. Les oublis purs.</p></div>
+          <div class="row"><div class="name"><span class="sq green"></span>Surcharge</div>
+            <p>Trop d'échéances concentrées sur la même semaine, pour anticiper le goulot plutôt que le subir.</p></div>
+        </div></div>
+
+      <div class="screen" id="dependances"><h3>Dépendances</h3>
+        <p class="desc">Quand une promesse que vous avez faite dépend de quelqu'un d'autre, Ibalya propose un lien
+          entre les deux (l'amont, ce dont ça dépend, vers l'aval, votre promesse). Vous tranchez : l'agent ne confirme
+          jamais un lien tout seul.</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li><strong>Confirmer</strong> ou <strong>rejeter</strong> chaque lien proposé.</li>
+            <li>Ouvrir l'engagement amont ou aval pour voir la conversation.</li>
+          </ul></div>
+        <div class="ex"><span class="lb">À quoi ça sert</span>
+          <p>Un lien confirmé débloque l'alerte croisée : « votre fournisseur est silencieux depuis 8 jours, et vous
+          avez promis une livraison au client le 15 ». Tant que le lien reste à confirmer, cette alerte ne se
+          déclenche pas.</p></div></div>
+    </div>
+
+    <div class="chunk" id="systeme">
+      <div class="kicker">Système</div>
+      <h2>Calibrer et paramétrer l'agent</h2>
+      <p class="say">Ces trois écrans servent à affiner ce qu'Ibalya comprend de votre activité et à régler son
+        comportement. Vous n'y allez pas tous les jours, mais un peu de temps ici rend toutes les alertes plus justes.</p>
+
+      <div class="screen" id="regles"><h3>Règles métier</h3>
+        <p class="desc">Ce que l'agent a compris de votre activité et ce qu'il a appris de vos corrections. Tout est
+          modifiable et réversible.</p>
+        <div class="lead"><span class="lb">Trois blocs</span>
+          <ul>
+            <li><strong>Ce que je comprends de votre activité</strong> : secteur, clients récurrents, fournisseurs
+              critiques, délai d'alerte avant une échéance, seuil de silence anormal. Déduit, corrigeable.</li>
+            <li><strong>Vos intentions</strong> : trois champs libres (priorités du moment, qui ou quoi surveiller, ce
+              qui vous coûte le plus de temps). Ces réponses pèsent sur l'ordre des alertes.</li>
+            <li><strong>Ce que j'ai appris de vos corrections</strong> : la liste des règles issues de vos gestes,
+              chacune désactivable d'un clic.</li>
+          </ul></div></div>
+
+      <div class="screen" id="interlocuteurs"><h3>Interlocuteurs</h3>
+        <p class="desc">Le carnet des personnes déduites de vos échanges. Indiquez qui est client, qui est
+          fournisseur, et qui mérite une vigilance particulière. Vous filtrez et cherchez par nom ou adresse.</p>
+        <div class="lead"><span class="lb">Ce que vous pouvez y faire</span>
+          <ul>
+            <li>Changer le type d'un contact (interne, client, fournisseur, autre).</li>
+            <li>Activer la <strong>vigilance accrue</strong> : un interlocuteur sensible reçoit plus d'attention dans
+              le calcul des alertes.</li>
+            <li>Ouvrir la fiche d'une personne : ses engagements et ses fils.</li>
+          </ul></div></div>
+
+      <div class="screen" id="reglages"><h3>Réglages</h3>
+        <p class="desc">Le centre de contrôle : la connexion de votre boîte, votre identité, le comportement de
+          l'agent, et la confidentialité.</p>
+        <div class="lead"><span class="lb">Ce que vous y réglez</span>
+          <ul>
+            <li><strong>Votre identité</strong> : prénom, nom, fonction, société, ou une signature libre. Sert à signer
+              les messages préparés. Vos autres adresses (perso, alias) évitent qu'on vous prenne pour un
+              interlocuteur externe.</li>
+            <li><strong>Comportement</strong> : le rythme du digest (quotidien ou hebdomadaire), sa réception par email
+              ou non, et le seuil en dessous duquel rien ne vous est présenté spontanément.</li>
+            <li><strong>Confidentialité</strong> : les catégories de courrier écartées avant analyse (voir plus bas).</li>
+          </ul></div>
+        <div class="ex"><span class="lb">Aussi disponible</span>
+          <p>Vos indicateurs de réussite (précision estimée, taux de faux positifs, actions validées) et un journal
+          d'audit qui horodate chaque lecture, détection et action de l'agent.</p></div></div>
+    </div>
+
+    <div class="chunk" id="lexique">
+      <div class="kicker">Repères</div>
+      <h2>Le vocabulaire d'Ibalya</h2>
+      <dl>
+        <div><dt>Engagement</dt><dd>Une promesse ou une échéance détectée dans un échange : qui a promis quoi, à qui,
+          pour quand. Il peut être fait par vous ou à vous ; le sens est toujours affiché « émetteur vers
+          destinataire ».</dd></div>
+        <div><dt>Fiabilité</dt><dd>Le niveau de confiance de l'agent dans une extraction. Vous filtrez là-dessus, et
+          vous corrigez ce qui est mal jugé.</dd></div>
+        <div><dt>Échéance déduite</dt><dd>Une date que l'agent a devinée sans qu'elle soit écrite noir sur blanc. Elle
+          ne déclenche d'alerte qu'une fois que vous l'avez confirmée dans Engagements.</dd></div>
+        <div><dt>Alerte</dt><dd>Un signalement proactif de l'agent. Le sens compte : un silence peut attendre un retour
+          de l'interlocuteur ou de vous ; une contradiction relie une promesse sortante à un retard entrant.</dd></div>
+        <div><dt>Dépendance</dt><dd>Un lien amont vers aval entre deux engagements. Proposé par l'agent, confirmé par
+          vous. Seul un lien confirmé active les alertes croisées.</dd></div>
+        <div><dt>Miroir d'activité</dt><dd>Le premier rapport automatique de ce que l'agent a compris, sans aucune
+          saisie. Votre point de départ et de calibrage.</dd></div>
+        <div><dt>À valider</dt><dd>La file des messages pré-rédigés. Rien n'est envoyé sans votre validation.</dd></div>
+        <div><dt>Digest</dt><dd>Le récapitulatif que l'agent produit à un rythme choisi (quotidien ou hebdomadaire),
+          sur le tableau de bord et, si vous le voulez, par email.</dd></div>
+      </dl>
+    </div>
+
+    <div class="chunk" id="confidentialite">
+      <div class="kicker">Repères</div>
+      <h2>Ce qu'Ibalya ne conserve pas</h2>
+      <p class="say">Certains courriers sont écartés avant toute analyse : ils ne sont jamais envoyés au modèle et leur
+        contenu n'est pas conservé par Ibalya. Seuls l'expéditeur et la date restent, pour garder trace de l'échange.
+        Votre messagerie d'origine, elle, n'est jamais modifiée.</p>
+      <div class="rule">
+        <div class="row"><div class="name"><span class="sq green"></span>Santé</div>
+          <p>Arrêts maladie, certificats, analyses. <em>Écarté par défaut.</em></p></div>
+        <div class="row"><div class="name"><span class="sq green"></span>Ressources humaines</div>
+          <p>Candidatures, CV, paie. <em>Écarté par défaut.</em></p></div>
+        <div class="row"><div class="name"><span class="sq amber"></span>Juridique</div>
+          <p>Mises en demeure, huissiers. <em>Non écarté par défaut</em>, car ces courriers portent souvent de vraies
+          échéances. À vous de l'activer si vous préférez.</p></div>
+      </div>
+      <div class="aside-note">Chaque utilisateur ne voit que ses propres données, cloisonnées. Un mot de passe IMAP
+        éventuel est chiffré ; une connexion Gmail ou Outlook passe par une autorisation révocable, jamais par votre
+        mot de passe.</div>
+    </div>
+
+    <div class="chunk" id="faq">
+      <div class="kicker">Repères</div>
+      <h2>Questions fréquentes</h2>
+      <div class="qa"><div class="q">Est-ce qu'Ibalya envoie des mails tout seul ?</div>
+        <div class="a">Non, jamais. Il prépare les messages ; vous les relisez et les validez. Aucun envoi sans un clic
+        de votre part.</div></div>
+      <div class="qa"><div class="q">Lit-il les pièces jointes (PDF, Word) ?</div>
+        <div class="a">Pas encore. Aujourd'hui il lit le texte des mails, pas le contenu des documents joints. Un
+        engagement présent uniquement dans une pièce jointe n'est donc pas encore détecté. C'est une amélioration
+        prévue.</div></div>
+      <div class="qa"><div class="q">Sur quelle période lit-il ma boîte ?</div>
+        <div class="a">Le contenu des 30 derniers jours pour extraire les engagements, et un an d'en-têtes (sans
+        contenu) pour connaître vos contacts et vos fils. Au delà d'un an, rien.</div></div>
+      <div class="qa"><div class="q">Que se passe-t-il quand je corrige l'agent ?</div>
+        <div class="a">Votre correction devient une règle explicite, visible dans Règles métier et désactivable. L'agent
+        ne refait pas la même erreur.</div></div>
+      <div class="qa"><div class="q">Mes données sont-elles isolées des autres utilisateurs ?</div>
+        <div class="a">Oui. Chaque utilisateur ne voit que ses propres données, et sa boîte est cloisonnée de celles
+        des autres.</div></div>
+      <div class="qa"><div class="q">Puis-je changer de boîte ou reconnecter la mienne ?</div>
+        <div class="a">Oui, depuis les Réglages, à tout moment. Vous pouvez aussi y relancer la première lecture.</div></div>
+    </div>
+  </main>
+</div>
+
+<footer>Ibalya · Votre agent lit, comprend et surveille. Vous décidez.</footer>
+
+<script src="guide.js"></script>
+</body>
+</html>
