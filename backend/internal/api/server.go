@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -39,6 +40,13 @@ type Server struct {
 	// Compteur d'échecs de connexion. Initialisé par Handler pour que les
 	// appelants gardent leur littéral de structure.
 	limiteConnexion *limiteur
+
+	// Onboardings en cours, par utilisateur. Un raccordement peut déclencher
+	// plusieurs callbacks OAuth et plusieurs clics rapprochés ; sans ce garde
+	// chacun lançait un cycle, et quatre onboardings simultanés d'un même
+	// compte ont épuisé le pool de connexions jusqu'au blocage total de l'app.
+	// Un seul onboarding à la fois par compte.
+	onboardingEnCours sync.Map
 }
 
 func (s *Server) Handler() http.Handler {
@@ -288,6 +296,14 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 // plan, il DOIT ouvrir son propre EnTenant : la requête qui l'a déclenché a
 // déjà rendu sa connexion, et sans tenant RLS ne verrait ni le jeton ni rien.
 func (s *Server) onboarding(userID int64) {
+	// Un seul onboarding à la fois par compte : un raccordement déclenche
+	// souvent plusieurs appels rapprochés, et les lancer en parallèle prenait
+	// autant de connexions au pool, chacune gardée le temps d'un cycle entier.
+	if _, dejaLa := s.onboardingEnCours.LoadOrStore(userID, struct{}{}); dejaLa {
+		log.Printf("onboarding: déjà en cours pour l'utilisateur %d, relance ignorée", userID)
+		return
+	}
+	defer s.onboardingEnCours.Delete(userID)
 	_ = s.Store.EnTenant(context.Background(), userID, func(ctx context.Context) error {
 		s.onboardingDans(ctx)
 		return nil

@@ -36,8 +36,29 @@ type Store struct {
 // New ouvre la base. adminURL a les privilèges (migration, provisioning du rôle
 // applicatif). appURL se connecte sous le rôle non privilégié soumis à RLS ;
 // vide, on retombe sur adminURL (mode dev sans cloisonnement fort).
+// tailleMinPool relève le plafond de connexions du pool. Le défaut pgx
+// (max(4, nbCPU)) est dangereusement bas ici : EnTenant garde une connexion
+// pendant TOUT un cycle, appels lents au modèle de langage compris, et
+// plusieurs cycles concurrents (scheduler qui boucle sur les boîtes +
+// onboarding d'un raccordement) suffisent à épuiser un pool de 4. Quand c'est
+// arrivé, plus aucune requête authentifiée ne pouvait obtenir de connexion :
+// l'app entière se figeait (écran noir). Un plafond large donne la marge qui
+// évite cette famine.
+const tailleMinPool = 20
+
+func nouveauPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.MaxConns < tailleMinPool {
+		cfg.MaxConns = tailleMinPool
+	}
+	return pgxpool.NewWithConfig(ctx, cfg)
+}
+
 func New(ctx context.Context, adminURL, appURL string) (*Store, error) {
-	admin, err := pgxpool.New(ctx, adminURL)
+	admin, err := nouveauPool(ctx, adminURL)
 	if err != nil {
 		return nil, fmt.Errorf("connexion base (admin): %w", err)
 	}
@@ -56,7 +77,7 @@ func New(ctx context.Context, adminURL, appURL string) (*Store, error) {
 	}
 	app := admin
 	if appURL != "" {
-		app, err = pgxpool.New(ctx, appURL)
+		app, err = nouveauPool(ctx, appURL)
 		if err != nil {
 			return nil, fmt.Errorf("connexion base (app): %w", err)
 		}
