@@ -73,7 +73,7 @@ a{color:inherit;}
 
 /* ── démonstration ── */
 .lp-terminal-enveloppe{position:relative;}
-.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);box-shadow:0 24px 60px rgba(0,0,0,.45);}
+.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);box-shadow:0 20px 50px rgba(30,37,48,.10);}
 .lp-terminal-barre{
   display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--border);
 }
@@ -254,7 +254,7 @@ a{color:inherit;}
 .lp-demo-msg p{font-size:13.5px;line-height:1.55;margin-top:4px;color:var(--muted);}
 .lp-demo-msg mark{
   background:none;color:var(--foreground);font-weight:500;
-  box-shadow:inset 0 -6px 0 rgba(59,130,246,.22);
+  box-shadow:inset 0 -6px 0 rgba(14,116,144,.20);
 }
 .lp-demo-vous{border-left-color:var(--primary);}
 
@@ -309,15 +309,24 @@ a{color:inherit;}
   src:url('/fonts/fraunces-600.woff2') format('woff2'); }
 @font-face { font-family:"Fraunces"; font-weight:700; font-display:swap;
   src:url('/fonts/fraunces-700.woff2') format('woff2'); }
-:root { --primary:#22a4c4; }   /* teal éclairci pour le fond sombre de la landing */
 .lp-hero h1, .lp-section-tete h2, .lp-logo { font-family:"Fraunces", Georgia, serif; letter-spacing:-.01em; }
 .lp-logo { font-weight:600; }
 .lp-securite h2, .lp-cta h2, .lp-bandeau-texte b { font-family:"Fraunces", Georgia, serif; }
 
-/* ═══ Landing réchauffée : fond charcoal dé-bleui (au lieu du bleu-noir froid) ═══ */
+/* ═══ Landing en clair (blanc chaud), cohérente avec l'app et le guide ═══
+   Les gens répondent mieux à un site clair : fond chaud off-white, bleu-canard
+   et titres serif conservés. Mêmes jetons que l'app et le guide. */
 :root {
-  --background:#17151c; --foreground:#f4f2f0; --card:#221f2a;
-  --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
+  color-scheme:light;
+  --primary:#0e7490;
+  --background:#f7f4f1; --foreground:#22272e; --card:#ffffff;
+  --secondary:#efe9e3; --muted:#77707a; --border:#e6ded7; --sidebar:#f1ece7;
+  --risk:#b5432a;
 }
-.lp-config { background:#131117; }
-.lp-c-mot { color:#7dd3fc; }   /* le violet du bloc code faisait « IA » -> bleu clair */
+/* Le bloc de configuration reste sombre : c'est un extrait de terminal montré
+   comme un échantillon de code, pas le fond du site. Contraste volontaire. */
+.lp-config { background:#161320; color:#c4bfce; }
+.lp-c-mot { color:#7dd3fc; }
+.lp-c-val { color:#4ade80; }
+.lp-c-faux { color:#f9a8d4; }
+.lp-c-note { color:#8b8598; }
