@@ -330,3 +330,25 @@ a{color:inherit;}
 .lp-c-val { color:#4ade80; }
 .lp-c-faux { color:#f9a8d4; }
 .lp-c-note { color:#8b8598; }
+
+/* ═══ Bouton de bascule clair / sombre ═══ */
+.lp-theme{
+  display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
+  border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;
+  transition:border-color .15s,color .15s;flex-shrink:0;
+}
+.lp-theme:hover{border-color:var(--primary);color:var(--foreground);}
+.lp-theme .i-sun{display:none;}
+:root[data-theme="dark"] .lp-theme .i-moon{display:none;}
+:root[data-theme="dark"] .lp-theme .i-sun{display:block;}
+
+/* ═══ Thème sombre (variante, activée par le bouton) ═══
+   Fond charcoal chaud dé-bleui, teal éclairci pour rester lisible sur sombre. */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --primary:#22a4c4;
+  --background:#17151c; --foreground:#f4f2f0; --card:#221f2a;
+  --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
+  --risk:#e07a5f;
+}
+:root[data-theme="dark"] .lp-terminal{box-shadow:0 24px 60px rgba(0,0,0,.45);}
