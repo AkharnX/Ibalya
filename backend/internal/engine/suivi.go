@@ -244,6 +244,10 @@ type Synthese struct {
 	} `json:"kpi"`
 	Priorites  []PrioriteItem           `json:"priorites"`
 	Categories map[string]CategorieBloc `json:"categories"`
+	// Alertes en cours (les 5 détecteurs), les critiques d'abord. Remontées sur
+	// l'accueil pour que le dirigeant voie ce que l'agent a repéré sans passer
+	// par la page Alertes.
+	Alertes []store.Detection `json:"alertes"`
 }
 
 // GenerateSynthese consolide la vue direction : ce qui bloque, ce qui arrive,
@@ -287,6 +291,23 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 				Contexte:     contexteLigne(x),
 				Action:       x.Action,
 			})
+		}
+	}
+
+	// alertes en cours : on remonte les détections actives, les critiques
+	// d'abord, plafonnées pour rester lisibles sur l'accueil.
+	if dets, err := e.Store.ListDetections(ctx, []string{"nouvelle", "au_digest"}, 0, 20); err == nil {
+		var critiques, autres []store.Detection
+		for _, d := range dets {
+			if d.Critique {
+				critiques = append(critiques, d)
+			} else {
+				autres = append(autres, d)
+			}
+		}
+		s.Alertes = append(critiques, autres...)
+		if len(s.Alertes) > 6 {
+			s.Alertes = s.Alertes[:6]
 		}
 	}
 	return s, nil
