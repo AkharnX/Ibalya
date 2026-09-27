@@ -122,6 +122,7 @@ const NAV = [
     ['/agent', 'Règles métier', null, 'nav-regles-metier'],
     ['/interlocuteurs', 'Interlocuteurs', null, 'nav-interlocuteurs'],
     ['/reglages', 'Réglages', null, 'nav-reglages'],
+    ['/guide/', 'Guide', null, 'action-ouvrir-gmail', true],
   ]],
 ]
 
@@ -262,12 +263,18 @@ export default function App() {
           {NAV.map(([groupe, items]) => (
             <div key={groupe}>
               <div className="nav-group">{groupe}</div>
-              {items.map(([path, label, countKey, icone]) => (
-                <NavLink key={path} to={path} end={path === '/'}
-                  className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-                  <span className="nav-libelle"><Icone nom={icone} />{label}</span>
-                  {countKey && <PastilleNav cle={countKey} />}
-                </NavLink>
+              {items.map(([path, label, countKey, icone, externe]) => (
+                externe ? (
+                  <a key={path} href={path} target="_blank" rel="noopener noreferrer" className="nav-item">
+                    <span className="nav-libelle"><Icone nom={icone} />{label}</span>
+                  </a>
+                ) : (
+                  <NavLink key={path} to={path} end={path === '/'}
+                    className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
+                    <span className="nav-libelle"><Icone nom={icone} />{label}</span>
+                    {countKey && <PastilleNav cle={countKey} />}
+                  </NavLink>
+                )
               ))}
             </div>
           ))}

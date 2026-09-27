@@ -6,6 +6,7 @@ import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
 import Onboarding from '../components/Onboarding'
 import { SqueletteKpi, SqueletteLignes } from '../components/Squelette'
+import { DET_LABELS, Reli } from '../components/ui'
 import { libelleCycle, useEtatAgent } from '../etatAgent'
 
 const CAT_META = {
@@ -25,6 +26,7 @@ export default function Synthese() {
 
   const d = useDraft(load)
   const [sourceId, setSourceId] = useState(null)
+  const [alerteSrc, setAlerteSrc] = useState(null)
   const { cycle, finiA, rafraichir } = useEtatAgent()
   const enCours = !!cycle?.en_cours
 
@@ -134,6 +136,32 @@ export default function Synthese() {
         ))}
       </div>
 
+      {syn?.alertes?.length > 0 && (
+        <>
+          <div className="section-title">
+            <h2>Alertes en cours</h2>
+            <button className="lien-plus" onClick={() => navigate('/alertes')}>Toutes les alertes →</button>
+          </div>
+          <div className="priority-list">
+            {syn.alertes.map((d) => (
+              <div className={'priority-item' + (d.critique ? ' risque' : '')} key={d.id}>
+                <span className={'p-badge' + (d.critique ? ' risque' : '')}>{DET_LABELS[d.type] || d.type}</span>
+                <div className="p-body">
+                  <p className="p-title">
+                    {(d.engagement_id || d.thread_id)
+                      ? <button className="lien-source" title="Voir la conversation d'origine"
+                          onClick={() => setAlerteSrc(d)}>{d.titre}</button>
+                      : d.titre}
+                  </p>
+                  <p className="p-sub">{d.detail}</p>
+                </div>
+                <div className="p-actions"><Reli value={d.score} /></div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="section-title"><h2>Vue d'ensemble par catégorie</h2></div>
       <div className="cat-grid">
         {['encours', 'retard', 'risque'].map((cat) => {
@@ -166,6 +194,12 @@ export default function Synthese() {
       <DraftPanel draft={d.draft} loading={d.loading} title={d.meta.title} hint={d.meta.hint}
         onClose={d.close} onSent={d.onSent} />
       <SourcePanel engagementId={sourceId} onClose={() => setSourceId(null)} />
+      {alerteSrc && (
+        <SourcePanel
+          engagementId={alerteSrc.engagement_id || undefined}
+          threadId={alerteSrc.engagement_id ? undefined : alerteSrc.thread_id}
+          onClose={() => setAlerteSrc(null)} />
+      )}
     </section>
   )
 }
