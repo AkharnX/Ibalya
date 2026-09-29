@@ -57,6 +57,7 @@
   .masthead .in{max-width:1180px;margin:0 auto;padding:22px 24px;display:flex;align-items:center;
     justify-content:space-between;gap:16px}
   .logo{display:flex;align-items:center;gap:11px}
+  .logo,.logo:hover{text-decoration:none}
   .logo svg{width:25px;height:25px;color:var(--teal)}
   .logo b{font-family:var(--serif);font-size:20px;font-weight:600}
   .logo span{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line-strong);
@@ -211,6 +212,7 @@
       <div class="grp">Repères</div>
       <a href="#lexique">Lexique</a>
       <a href="#confidentialite">Confidentialité</a>
+      <a href="#probleme">En cas de problème</a>
       <a href="#faq">Questions fréquentes</a>
     </nav>
   </aside>
@@ -550,6 +552,32 @@
       <div class="aside-note">Chaque utilisateur ne voit que ses propres données, cloisonnées. Un mot de passe IMAP
         éventuel est chiffré ; une connexion Gmail ou Outlook passe par une autorisation révocable, jamais par votre
         mot de passe.</div>
+    </div>
+
+    <div class="chunk" id="probleme">
+      <div class="kicker">Repères</div>
+      <h2>En cas de problème</h2>
+      <p class="say">Voici les messages que vous pouvez croiser, ce qu'ils veulent dire, et quoi faire. Dans tous les
+        cas, votre messagerie d'origine n'est jamais touchée.</p>
+      <div class="qa"><div class="q">« Analyse interrompue »</div>
+        <div class="a">L'analyse a été coupée avant la fin, en général pour une raison temporaire (service momentanément
+        indisponible ou quota atteint). Réessayez un peu plus tard avec le bouton <strong>Analyser</strong> de la
+        Synthèse. Ce qui avait déjà été lu n'est pas perdu. Si le message revient à chaque fois, prévenez-nous.</div></div>
+      <div class="qa"><div class="q">« Votre compte doit être reconnecté : l'autorisation a expiré ou été révoquée »</div>
+        <div class="a">L'accès que vous aviez accordé à Ibalya n'est plus valable (expiration, ou autorisation retirée
+        côté Google/Microsoft). Allez dans <strong>Réglages → Connexion</strong> et reconnectez la boîte. La lecture
+        reprend ensuite normalement, rien n'est perdu.</div></div>
+      <div class="qa"><div class="q">« Cette adresse est déjà raccordée à une autre de vos boîtes »</div>
+        <div class="a">Une même adresse mail ne peut être connectée qu'à une seule boîte, pour ne pas la lire deux fois.
+        Choisissez une autre adresse pour cette boîte, ou supprimez d'abord la boîte qui utilise déjà cette adresse
+        (Réglages → Mes boîtes).</div></div>
+      <div class="qa"><div class="q">« Aucun compte Ibalya n'est associé à cette adresse » (à la connexion)</div>
+        <div class="a">L'accès à Ibalya se fait sur invitation : le bouton « Continuer avec Google » ne crée jamais de
+        compte. Connectez-vous avec l'adresse exacte qui a été autorisée pour vous.</div></div>
+      <div class="qa"><div class="q">La première lecture semble ne pas avancer</div>
+        <div class="a">Sur une grosse boîte, la première lecture prend quelques minutes ; les compteurs montent au fur et
+        à mesure. Vous pouvez continuer à naviguer pendant ce temps. Si rien ne bouge après un long moment,
+        prévenez-nous.</div></div>
     </div>
 
     <div class="chunk" id="faq">
