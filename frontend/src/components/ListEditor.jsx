@@ -14,7 +14,7 @@ export const entryLabel = (v) => {
   return String(v ?? '')
 }
 
-export default function ListEditor({ label, hint, value, onChange, placeholder }) {
+export default function ListEditor({ label, hint, value, onChange, placeholder, className = '' }) {
   const [draft, setDraft] = useState('')
   const items = Array.isArray(value) ? value : []
 
@@ -27,7 +27,7 @@ export default function ListEditor({ label, hint, value, onChange, placeholder }
   const remove = (i) => onChange(items.filter((_, idx) => idx !== i))
 
   return (
-    <div className="field">
+    <div className={'field' + (className ? ' ' + className : '')}>
       <label>{label}</label>
       {hint && <p className="field-hint">{hint}</p>}
       <div className="tag-list">

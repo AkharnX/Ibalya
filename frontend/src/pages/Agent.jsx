@@ -85,18 +85,18 @@ export default function Agent() {
             placeholder="ex. menuiserie et agencement sur mesure" />
         </div>
 
+        <div className="field">
+          <label>Rythme habituel de vos affaires</label>
+          <p className="field-hint">Sert à juger si un délai est normal ou anormal.</p>
+          <input value={facts.cycle_type || ''} onChange={set('cycle_type')}
+            placeholder="ex. chantiers de 2 à 8 semaines" />
+        </div>
+
         <div className="field span-2">
           <label>En quelques mots</label>
           <p className="field-hint">La description que l'agent utilise comme contexte général.</p>
           <textarea rows={3} value={facts.description || ''} onChange={set('description')}
             placeholder="ex. L'entreprise fabrique et pose des éléments en bois pour des particuliers et des collectivités…" />
-        </div>
-
-        <div className="field span-2">
-          <label>Rythme habituel de vos affaires</label>
-          <p className="field-hint">Sert à juger si un délai est normal ou anormal.</p>
-          <input value={facts.cycle_type || ''} onChange={set('cycle_type')}
-            placeholder="ex. chantiers de 2 à 8 semaines, de la prise de mesures à la pose" />
         </div>
 
         <ListEditor
@@ -112,6 +112,7 @@ export default function Agent() {
           value={facts.fournisseurs_critiques} onChange={setList('fournisseurs_critiques')} />
 
         <ListEditor
+          className="span-2"
           label="Interlocuteurs clés"
           hint="Les personnes qui comptent, chez vous ou chez vos partenaires."
           placeholder="nom ou adresse email"
