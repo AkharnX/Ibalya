@@ -114,7 +114,7 @@ export default function Miroir() {
               <span className="lbl">Engagements en cours</span><span className="num">{(m.engagements_ouverts || []).length}</span>
             </div>
             <div className="kpi static">
-              <span className="lbl">Retards probables</span><span className="num">{(m.en_retard_probable || []).length}</span>
+              <span className="lbl">En retard</span><span className="num">{(m.en_retard_probable || []).length}</span>
             </div>
             <div className="kpi static">
               <span className="lbl">Fils sans réponse</span><span className="num">{(m.fils_sans_reponse || []).length}</span>
@@ -129,7 +129,7 @@ export default function Miroir() {
             aide="Les promesses détectées dans vos échanges, encore ouvertes à ce jour."
             rows={m.engagements_ouverts || []} />
 
-          <Liste titre="Retards probables" onSource={setSourceId}
+          <Liste titre="En retard" onSource={setSourceId}
             aide="Une échéance est passée sans signe de livraison dans le fil."
             rows={m.en_retard_probable || []} />
 

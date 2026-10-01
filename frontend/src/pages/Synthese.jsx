@@ -10,9 +10,9 @@ import { DET_LABELS, Reli } from '../components/ui'
 import { libelleCycle, useEtatAgent } from '../etatAgent'
 
 const CAT_META = {
-  encours: { dot: 'blue', titre: 'Engagements en cours' },
-  retard: { dot: 'amber', titre: 'Retards probables' },
-  risque: { dot: 'red', titre: 'Engagements à risque' },
+  encours: { dot: 'blue', titre: 'Dans les temps' },
+  retard: { dot: 'amber', titre: 'En retard' },
+  risque: { dot: 'red', titre: 'Retard probable' },
 }
 
 export default function Synthese() {
@@ -101,7 +101,7 @@ export default function Synthese() {
           <span className="lbl">En retard</span><span className="num">{k?.retards ?? '–'}</span>
         </button>
         <button className="kpi risk flag" onClick={() => navigate('/suivi?cat=risque')}>
-          <span className="lbl">Critiques</span><span className="num">{k?.risques ?? '–'}</span>
+          <span className="lbl">Retard probable</span><span className="num">{k?.risques ?? '–'}</span>
         </button>
         <button className="kpi accent flag" onClick={() => navigate('/a-valider')}>
           <span className="lbl">À valider</span><span className="num">{k?.messages_a_valider ?? '–'}</span>
@@ -117,7 +117,7 @@ export default function Synthese() {
         {syn && !syn.priorites?.length && <div className="empty">Rien à arbitrer, aucun retard ni engagement bloqué.</div>}
         {(syn?.priorites || []).map((p) => (
           <div className={'priority-item ' + p.categorie} key={p.engagement_id}>
-            <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'À risque' : 'Retard'}</span>
+            <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'Retard probable' : 'En retard'}</span>
             <div className="p-body">
               <p className="p-title">
                 <button className="lien-source" title="Voir la conversation d'origine"

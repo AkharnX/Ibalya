@@ -9,9 +9,9 @@ import { SqueletteTable } from '../components/Squelette'
 
 const CATEGORIES = [
   ['all', 'Tous'],
-  ['encours', 'Engagements en cours'],
-  ['retard', 'Retards probables'],
-  ['risque', 'À risque'],
+  ['encours', 'Dans les temps'],
+  ['retard', 'En retard'],
+  ['risque', 'Retard probable'],
 ]
 const TYPES = ['all', 'livraison', 'devis', 'facturation', 'rendez_vous', 'prise_de_contact']
 
@@ -129,7 +129,7 @@ export default function Suivi() {
   }
 
   const statusClass = (r) => (r.categorie === 'retard' ? 'late' : r.categorie === 'risque' ? 'risk' : 'open')
-  const statusLabel = (r) => (r.categorie === 'retard' ? 'En retard' : r.categorie === 'risque' ? 'À risque' : 'Ouvert')
+  const statusLabel = (r) => (r.categorie === 'retard' ? 'En retard' : r.categorie === 'risque' ? 'Retard probable' : 'Dans les temps')
 
   return (
     <section>

@@ -337,6 +337,13 @@ tbody tr:hover{background:var(--secondary);}
 }
 .eng-title{font-weight:500;font-size:13.5px;margin:0 0 3px;}
 .eng-flow{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin:0;}
+/* Message cliquable (À valider) : tout le bloc objet + aperçu ouvre le panneau
+   de lecture. Rendu identique au repos, l'objet vire au teal au survol pour
+   signaler qu'on peut l'ouvrir. */
+.msg-open{display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer;font:inherit;color:inherit;}
+.msg-open .eng-title{display:block;margin:0 0 3px;transition:color .12s;}
+.msg-open .eng-flow{display:block;}
+.msg-open:hover .eng-title{color:var(--primary);}
 /* Bloc d'action suggérée, dans le panneau de traçabilité. */
 .suggestion{
   display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
