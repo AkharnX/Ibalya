@@ -80,7 +80,7 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
             <h3>{title || 'Proposition de message'}</h3>
             <p>{hint || "Générée par l'agent à partir du contexte de l'engagement"}</p>
           </div>
-          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
+          <button className="draft-close" aria-label="Fermer" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
         <div className="draft-body">
           {loading && <p className="draft-loading">L'agent rédige le message…</p>}
@@ -151,7 +151,7 @@ export function QueuePanel({ open, drafts, onPick, onClose }) {
             <h3>Messages à valider</h3>
             <p>{drafts.length} brouillon(s) en attente de votre validation</p>
           </div>
-          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
+          <button className="draft-close" aria-label="Fermer" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
         <div className="draft-body">
           {!drafts.length && <p className="draft-loading">Aucun message en attente.</p>}

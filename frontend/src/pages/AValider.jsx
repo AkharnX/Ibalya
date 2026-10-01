@@ -54,9 +54,9 @@ export default function AValider() {
                   <td className="sub">{fmtDT(d.created_at)}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="btn-icon primary" title="Relire et envoyer"
+                      <button className="btn-icon primary" aria-label="Relire et envoyer" title="Relire et envoyer"
                         onClick={() => setSelected(d)}><Icone nom="action-valider-envoyer" /></button>
-                      <button className="btn-icon" title="Rejeter" onClick={() => reject(d.id)}><Icone nom="action-rejeter" /></button>
+                      <button className="btn-icon" aria-label="Rejeter" title="Rejeter" onClick={() => reject(d.id)}><Icone nom="action-rejeter" /></button>
                     </div>
                   </td>
                 </tr>

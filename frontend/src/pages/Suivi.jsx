@@ -142,10 +142,10 @@ export default function Suivi() {
 
       <div className="chip-row">
         {CATEGORIES.map(([key, label]) => (
-          <div key={key} className={'chip' + (cat === key ? ' active' : '')}
+          <button type="button" key={key} className={'chip' + (cat === key ? ' active' : '')}
             onClick={() => setParams(key === 'all' ? {} : { cat: key })}>
             {label} <span className="n">{counts[key] || 0}</span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -154,9 +154,9 @@ export default function Suivi() {
 
       <div className="filter-bar">
         {TYPES.map((t) => (
-          <div key={t} className={'type-pill' + (type === t ? ' active' : '')} onClick={() => setType(t)}>
+          <button type="button" key={t} className={'type-pill' + (type === t ? ' active' : '')} onClick={() => setType(t)}>
             {t === 'all' ? 'Tous les types' : TYPE_LABELS[t]}
-          </div>
+          </button>
         ))}
         <div className="search-wrap">
           <input type="text" placeholder="Rechercher un client..." value={search}
@@ -191,9 +191,9 @@ export default function Suivi() {
                     {dateId === r.id ? (
                       <div className="echeance-edit">
                         <input type="date" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
-                        <button className="btn-icon primary" title="Confirmer cette échéance"
+                        <button className="btn-icon primary" aria-label="Confirmer cette échéance" title="Confirmer cette échéance"
                           onClick={() => confirmerEcheance(r.id)}><Icone nom="etat-livre" /></button>
-                        <button className="btn-icon" title="Annuler" onClick={() => setDateId(null)}><Icone nom="action-rejeter" /></button>
+                        <button className="btn-icon" aria-label="Annuler" title="Annuler" onClick={() => setDateId(null)}><Icone nom="action-rejeter" /></button>
                       </div>
                     ) : r.echeance ? (
                       r.echeance_inferee && !r.echeance_confirmee ? (
@@ -207,12 +207,12 @@ export default function Suivi() {
                   <td>
                     <div className="row-actions">
                       {r.action && (
-                        <button className="btn-icon primary" title={r.action.label}
+                        <button className="btn-icon primary" aria-label={r.action.label} title={r.action.label}
                           onClick={() => d.openForEngagement(r.id, r.action)}><Icone nom="action-valider-envoyer" /></button>
                       )}
-                      <button className="btn-icon" title="Marquer livré" onClick={() => patch(r.id, { statut: 'livre' }, 'Marqué comme livré')}><Icone nom="etat-livre" /></button>
+                      <button className="btn-icon" aria-label="Marquer livré" title="Marquer livré" onClick={() => patch(r.id, { statut: 'livre' }, 'Marqué comme livré')}><Icone nom="etat-livre" /></button>
                       <div className="menu-wrap" ref={menuId === r.id ? zone : null}>
-                        <button className="btn-icon" title="Corriger l’agent"
+                        <button className="btn-icon" aria-label="Corriger l’agent" title="Corriger l’agent"
                           aria-haspopup="menu" aria-expanded={menuId === r.id}
                           onClick={(e) => ouvrirMenu(e, r.id)}>⋯</button>
                         {menuId === r.id && menuPos && (

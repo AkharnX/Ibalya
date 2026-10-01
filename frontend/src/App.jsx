@@ -285,11 +285,11 @@ export default function App() {
             <span>{user?.email}</span>
           </div>
           <div style={{ display: 'flex', gap: 2 }}>
-            <button className="icon-btn" title={dark ? 'Thème clair' : 'Thème sombre'}
+            <button className="icon-btn" aria-label={dark ? 'Thème clair' : 'Thème sombre'} title={dark ? 'Thème clair' : 'Thème sombre'}
               onClick={() => setDark(!dark)}>
               <Icone nom={dark ? 'divers-theme-clair' : 'divers-theme-sombre'} />
             </button>
-            <button className="icon-btn" title="Se déconnecter" onClick={async () => {
+            <button className="icon-btn" aria-label="Se déconnecter" title="Se déconnecter" onClick={async () => {
               try { await apiLogout() } catch { /* session déjà close */ }
               setAuthed(false); setUser(null)
             }}><Icone nom="divers-deconnexion" /></button>
@@ -300,7 +300,7 @@ export default function App() {
       <div className="content">
         <header className="topbar">
           <div className="topbar-gauche">
-            <button className="icon-btn burger" title="Menu"
+            <button className="icon-btn burger" aria-label="Menu" title="Menu"
               onClick={() => setMenuOpen(!menuOpen)}><Icone nom="action-menu" /></button>
             <Recherche />
           </div>

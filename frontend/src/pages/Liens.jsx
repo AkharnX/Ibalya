@@ -63,9 +63,9 @@ export default function Liens() {
 
       <div className="chip-row">
         {FILTRES.map(([k, label]) => (
-          <div key={k || 'all'} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
+          <button type="button" key={k || 'all'} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
             {label} <span className="n">{compte[k] || 0}</span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -93,9 +93,9 @@ export default function Liens() {
                   <td>
                     {l.statut === 'candidat' ? (
                       <div className="row-actions">
-                        <button className="btn-icon primary" title="Confirmer ce lien"
+                        <button className="btn-icon primary" aria-label="Confirmer ce lien" title="Confirmer ce lien"
                           disabled={busy === l.id} onClick={() => decider(l.id, 'confirm')}><Icone nom="etat-livre" /></button>
-                        <button className="btn-icon" title="Ce lien n'existe pas"
+                        <button className="btn-icon" aria-label="Ce lien n'existe pas" title="Ce lien n'existe pas"
                           disabled={busy === l.id} onClick={() => decider(l.id, 'reject')}><Icone nom="action-rejeter" /></button>
                       </div>
                     ) : (

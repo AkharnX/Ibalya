@@ -32,7 +32,7 @@ export default function FichePersonne({ personneId, onClose, onEngagement, onFil
             <h3>{f?.name || f?.email || 'Interlocuteur'}</h3>
             <p>{f ? f.email : 'Chargement…'}</p>
           </div>
-          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
+          <button className="draft-close" aria-label="Fermer" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
 
         <div className="draft-body">

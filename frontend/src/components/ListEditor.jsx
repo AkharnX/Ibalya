@@ -34,7 +34,7 @@ export default function ListEditor({ label, hint, value, onChange, placeholder, 
         {items.map((it, i) => (
           <span className="tag-edit" key={i}>
             {entryLabel(it)}
-            <button type="button" title="Retirer" onClick={() => remove(i)}>×</button>
+            <button type="button" aria-label="Retirer" title="Retirer" onClick={() => remove(i)}>×</button>
           </span>
         ))}
         {!items.length && <span className="field-hint">Aucun pour l'instant.</span>}

@@ -386,7 +386,6 @@ label{
 /* Aucun changement de bord au focus : le champ reste strictement calme au clic
    (pas de contour qui se dessine). Le curseur dans l'input suffit. */
 .adr-champ:focus-within{border-color:var(--border);}
-.adr-champ,.adr-input{outline:none;}
 .adr-chip{display:inline-flex;align-items:center;gap:4px;background:var(--secondary);border:1px solid var(--border);
   border-radius:999px;padding:3px 4px 3px 11px;font-size:13px;white-space:nowrap;transition:border-color .12s,background .12s;}
 /* Le retour visuel est sur la pastille au survol : on voit qu'elle est retirable. */
