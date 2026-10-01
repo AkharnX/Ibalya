@@ -24,7 +24,7 @@ const TYPES = ['all', 'livraison', 'devis', 'facturation', 'rendez_vous', 'prise
 const CORRECTIONS = [
   ['pas_un_engagement', 'Ce n’est pas un engagement'],
   ['engagement_imprecis', 'Engagement réel, mais mal résumé'],
-  ['abandon_metier', 'Abandonné — mais l’agent avait raison'],
+  ['abandon_metier', 'Abandonné, mais l’agent avait raison'],
   ['priorite_haute', 'Priorité haute pour cet interlocuteur'],
   ['ignorer_interlocuteur', 'Ne plus rien extraire de cet interlocuteur'],
   ['ne_plus_alerter', 'Ne plus m’alerter sur ce fil'],
@@ -136,7 +136,7 @@ export default function Suivi() {
       <div className="page-head">
         <div>
           <h1>Suivi des engagements</h1>
-          <p>Tout ce qui a été promis — par vous ou à vous — détecté dans vos échanges. La photographie de vos 30 derniers jours, à corriger d'un geste.</p>
+          <p>Tout ce qui a été promis, par vous ou à vous, détecté dans vos échanges. La photographie de vos 30 derniers jours, à corriger d'un geste.</p>
         </div>
       </div>
 
@@ -200,7 +200,7 @@ export default function Suivi() {
                         <button className="echeance-a-confirmer" title="Échéance déduite par l’agent : à confirmer"
                           onClick={() => ouvrirDate(r)}>{fmtDate(r.echeance)}</button>
                       ) : fmtDate(r.echeance)
-                    ) : <span className="mono">—</span>}
+                    ) : <span className="mono">–</span>}
                   </td>
                   <td><Reli value={r.confiance} /></td>
                   <td><div className={'status ' + statusClass(r)}><span className="dot" />{statusLabel(r)}</div></td>

@@ -28,7 +28,7 @@ function Liste({ titre, aide, rows, onSource }) {
                     </p>
                     <p className="eng-flow">{e.emetteur_email || '?'} → {e.destinataire_email || '?'}</p>
                   </td>
-                  <td>{e.echeance ? fmtDate(e.echeance) : <span className="mono">—</span>}</td>
+                  <td>{e.echeance ? fmtDate(e.echeance) : <span className="mono">–</span>}</td>
                   <td><Reli value={e.confiance} /></td>
                 </tr>
               ))}
@@ -151,7 +151,7 @@ export default function Miroir() {
                           <button className="lien-source" title="Voir la conversation"
                             onClick={() => setFilId(f.thread_id)}>{f.sujet || '(sans objet)'}</button>
                         </td>
-                        <td className="sub">{f.interlocuteur || '—'}</td>
+                        <td className="sub">{f.interlocuteur || '–'}</td>
                         <td><span className="mono">{f.jours_silence} j</span></td>
                       </tr>
                     ))}

@@ -8,7 +8,7 @@ import Canal from '../components/Canal'
 export function signatureComposee(s) {
   const nom = [s.identite_prenom, s.identite_nom].map((x) => (x || '').trim()).filter(Boolean).join(' ')
   if (!nom) return ''
-  const role = [s.identite_fonction, s.identite_societe].map((x) => (x || '').trim()).filter(Boolean).join(' — ')
+  const role = [s.identite_fonction, s.identite_societe].map((x) => (x || '').trim()).filter(Boolean).join(', ')
   return [nom, role].filter(Boolean).join('\n')
 }
 
@@ -88,6 +88,19 @@ function Confidentialite({ valeur, onChange, onEnregistrer }) {
   )
 }
 
+// Fautes de frappe courantes sur les domaines grand public : une adresse comme
+// « dsgh@gmial.com » a un format valide mais un domaine qui n'existe pas. On
+// propose la correction plutôt que d'enregistrer une adresse morte.
+const DOMAINES_TYPO = {
+  'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmil.com': 'gmail.com',
+  'gnail.com': 'gmail.com', 'gmaill.com': 'gmail.com', 'gmail.co': 'gmail.com',
+  'gmail.fr': 'gmail.com', 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
+  'hotmil.com': 'hotmail.com', 'hotmail.fr': 'hotmail.com', 'outlok.com': 'outlook.com',
+  'outloo.com': 'outlook.com', 'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com',
+  'yahoo.co': 'yahoo.com', 'ornage.fr': 'orange.fr', 'orane.fr': 'orange.fr',
+  'wanadou.fr': 'wanadoo.fr', 'oulook.com': 'outlook.com',
+}
+
 // Champ d'adresses à pastilles : on tape une adresse, Entrée (ou virgule) la
 // transforme en pastille retirable. Plus lisible qu'un texte libre, et on voit
 // d'un coup ce qui est enregistré. La valeur reste une chaîne (une adresse par
@@ -101,6 +114,12 @@ function ChampAdresses({ value, onChange }) {
     const e = (txt || '').trim().replace(/[,;]+$/, '')
     if (!e) return true
     if (!estEmail(e)) { toast('Adresse invalide : ' + e, true); return false }
+    const domaine = e.split('@')[1].toLowerCase()
+    if (DOMAINES_TYPO[domaine]) {
+      const propose = e.slice(0, e.lastIndexOf('@') + 1) + DOMAINES_TYPO[domaine]
+      toast('Domaine inconnu : vouliez-vous dire ' + propose + ' ? Corrigez l’adresse.', true)
+      return false
+    }
     if (!liste.some((x) => x.toLowerCase() === e.toLowerCase())) maj([...liste, e])
     setSaisie('')
     return true
@@ -156,7 +175,7 @@ export default function Reglages() {
     } catch (e) { toast(e.message, true) }
   }
   const onboard = async () => {
-    try { await api('/onboarding/run', { method: 'POST' }); toast('Onboarding lancé — le miroir sera prêt dans quelques minutes.') }
+    try { await api('/onboarding/run', { method: 'POST' }); toast('Onboarding lancé, le miroir sera prêt dans quelques minutes.') }
     catch (e) { toast(e.message, true) }
   }
 
@@ -227,7 +246,7 @@ export default function Reglages() {
         <div className="panel">
           <h3>Comportement</h3>
           <div className="setting">
-            <label>Seuil de publication (0–1) — sous ce score, rien n'est présenté proactivement</label>
+            <label>Seuil de publication (0–1) : sous ce score, rien n'est présenté proactivement</label>
             <input type="number" step="0.05" min="0" max="1" value={settings.seuil_publication} onChange={set('seuil_publication')} />
           </div>
           <div className="setting">
@@ -240,16 +259,16 @@ export default function Reglages() {
           <div className="setting">
             <label>Mode de l'application Google</label>
             <select value={settings.google_mode_test} onChange={set('google_mode_test')}>
-              <option value="1">Test — jeton à renouveler tous les 7 jours</option>
-              <option value="0">Production — connexion durable</option>
+              <option value="1">Test : jeton à renouveler tous les 7 jours</option>
+              <option value="0">Production : connexion durable</option>
             </select>
             <p className="help">Reflète le statut de publication dans Google Cloud. En mode Test, un rappel de reconnexion s'affiche avant l'expiration.</p>
           </div>
           <div className="setting">
             <label>Recevoir le digest par email</label>
             <select value={settings.digest_email} onChange={set('digest_email')}>
-              <option value="0">Non — tableau de bord uniquement</option>
-              <option value="1">Oui — sur ma boîte</option>
+              <option value="0">Non : tableau de bord uniquement</option>
+              <option value="1">Oui : sur ma boîte</option>
             </select>
           </div>
           <div className="setting">
@@ -276,7 +295,7 @@ export default function Reglages() {
         ))}
       </div>
 
-      <h3>Journal d'audit <span className="muted">— chaque lecture, détection et action, horodatée</span></h3>
+      <h3>Journal d'audit <span className="muted">: chaque lecture, détection et action, horodatée</span></h3>
       <div className="tbl-wrap">
         <table>
           <thead><tr><th>Date</th><th>Acteur</th><th>Événement</th><th>Détails</th></tr></thead>

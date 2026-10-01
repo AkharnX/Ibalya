@@ -7,8 +7,8 @@ export const TYPE_LABELS = {
   facturation: 'Facturation', autre: 'Autre',
 }
 
-export const fmtDate = (s) => (s ? new Date(s).toLocaleDateString('fr-FR') : '—')
-export const fmtDT = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—')
+export const fmtDate = (s) => (s ? new Date(s).toLocaleDateString('fr-FR') : '–')
+export const fmtDT = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '–')
 
 export const Empty = ({ children }) => <div className="empty">{children}</div>
 

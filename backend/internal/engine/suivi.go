@@ -316,13 +316,13 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 func apercuLigne(x EngagementSuivi) string {
 	switch {
 	case x.Blocage != nil:
-		return fmt.Sprintf("%s — dépend de « %s », en retard", x.Objet, x.Blocage.AmontObjet)
+		return fmt.Sprintf("%s : dépend de « %s », en retard", x.Objet, x.Blocage.AmontObjet)
 	case x.Statut == "en_retard" && x.Echeance != nil:
-		return fmt.Sprintf("%s — échéance dépassée le %s", x.Objet, x.Echeance.Format("02/01"))
+		return fmt.Sprintf("%s : échéance dépassée le %s", x.Objet, x.Echeance.Format("02/01"))
 	case x.Echeance != nil && !x.EcheanceConfirmee:
-		return fmt.Sprintf("%s — échéance %s, à confirmer", x.Objet, x.Echeance.Format("02/01"))
+		return fmt.Sprintf("%s : échéance %s, à confirmer", x.Objet, x.Echeance.Format("02/01"))
 	case x.Echeance != nil:
-		return fmt.Sprintf("%s — échéance %s", x.Objet, x.Echeance.Format("02/01"))
+		return fmt.Sprintf("%s : échéance %s", x.Objet, x.Echeance.Format("02/01"))
 	}
 	return x.Objet
 }
@@ -337,14 +337,14 @@ func contexteLigne(x EngagementSuivi) string {
 		if x.Blocage.AmontEcheance != "" {
 			cause += ", attendue le " + x.Blocage.AmontEcheance
 		}
-		return fmt.Sprintf("%s — bloquée par : %s", ech, cause)
+		return fmt.Sprintf("%s, bloquée par : %s", ech, cause)
 	}
 	if x.Statut == "en_retard" && x.Echeance != nil {
 		jours := int(time.Since(*x.Echeance).Hours() / 24)
-		return fmt.Sprintf("Échéance dépassée le %s (%d jour(s)) — %s",
+		return fmt.Sprintf("Échéance dépassée le %s (%d jour(s)) : %s",
 			x.Echeance.Format("02/01"), jours, x.Contact)
 	}
-	return fmt.Sprintf("%s — %s", ech, x.Contact)
+	return fmt.Sprintf("%s, %s", ech, x.Contact)
 }
 
 // DraftForEngagement rédige à la demande un message pour un engagement donné,

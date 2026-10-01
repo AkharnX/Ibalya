@@ -26,7 +26,7 @@ export default function AValider() {
       <div className="page-head">
         <div>
           <h1>À valider</h1>
-          <p>Les messages que l'agent a pré-rédigés à partir de vos engagements. Relisez, ajustez si besoin, puis envoyez — rien ne part sans votre validation.</p>
+          <p>Les messages que l'agent a pré-rédigés à partir de vos engagements. Relisez, ajustez si besoin, puis envoyez : rien ne part sans votre validation.</p>
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default function AValider() {
                     <p className="eng-flow">{d.body.slice(0, 90).replace(/\n/g, ' ')}…</p>
                   </td>
                   <td style={{ maxWidth: 260 }}>
-                    <span className="sub">{d.detection_titre || d.engagement_objet || '—'}</span>
+                    <span className="sub">{d.detection_titre || d.engagement_objet || '–'}</span>
                   </td>
                   <td className="sub">{fmtDT(d.created_at)}</td>
                   <td>

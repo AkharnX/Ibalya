@@ -36,7 +36,7 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
     if (!review?.suggestion) return
     setBody(review.suggestion)
     setReview({ ...review, suggestion: '', applied: true })
-    toast('Version de l\'agent appliquée — relisez avant d\'envoyer')
+    toast('Version de l\'agent appliquée, relisez avant d\'envoyer')
   }
 
   const open = loading || !!draft
@@ -109,7 +109,7 @@ export function DraftPanel({ draft, loading, title, hint, onClose, onSent }) {
                 <div className={'review ' + (review.verdict === 'pret_a_envoyer' ? 'ok' : 'todo')}>
                   <p className="review-verdict">
                     {review.verdict === 'pret_a_envoyer'
-                      ? 'Rien à signaler — le message peut partir.'
+                      ? 'Rien à signaler, le message peut partir.'
                       : `${review.remarques.length} point(s) à regarder avant d'envoyer`}
                   </p>
                   {review.remarques.map((r, i) => (
@@ -159,7 +159,7 @@ export function QueuePanel({ open, drafts, onPick, onClose }) {
             <button className="queue-row" key={d.id} onClick={() => onPick(d)}>
               <div>
                 <p className="qt">{d.detection_titre || d.subject}</p>
-                <p className="qs">{d.to_email} — {d.subject}</p>
+                <p className="qs">{d.to_email} · {d.subject}</p>
               </div>
               <span className="qgo">→</span>
             </button>

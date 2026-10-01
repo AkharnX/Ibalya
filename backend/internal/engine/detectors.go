@@ -144,7 +144,7 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 			Type: "echeance_a_risque", EngagementID: &eng.ID, ThreadID: eng.ThreadID,
 			Score: clamp01(score), Critique: critique,
 			Titre:  fmt.Sprintf("Échéance dans %d jour(s) sans signal de progression", days),
-			Detail: fmt.Sprintf("« %s » — échéance le %s, aucun signal récent.", eng.Objet, eng.Echeance.Format("02/01/2006")),
+			Detail: fmt.Sprintf("« %s » : échéance le %s, aucun signal récent.", eng.Objet, eng.Echeance.Format("02/01/2006")),
 		}
 		key := fmt.Sprintf("echeance_a_risque:%d:%s", eng.ID, today)
 		if id, _ := e.Store.CreateDetection(ctx, d, key); id != 0 {
@@ -377,7 +377,7 @@ func (e *Engine) detectSurcharge(ctx context.Context, p capsuleParams, today str
 			Type:  "surcharge",
 			Score: 0.6,
 			Titre: fmt.Sprintf("%d échéances la semaine du %s pour %s", s.n, s.week.Format("02/01"), s.email),
-			Detail: fmt.Sprintf("Concentration inhabituelle de %d engagements à échéance sur la même semaine — lissage de charge recommandé.",
+			Detail: fmt.Sprintf("Concentration inhabituelle de %d engagements à échéance sur la même semaine, lissage de charge recommandé.",
 				s.n),
 			Payload: mustJSON(map[string]any{"responsable": s.email, "semaine": s.week.Format("2006-01-02"), "nombre": s.n}),
 		}
