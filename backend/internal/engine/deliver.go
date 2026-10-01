@@ -260,7 +260,12 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 	// Un digest sans lien de retour est un constat sans suite : c'est dans
 	// l'application que le dirigeant valide, corrige et relance.
 	if e.BaseURL != "" {
-		fmt.Fprintf(&b, "\nOuvrir Ibalya : %s/app/\n", strings.TrimSuffix(e.BaseURL, "/"))
+		base := strings.TrimSuffix(e.BaseURL, "/")
+		fmt.Fprintf(&b, "\nOuvrir Ibalya : %s/app/\n", base)
+		// Désinscription : le digest est un email récurrent et automatique, il doit
+		// toujours offrir un moyen clair d'y mettre fin (conformité + confiance).
+		// Le réglage « recevoir le digest par email » se coupe dans les Réglages.
+		fmt.Fprintf(&b, "Pour ne plus recevoir ce résumé par email, désactivez-le dans vos Réglages : %s/app/reglages\n", base)
 	}
 	b.WriteString("\n— Ibalya\n")
 	return b.String()
