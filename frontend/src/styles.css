@@ -1217,6 +1217,19 @@ button:hover, .btn:hover { transform: none; }     /* pas d'effet de survol gadge
   src:url('./assets/fonts/fraunces-700.woff2') format('woff2'); }
 :root { --font-serif:"Fraunces", Georgia, "Times New Roman", serif; }
 
+/* Mono auto-hébergée : --font-mono nommait "Geist Mono" sans jamais la charger,
+   donc les libellés/chiffres retombaient sur un monospace système (Courier sous
+   Linux). On héberge les graisses réellement utilisées : 300 (gros chiffres KPI),
+   400 (libellés), 500 (en-têtes de table), 600 (badges). */
+@font-face { font-family:"Geist Mono"; font-style:normal; font-weight:300; font-display:swap;
+  src:url('./assets/fonts/geist-mono-300.woff2') format('woff2'); }
+@font-face { font-family:"Geist Mono"; font-style:normal; font-weight:400; font-display:swap;
+  src:url('./assets/fonts/geist-mono-400.woff2') format('woff2'); }
+@font-face { font-family:"Geist Mono"; font-style:normal; font-weight:500; font-display:swap;
+  src:url('./assets/fonts/geist-mono-500.woff2') format('woff2'); }
+@font-face { font-family:"Geist Mono"; font-style:normal; font-weight:600; font-display:swap;
+  src:url('./assets/fonts/geist-mono-600.woff2') format('woff2'); }
+
 /* accent bleu-canard (distinctif, non « IA », ne colle pas au sens ambre/vert/rouge) */
 :root { --primary:#0e7490; }
 :root.light { --primary:#0e7490; }
