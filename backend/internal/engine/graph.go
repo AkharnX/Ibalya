@@ -92,9 +92,13 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 		})
 		switch {
 		case err != nil:
-			// Modèle injoignable : on ne perd pas le candidat, on le propose sur
-			// la seule heuristique. Le dirigeant tranchera comme avant.
-			log.Printf("dépendance: jugement indisponible, candidat proposé sur heuristique seule: %v", err)
+			// Modèle injoignable : on N'ÉCRIT PAS un candidat non jugé. Le faire
+			// (score 0) noyait la liste de propositions bruyantes pendant une panne
+			// LLM — exactement ce qui est arrivé lors d'une coupure de crédits.
+			// Le candidat structurel est recalculé à chaque cycle : il sera jugé
+			// au prochain, une fois le modèle de retour.
+			log.Printf("dépendance: jugement indisponible, candidat ignoré ce cycle: %v", err)
+			continue
 		case !rep.Depend || rep.Score < seuilRetenu:
 			// Jugé sans lien : on n'encombre pas le dirigeant avec.
 			continue
