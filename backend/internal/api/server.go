@@ -131,6 +131,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rules", s.auth(s.listRules))
 	mux.HandleFunc("POST /api/rules", s.auth(s.createRule))
 	mux.HandleFunc("DELETE /api/rules/{id}", s.auth(s.deleteRule))
+	mux.HandleFunc("POST /api/rules/{id}/activer", s.auth(s.reactivateRule))
 	// Déclencher un digest sans attendre l'heure du scheduler : sert à
 	// vérifier l'expéditeur et le contenu après un changement de réglage.
 	mux.HandleFunc("POST /api/digest/envoyer", s.auth(s.envoyerDigest))
@@ -842,6 +843,16 @@ func (s *Server) deleteRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.Store.Audit(r.Context(), acteur(r), "regle_desactivee", map[string]int64{"id": id})
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+func (s *Server) reactivateRule(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	if err := s.Store.ReactivateRule(r.Context(), id); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	s.Store.Audit(r.Context(), acteur(r), "regle_reactivee", map[string]int64{"id": id})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 

@@ -600,6 +600,11 @@ func (s *Store) DeactivateRule(ctx context.Context, id int64) error {
 	return err
 }
 
+func (s *Store) ReactivateRule(ctx context.Context, id int64) error {
+	_, err := s.q(ctx).Exec(ctx, `UPDATE learned_rules SET active=true WHERE id=$1`, id)
+	return err
+}
+
 // --- Détections ---
 
 // CreateDetection insère si la clé de dédoublonnage est nouvelle. Retourne l'id ou 0 si doublon.
