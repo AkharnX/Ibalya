@@ -56,6 +56,11 @@ export default function Agent() {
     catch (e) { toast(e.message, true) }
   }
 
+  const reactiver = async (id) => {
+    try { await api('/rules/' + id + '/activer', { method: 'POST' }); toast('Règle réactivée, l\'agent en tiendra compte'); load() }
+    catch (e) { toast(e.message, true) }
+  }
+
   const heures = Number(facts.silence_defaut_heures)
   const inconnues = Object.keys(facts).filter((k) => !CHAMPS_CONNUS.includes(k))
 
@@ -190,7 +195,7 @@ export default function Agent() {
                   <td className="sub">{fmtDate(r.created_at)}</td>
                   <td>{r.active
                     ? <button className="ghost" onClick={() => delRule(r.id)}>Désactiver</button>
-                    : <span className="sub">désactivée</span>}</td>
+                    : <button className="ghost" onClick={() => reactiver(r.id)}>Réactiver</button>}</td>
                 </tr>
               ))}
             </tbody>
