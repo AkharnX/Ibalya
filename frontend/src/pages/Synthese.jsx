@@ -126,9 +126,9 @@ export default function Synthese() {
               <p className="p-sub">{p.contexte}</p>
             </div>
             <div className="p-actions">
-              <button className="btn-icon" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
+              <button className="btn-icon" aria-label="Marquer résolu" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
               {p.action && (
-                <button className="btn-icon primary" title={p.action.label}
+                <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
                   onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
               )}
             </div>
@@ -176,9 +176,9 @@ export default function Synthese() {
                 {!bloc.nombre && <div className="cat-preview-item">Aucun engagement dans cette catégorie.</div>}
               </div>
               {bloc.nombre > 0 && (
-                <div className="cat-link" onClick={() => navigate('/suivi?cat=' + cat)}>
+                <button type="button" className="cat-link" onClick={() => navigate('/suivi?cat=' + cat)}>
                   Voir {bloc.nombre === 1 ? "l'engagement" : `les ${bloc.nombre} engagements`} →
-                </div>
+                </button>
               )}
             </div>
           )

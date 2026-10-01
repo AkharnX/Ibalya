@@ -39,7 +39,7 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
             <h3>{data?.sujet || 'Conversation d’origine'}</h3>
             <p>{data ? `${data.messages.length} message(s) dans ce fil` : 'Chargement…'}</p>
           </div>
-          <button className="draft-close" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
+          <button className="draft-close" aria-label="Fermer" title="Fermer" onClick={onClose}><Icone nom="action-fermer-panneau" /></button>
         </div>
 
         <div className="draft-body">

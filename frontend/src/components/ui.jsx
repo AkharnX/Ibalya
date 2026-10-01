@@ -56,15 +56,15 @@ export const FiltreFiabilite = ({ valeur, onChange, rows, champ }) => {
   })
   return (
     <div className="chip-row">
-      <div className={'chip' + (valeur === '' ? ' active' : '')} onClick={() => onChange('')}>
+      <button type="button" className={'chip' + (valeur === '' ? ' active' : '')} onClick={() => onChange('')}>
         Toutes fiabilités <span className="n">{comptes[''] || 0}</span>
-      </div>
+      </button>
       {NIVEAUX_FIABILITE.map(([cle, label, min, max]) => (
-        <div key={cle} className={'chip chip-' + cle + (valeur === cle ? ' active' : '')}
+        <button type="button" key={cle} className={'chip chip-' + cle + (valeur === cle ? ' active' : '')}
           onClick={() => onChange(cle)}
           title={max > 1 ? `${Math.round(min * 100)} % et plus` : `${Math.round(min * 100)} à ${Math.round(max * 100) - 1} %`}>
           {label} <span className="n">{comptes[cle] || 0}</span>
-        </div>
+        </button>
       ))}
     </div>
   )

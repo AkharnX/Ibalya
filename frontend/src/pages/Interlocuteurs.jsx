@@ -71,17 +71,17 @@ export default function Interlocuteurs() {
       </div>
 
       <div className="chip-row">
-        <div className={'chip' + (filtre === '' ? ' active' : '')} onClick={() => setFiltre('')}>
+        <button type="button" className={'chip' + (filtre === '' ? ' active' : '')} onClick={() => setFiltre('')}>
           Tous <span className="n">{compte[''] || 0}</span>
-        </div>
+        </button>
         {TYPES.map(([k, label]) => (
-          <div key={k} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
+          <button type="button" key={k} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
             {label} <span className="n">{compte[k] || 0}</span>
-          </div>
+          </button>
         ))}
-        <div className={'chip' + (filtre === 'sensible' ? ' active' : '')} onClick={() => setFiltre('sensible')}>
+        <button type="button" className={'chip' + (filtre === 'sensible' ? ' active' : '')} onClick={() => setFiltre('sensible')}>
           À surveiller <span className="n">{compte.sensible || 0}</span>
-        </div>
+        </button>
       </div>
 
       <div className="filter-bar">

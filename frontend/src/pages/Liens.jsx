@@ -51,7 +51,7 @@ export default function Liens() {
       <div className="page-head">
         <div>
           <h1>Dépendances</h1>
-          <p>Quand une promesse que vous avez faite dépend de quelqu'un d'autre, l'agent propose le lien. À vous de trancher : il ne le décide jamais seul.</p>
+          <p>Quand une promesse que vous avez faite dépend de quelqu'un d'autre, l'agent propose le lien. À vous de trancher, il ne le décide jamais seul.</p>
         </div>
       </div>
 
@@ -63,9 +63,9 @@ export default function Liens() {
 
       <div className="chip-row">
         {FILTRES.map(([k, label]) => (
-          <div key={k || 'all'} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
+          <button type="button" key={k || 'all'} className={'chip' + (filtre === k ? ' active' : '')} onClick={() => setFiltre(k)}>
             {label} <span className="n">{compte[k] || 0}</span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -93,9 +93,9 @@ export default function Liens() {
                   <td>
                     {l.statut === 'candidat' ? (
                       <div className="row-actions">
-                        <button className="btn-icon primary" title="Confirmer ce lien"
+                        <button className="btn-icon primary" aria-label="Confirmer ce lien" title="Confirmer ce lien"
                           disabled={busy === l.id} onClick={() => decider(l.id, 'confirm')}><Icone nom="etat-livre" /></button>
-                        <button className="btn-icon" title="Ce lien n'existe pas"
+                        <button className="btn-icon" aria-label="Ce lien n'existe pas" title="Ce lien n'existe pas"
                           disabled={busy === l.id} onClick={() => decider(l.id, 'reject')}><Icone nom="action-rejeter" /></button>
                       </div>
                     ) : (
