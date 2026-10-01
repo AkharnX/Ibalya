@@ -88,6 +88,43 @@ function Confidentialite({ valeur, onChange, onEnregistrer }) {
   )
 }
 
+// Champ d'adresses à pastilles : on tape une adresse, Entrée (ou virgule) la
+// transforme en pastille retirable. Plus lisible qu'un texte libre, et on voit
+// d'un coup ce qui est enregistré. La valeur reste une chaîne (une adresse par
+// ligne) pour ne rien changer côté serveur.
+function ChampAdresses({ value, onChange }) {
+  const liste = (value || '').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)
+  const [saisie, setSaisie] = useState('')
+  const estEmail = (e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
+  const maj = (arr) => onChange(arr.join('\n'))
+  const ajouter = (txt) => {
+    const e = (txt || '').trim().replace(/[,;]+$/, '')
+    if (!e) return true
+    if (!estEmail(e)) { toast('Adresse invalide : ' + e, true); return false }
+    if (!liste.some((x) => x.toLowerCase() === e.toLowerCase())) maj([...liste, e])
+    setSaisie('')
+    return true
+  }
+  const retirer = (e) => maj(liste.filter((x) => x !== e))
+  const onKey = (ev) => {
+    if (ev.key === 'Enter' || ev.key === ',' || ev.key === ';') { ev.preventDefault(); ajouter(saisie) }
+    else if (ev.key === 'Backspace' && !saisie && liste.length) retirer(liste[liste.length - 1])
+  }
+  return (
+    <div className="chips" onClick={(e) => e.currentTarget.querySelector('input')?.focus()}>
+      {liste.map((e) => (
+        <span className="chip" key={e}>{e}
+          <button type="button" className="chip-x" aria-label={'Retirer ' + e} onClick={() => retirer(e)}>×</button>
+        </span>
+      ))}
+      <input className="chip-input" type="email" value={saisie} autoComplete="off"
+        placeholder={liste.length ? 'Ajouter…' : 'perso@gmail.com'}
+        onChange={(e) => setSaisie(e.target.value)} onKeyDown={onKey}
+        onBlur={() => ajouter(saisie)} />
+    </div>
+  )
+}
+
 export default function Reglages() {
   const [settings, setSettings] = useState({
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
@@ -180,9 +217,9 @@ export default function Reglages() {
           <EditeurSignature s={settings} onChange={(v) => setSettings((p) => ({ ...p, identite_signature: v }))} />
           <div className="setting">
             <label htmlFor="adresses_soi">Mes autres adresses</label>
-            <textarea id="adresses_soi" rows={2} value={settings.adresses_soi} onChange={set('adresses_soi')}
-              placeholder="perso@gmail.com&#10;prenom.nom@autre.fr" />
-            <p className="help">Vos autres adresses (perso, alias), une par ligne. L’agent ne vous
+            <ChampAdresses value={settings.adresses_soi}
+              onChange={(v) => setSettings((p) => ({ ...p, adresses_soi: v }))} />
+            <p className="help">Vos autres adresses (perso, alias) : tapez-en une et appuyez sur Entrée. L’agent ne vous
               prendra plus pour un interlocuteur quand vous apparaissez via l’une d’elles.</p>
           </div>
           <button className="primary" onClick={save}>Enregistrer</button>
