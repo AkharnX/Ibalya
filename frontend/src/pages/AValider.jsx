@@ -45,8 +45,11 @@ export default function AValider() {
                 <tr key={d.id}>
                   <td className="sub">{d.to_email}</td>
                   <td>
-                    <p className="eng-title">{d.subject}</p>
-                    <p className="eng-flow">{d.body.slice(0, 90).replace(/\n/g, ' ')}…</p>
+                    <button type="button" className="msg-open" onClick={() => setSelected(d)}
+                      aria-label={`Lire le message : ${d.subject}`}>
+                      <span className="eng-title">{d.subject}</span>
+                      <span className="eng-flow">{d.body.slice(0, 90).replace(/\n/g, ' ')}…</span>
+                    </button>
                   </td>
                   <td style={{ maxWidth: 260 }}>
                     <span className="sub">{d.detection_titre || d.engagement_objet || '–'}</span>
