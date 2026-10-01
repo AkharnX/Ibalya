@@ -41,7 +41,7 @@ export default function Agent() {
         if (payload[k] === '' || payload[k] == null) delete payload[k]
       }
       await api('/capsule', { method: 'PUT', body: JSON.stringify({ facts: payload, intentions }) })
-      toast("Enregistré — l'agent en tiendra compte dès le prochain cycle")
+      toast("Enregistré, l'agent en tiendra compte dès le prochain cycle")
     } catch (e) { toast(e.message, true) } finally { setSaving(false) }
   }
 
@@ -73,7 +73,7 @@ export default function Agent() {
 
       <h3>Ce que je comprends de votre activité</h3>
       <p className="help">
-        Déduit automatiquement de vos échanges — corrigez ce qui est faux. Ces informations guident
+        Déduit automatiquement de vos échanges, corrigez ce qui est faux. Ces informations guident
         l'extraction des engagements et le niveau de priorité des alertes.
       </p>
 
@@ -176,7 +176,7 @@ export default function Agent() {
         se cale sur votre réalité en deux à trois semaines.
       </p>
       {!rules.length ? (
-        <Empty>Aucune règle pour l'instant — corrigez un engagement pour en créer une.</Empty>
+        <Empty>Aucune règle pour l'instant, corrigez un engagement pour en créer une.</Empty>
       ) : (
         <div className="tbl-wrap">
           <table>

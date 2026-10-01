@@ -183,7 +183,7 @@ func (s *Server) chatEngagements(ctx context.Context, refs map[string]store.Sour
 		e.Ref = fmt.Sprintf("e%d", n)
 		label := e.Objet
 		if e.Interlocuteur != "" {
-			label += " — " + e.Interlocuteur
+			label += " · " + e.Interlocuteur
 		}
 		refs[e.Ref] = store.SourceChat{Label: label, ThreadID: deref(threadID)}
 		out = append(out, e)
@@ -283,7 +283,7 @@ func (s *Server) chatMessages(ctx context.Context, question string, refs map[str
 		m.Ref = fmt.Sprintf("m%d", n)
 		label := "Fil « " + m.Fil + " »"
 		if m.Date != "" {
-			label += " — " + m.Date
+			label += " · " + m.Date
 		}
 		refs[m.Ref] = store.SourceChat{Label: label, ThreadID: threadID}
 		out = append(out, m)

@@ -53,13 +53,13 @@ export default function SourcePanel({ engagementId, threadId, action, onAction, 
                   <div className="msg-head">
                     <div>
                       <b>{m.sender}</b>
-                      <span className="msg-to">→ {(m.recipients || []).join(', ') || '—'}</span>
+                      <span className="msg-to">→ {(m.recipients || []).join(', ') || '–'}</span>
                     </div>
                     <span className="msg-date">{fmtDT(m.sent_at)}</span>
                   </div>
                   {m.est_source && <span className="msg-badge">Message d’origine</span>}
                   {m.status === 'excluded' && (
-                    <span className="msg-badge exclu">Écarté par le pré-filtre — non analysé</span>
+                    <span className="msg-badge exclu">Écarté par le pré-filtre, non analysé</span>
                   )}
                   <p className="msg-subject">{m.subject}</p>
                   <pre className="msg-body">{m.body || '(corps vide)'}</pre>

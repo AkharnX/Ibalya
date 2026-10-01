@@ -130,7 +130,7 @@ a{color:inherit;}
 .lp-liste-securite li{
   font-size:14.5px;color:var(--muted);padding-left:22px;position:relative;line-height:1.55;
 }
-.lp-liste-securite li::before{content:"—";position:absolute;left:0;color:var(--primary);}
+.lp-liste-securite li::before{content:"–";position:absolute;left:0;color:var(--primary);}
 .lp-liste-securite b{color:var(--foreground);font-weight:500;}
 .lp-config{
   border:1px solid var(--border);background:#06080c;padding:26px 22px;

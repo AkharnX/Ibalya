@@ -281,7 +281,7 @@ export default function App() {
         </nav>
         <div className="sidebar-foot">
           <div className="sidebar-user">
-            <b>{user?.nom || user?.email || '—'}</b>
+            <b>{user?.nom || user?.email || '–'}</b>
             <span>{user?.email}</span>
           </div>
           <div style={{ display: 'flex', gap: 2 }}>

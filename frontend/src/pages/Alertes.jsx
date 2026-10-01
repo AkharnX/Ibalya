@@ -40,11 +40,11 @@ export default function Alertes() {
       <details className="legend">
         <summary>Les 5 types d'alerte expliqués</summary>
         <ul>
-          <li><b>Échéance à risque</b> — une promesse arrive à échéance sans signe d'avancement récent.</li>
-          <li><b>Silence anormal</b> — un fil avec un engagement en cours reste sans réponse plus longtemps que son rythme habituel, que le retour attendu soit celui de votre interlocuteur ou le vôtre.</li>
-          <li><b>Contradiction</b> — une promesse à un client devient intenable à cause d'un retard amont (fournisseur, prestataire).</li>
-          <li><b>Orphelin</b> — une promesse jamais suivie d'effet : ni confirmation, ni livraison, ni relance. Les oublis.</li>
-          <li><b>Surcharge</b> — trop d'échéances concentrées sur la même semaine.</li>
+          <li><b>Échéance à risque</b> : une promesse arrive à échéance sans signe d'avancement récent.</li>
+          <li><b>Silence anormal</b> : un fil avec un engagement en cours reste sans réponse plus longtemps que son rythme habituel, que le retour attendu soit celui de votre interlocuteur ou le vôtre.</li>
+          <li><b>Contradiction</b> : une promesse à un client devient intenable à cause d'un retard amont (fournisseur, prestataire).</li>
+          <li><b>Orphelin</b> : une promesse jamais suivie d'effet : ni confirmation, ni livraison, ni relance. Les oublis.</li>
+          <li><b>Surcharge</b> : trop d'échéances concentrées sur la même semaine.</li>
         </ul>
       </details>
 

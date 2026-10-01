@@ -8,7 +8,7 @@ export const entryLabel = (v) => {
   if (v && typeof v === 'object') {
     const nom = v.nom || v.name || ''
     const email = v.email || ''
-    if (nom && email) return `${nom} — ${email}`
+    if (nom && email) return `${nom} · ${email}`
     return nom || email || JSON.stringify(v)
   }
   return String(v ?? '')

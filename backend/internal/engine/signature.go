@@ -32,7 +32,7 @@ func SignatureComposee(prenom, nom, fonction, societe string) string {
 		return ""
 	}
 	lignes := []string{complet}
-	if r := strings.Trim(strings.TrimSpace(fonction)+" — "+strings.TrimSpace(societe), " —"); r != "" {
+	if r := strings.Trim(strings.TrimSpace(fonction)+", "+strings.TrimSpace(societe), " ,"); r != "" {
 		lignes = append(lignes, r)
 	}
 	return strings.Join(lignes, "\n")

@@ -95,19 +95,19 @@ export default function Synthese() {
       {!syn && <SqueletteKpi />}
       {syn && <div className="kpi-row">
         <button className="kpi" onClick={() => navigate('/suivi')}>
-          <span className="lbl">Actifs</span><span className="num">{k?.engagements_suivis ?? '—'}</span>
+          <span className="lbl">Actifs</span><span className="num">{k?.engagements_suivis ?? '–'}</span>
         </button>
         <button className="kpi warn" onClick={() => navigate('/suivi?cat=retard')}>
-          <span className="lbl">En retard</span><span className="num">{k?.retards ?? '—'}</span>
+          <span className="lbl">En retard</span><span className="num">{k?.retards ?? '–'}</span>
         </button>
         <button className="kpi risk flag" onClick={() => navigate('/suivi?cat=risque')}>
-          <span className="lbl">Critiques</span><span className="num">{k?.risques ?? '—'}</span>
+          <span className="lbl">Critiques</span><span className="num">{k?.risques ?? '–'}</span>
         </button>
         <button className="kpi accent flag" onClick={() => navigate('/a-valider')}>
-          <span className="lbl">À valider</span><span className="num">{k?.messages_a_valider ?? '—'}</span>
+          <span className="lbl">À valider</span><span className="num">{k?.messages_a_valider ?? '–'}</span>
         </button>
         <div className="kpi static">
-          <span className="lbl">Messages lus / 30j</span><span className="num">{k?.messages_lus ?? '—'}</span>
+          <span className="lbl">Messages lus / 30j</span><span className="num">{k?.messages_lus ?? '–'}</span>
         </div>
       </div>}
 

@@ -88,7 +88,7 @@ export default function Liens() {
                   <td className="obj">
                     <button className="lien-source" onClick={() => setSourceId(l.aval_id)}>{l.aval_objet}</button>
                   </td>
-                  <td className="sub">{l.raison || '—'}</td>
+                  <td className="sub">{l.raison || '–'}</td>
                   <td className="sub">{fmtDate(l.created_at)}</td>
                   <td>
                     {l.statut === 'candidat' ? (

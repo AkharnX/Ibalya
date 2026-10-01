@@ -178,7 +178,7 @@ class MockProvider(LLMProvider):
                 remarques.append({"type": "manque",
                                   "message": "Le message ne pose aucune question claire : le destinataire ne saura pas quoi répondre."})
             if len(body) > 900:
-                remarques.append({"type": "ton", "message": "Message assez long — un dirigeant lit vite, deux paragraphes suffisent."})
+                remarques.append({"type": "ton", "message": "Message assez long, un dirigeant lit vite, deux paragraphes suffisent."})
             return {"verdict": "a_revoir" if remarques else "pret_a_envoyer",
                     "remarques": remarques, "suggestion": ""}
         if "capsule" in system:
@@ -199,7 +199,7 @@ class MockProvider(LLMProvider):
             req = {}
         objet = req.get("engagement_objet") or "notre dossier en cours"
         return {
-            "subject": f"Suivi — {objet[:60]}",
+            "subject": f"Suivi : {objet[:60]}",
             "body": (f"Bonjour,\n\nSauf erreur de ma part, je suis sans nouvelles concernant "
                      f"« {objet} ». Pouvez-vous me faire un point rapide sur l'avancement "
                      f"et me confirmer le délai ?\n\nMerci d'avance,\nBien cordialement"),

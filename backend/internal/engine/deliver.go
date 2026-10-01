@@ -194,7 +194,7 @@ func (e *Engine) GenerateDigest(ctx context.Context, dtype string) (*DigestConte
 	// envoi du digest par email au dirigeant si activé (Réglages)
 	if e.Store.GetSetting(ctx, "digest_email", "0") == "1" {
 		if to, _ := e.Canal(ctx).AccountEmail(ctx); to != "" {
-			subject := "Votre digest Ibalya — " + time.Now().Format("02/01/2006")
+			subject := "Votre digest Ibalya du " + time.Now().Format("02/01/2006")
 			// Le digest vient d'Ibalya, pas du dirigeant : il part par
 			// l'expéditeur de service quand il est configuré. Passer par sa
 			// boîte le fait apparaître dans ses messages envoyés, et Gmail y
@@ -224,7 +224,7 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 	// pas se noyer sous les alertes.
 	if r := dc.JoursAvantReconnexion; r >= 0 && r <= 2 {
 		if r <= 0 {
-			b.WriteString("\n⚠ ACTION REQUISE — votre connexion Gmail a expiré. " +
+			b.WriteString("\n⚠ ACTION REQUISE : votre connexion Gmail a expiré. " +
 				"Reconnectez votre boîte dans Réglages, Connexion, sans quoi l'agent ne lit plus vos mails.\n")
 		} else {
 			fmt.Fprintf(&b, "\n⚠ Votre connexion Gmail expire dans %d jour(s). "+
@@ -232,7 +232,7 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 		}
 	}
 	if len(dc.Detections) > 0 {
-		b.WriteString("\n— ALERTES —\n")
+		b.WriteString("\nALERTES\n")
 		for _, d := range dc.Detections {
 			marque := ""
 			if d.Critique {
@@ -242,7 +242,7 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 		}
 	}
 	if len(dc.Engagements) > 0 {
-		b.WriteString("\n— ENGAGEMENTS À RISQUE —\n")
+		b.WriteString("\nENGAGEMENTS À RISQUE\n")
 		for _, e := range dc.Engagements {
 			ech := "sans échéance"
 			if e.Echeance != nil {
@@ -252,7 +252,7 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 		}
 	}
 	if len(dc.Brouillons) > 0 {
-		fmt.Fprintf(&b, "\n— SUGGESTIONS —\n%d message(s) pré-rédigé(s) vous attendent.\n", len(dc.Brouillons))
+		fmt.Fprintf(&b, "\nSUGGESTIONS\n%d message(s) pré-rédigé(s) vous attendent.\n", len(dc.Brouillons))
 	}
 	if len(dc.Detections) == 0 && len(dc.Engagements) == 0 {
 		b.WriteString("\nRien à signaler au-dessus du seuil aujourd'hui.\n")
@@ -267,7 +267,7 @@ func (e *Engine) renderDigestText(dc *DigestContent) string {
 		// Le réglage « recevoir le digest par email » se coupe dans les Réglages.
 		fmt.Fprintf(&b, "Pour ne plus recevoir ce résumé par email, désactivez-le dans vos Réglages : %s/app/reglages\n", base)
 	}
-	b.WriteString("\n— Ibalya\n")
+	b.WriteString("\nIbalya\n")
 	return b.String()
 }
 
@@ -434,7 +434,7 @@ func (e *Engine) draftFor(ctx context.Context, s EngagementSuivi, action ActionS
 	facts := e.capsuleLLM(ctx)
 	contexte := contexteLigne(s)
 	if s.Blocage != nil {
-		contexte += fmt.Sprintf(" — cause amont : « %s » (%s)", s.Blocage.AmontObjet, s.Blocage.AmontEmetteur)
+		contexte += fmt.Sprintf(", cause amont : « %s » (%s)", s.Blocage.AmontObjet, s.Blocage.AmontEmetteur)
 	}
 	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{
 		DetectionType: s.Categorie, DetectionTitre: action.Label, DetectionDetail: contexte,
