@@ -51,7 +51,7 @@ export default function Liens() {
       <div className="page-head">
         <div>
           <h1>Dépendances</h1>
-          <p>Quand une promesse que vous avez faite dépend de quelqu'un d'autre, l'agent propose le lien. À vous de trancher : il ne le décide jamais seul.</p>
+          <p>Quand une promesse que vous avez faite dépend de quelqu'un d'autre, l'agent propose le lien. À vous de trancher, il ne le décide jamais seul.</p>
         </div>
       </div>
 
