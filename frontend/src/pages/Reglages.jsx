@@ -130,13 +130,13 @@ function ChampAdresses({ value, onChange }) {
     else if (ev.key === 'Backspace' && !saisie && liste.length) retirer(liste[liste.length - 1])
   }
   return (
-    <div className="chips" onClick={(e) => e.currentTarget.querySelector('input')?.focus()}>
+    <div className="adr-champ" onClick={(e) => e.currentTarget.querySelector('input')?.focus()}>
       {liste.map((e) => (
-        <span className="chip" key={e}>{e}
-          <button type="button" className="chip-x" aria-label={'Retirer ' + e} onClick={() => retirer(e)}>×</button>
+        <span className="adr-chip" key={e}>{e}
+          <button type="button" className="adr-x" aria-label={'Retirer ' + e} onClick={() => retirer(e)}>×</button>
         </span>
       ))}
-      <input className="chip-input" type="email" value={saisie} autoComplete="off"
+      <input className="adr-input" type="email" value={saisie} autoComplete="off"
         placeholder={liste.length ? 'Ajouter…' : 'perso@gmail.com'}
         onChange={(e) => setSaisie(e.target.value)} onKeyDown={onKey}
         onBlur={() => ajouter(saisie)} />
@@ -200,7 +200,7 @@ export default function Reglages() {
         </div>
       </div>
       <div className="reglages-grille">
-        <div className="panel">
+        <div className="panel panel-large">
           <h3>Connexion</h3>
           <Canal statut={status} onChange={load} />
           <div className="setting">

@@ -379,16 +379,20 @@ label{
   letter-spacing:.12em;color:var(--muted-foreground);margin:14px 0 5px;
 }
 .setting{margin-bottom:18px;}
-/* Champ d'adresses à pastilles (Mes autres adresses) */
-.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:7px 8px;border:1px solid var(--border);
+/* Champ d'adresses à pastilles (Mes autres adresses). Classes adr-* pour ne pas
+   entrer en collision avec les .chip des filtres. */
+.adr-champ{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:7px 8px;border:1px solid var(--border);
   border-radius:8px;background:var(--background);cursor:text;min-height:40px;}
-.chips:focus-within{border-color:var(--primary);}
-.chip{display:inline-flex;align-items:center;gap:4px;background:var(--secondary);border:1px solid var(--border);
-  border-radius:999px;padding:3px 4px 3px 11px;font-size:13px;white-space:nowrap;}
-.chip-x{border:none;background:none;color:var(--muted-foreground);cursor:pointer;font-size:16px;line-height:1;
+/* Focus discret : pas de halo bleu sur tout le champ, juste un bord un peu marqué. */
+.adr-champ:focus-within{border-color:var(--line-strong);}
+.adr-chip{display:inline-flex;align-items:center;gap:4px;background:var(--secondary);border:1px solid var(--border);
+  border-radius:999px;padding:3px 4px 3px 11px;font-size:13px;white-space:nowrap;transition:border-color .12s,background .12s;}
+/* Le retour visuel est sur la pastille au survol : on voit qu'elle est retirable. */
+.adr-chip:hover{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--secondary));}
+.adr-x{border:none;background:none;color:var(--muted-foreground);cursor:pointer;font-size:16px;line-height:1;
   padding:0 4px;border-radius:50%;}
-.chip-x:hover{color:var(--primary);}
-.chip-input{flex:1;min-width:140px;border:none;outline:none;background:none;color:inherit;font:inherit;
+.adr-chip:hover .adr-x,.adr-x:hover{color:var(--primary);}
+.adr-input{flex:1;min-width:140px;border:none;outline:none;background:none;color:inherit;font:inherit;
   font-size:14px;padding:4px 2px;}
 
 /* ── formulaire de la capsule ── */
