@@ -443,6 +443,27 @@ label{
 /* ═══ panneau latéral ═══ */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.2s;z-index:40;}
 .overlay.open{opacity:1;pointer-events:auto;}
+
+/* ═══ assistant de configuration (pas-à-pas nouveaux venus) ═══ */
+.overlay:has(.wiz){display:flex;align-items:center;justify-content:center;padding:24px;}
+.wiz{background:var(--card);border:1px solid var(--border);width:100%;max-width:560px;max-height:calc(100vh - 48px);
+  overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.18);}
+.wiz-corps{padding:32px 32px 24px;display:flex;flex-direction:column;}
+@media (max-width:600px){.wiz-corps{padding:24px 18px 18px;}}
+.wiz-kicker{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--primary);margin-bottom:12px;}
+.wiz-progress{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.wiz-progress span{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted-foreground);}
+.wiz-barre{height:3px;background:var(--secondary);overflow:hidden;}
+.wiz-barre > div{height:100%;background:var(--primary);transition:width .25s ease;}
+.wiz-q{font-family:var(--font-serif);font-weight:600;font-size:23px;letter-spacing:-.01em;line-height:1.2;margin:0 0 10px;}
+.wiz-aide{color:var(--muted-foreground);font-size:13.5px;line-height:1.55;margin:0 0 20px;max-width:46ch;}
+.wiz-champ{margin-bottom:28px;}
+.wiz-champ input,.wiz-champ textarea{width:100%;font-size:15px;padding:10px 12px;}
+.wiz-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:480px){.wiz-duo{grid-template-columns:1fr;}}
+.wiz-tags .tag-add input{font-size:15px;}
+.wiz-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.wiz-foot-droite{display:flex;align-items:center;gap:8px;}
 .draft-panel{
   position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;z-index:41;
   background:var(--card);border-left:1px solid var(--border);

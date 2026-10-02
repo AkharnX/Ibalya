@@ -198,6 +198,11 @@ export default function Reglages() {
           <h1>Réglages</h1>
           <p>La connexion au canal, le seuil à partir duquel l'agent vous parle, et la trace de tout ce qu'il a fait.</p>
         </div>
+        <div className="page-actions">
+          <button className="btn" onClick={() => window.dispatchEvent(new Event('ibalya:assistant-config'))}>
+            Assistant de configuration
+          </button>
+        </div>
       </div>
       <div className="reglages-grille">
         <div className="panel panel-large">
