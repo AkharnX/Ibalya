@@ -118,6 +118,15 @@ func provisionnerRole(ctx context.Context, admin *pgxpool.Pool, appURL string) e
 
 // clé de contexte portant la connexion liée au tenant courant.
 type connTenant struct{}
+type tenantIDKey struct{}
+
+// TenantID renvoie l'id de l'espace (tenant) courant, tel que posé par EnTenant.
+// Permet aux couches supérieures de cloisonner un état en mémoire par boîte,
+// pas seulement les données en base (cf. l'état de cycle du moteur).
+func TenantID(ctx context.Context) (int64, bool) {
+	id, ok := ctx.Value(tenantIDKey{}).(int64)
+	return id, ok
+}
 
 // EnTenant exécute fn avec le tenant positionné sur une connexion dédiée : les
 // politiques RLS ne laissent alors voir et écrire QUE les données de cet
@@ -137,7 +146,9 @@ func (s *Store) EnTenant(ctx context.Context, userID int64, fn func(ctx context.
 		return err
 	}
 	defer conn.Exec(context.Background(), "SELECT set_config('app.user_id', '', false)")
-	return fn(context.WithValue(ctx, connTenant{}, conn))
+	ctx = context.WithValue(ctx, connTenant{}, conn)
+	ctx = context.WithValue(ctx, tenantIDKey{}, userID)
+	return fn(ctx)
 }
 
 // Querier : dénominateur commun d'un pool, d'une connexion et d'une transaction.

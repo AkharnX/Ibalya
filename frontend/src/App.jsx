@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Icone from './components/Icone'
 import Recherche from './components/Recherche'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { api, AuthError, login as apiLogin, logout as apiLogout, toast, estVueCombinee, definirVueCombinee } from './api'
 import { FournisseurEtatAgent, libelleCycle, useEtatAgent } from './etatAgent'
 import Synthese from './pages/Synthese'
 import Miroir from './pages/Miroir'
@@ -224,6 +224,71 @@ function BandeauReconnexion() {
   )
 }
 
+// Sélecteur de boîte : le bloc du bas s'ouvre au clic sur un menu listant les
+// boîtes du compte. En choisir une recharge l'app sur ses données (état React
+// entièrement réinitialisé, aucun résidu). Se ferme au clic dehors ou sur Échap.
+function BoiteSwitcher() {
+  const [espaces, setEspaces] = useState(null)
+  const [ouvert, setOuvert] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => { api('/espaces').then(setEspaces).catch(() => {}) }, [])
+  useEffect(() => {
+    if (!ouvert) return
+    const dehors = (e) => { if (ref.current && !ref.current.contains(e.target)) setOuvert(false) }
+    const echap = (e) => { if (e.key === 'Escape') setOuvert(false) }
+    document.addEventListener('mousedown', dehors)
+    document.addEventListener('keydown', echap)
+    return () => { document.removeEventListener('mousedown', dehors); document.removeEventListener('keydown', echap) }
+  }, [ouvert])
+  if (!espaces || espaces.length === 0) return null
+  const actif = espaces.find((e) => e.actif) || espaces[0]
+  const nom = (e) => e.libelle || e.email || ('Boîte ' + e.id)
+  const multi = espaces.length > 1
+  const combinee = multi && estVueCombinee()
+  const changer = async (id) => {
+    const memeBoite = String(id) === String(actif.id)
+    definirVueCombinee(false) // sortir de la vue combinée en choisissant une boîte
+    if (memeBoite) {
+      if (combinee) { window.location.reload(); return } // on quittait la vue combinée
+      setOuvert(false); return
+    }
+    try { await api(`/espaces/${id}/activer`, { method: 'POST' }); window.location.reload() }
+    catch (e) { toast(e.message, true) }
+  }
+  const voirToutes = () => { definirVueCombinee(true); window.location.reload() }
+  return (
+    <div className={'boite-switch' + (ouvert ? ' ouvert' : '')} ref={ref}>
+      {ouvert && (
+        <div className="boite-menu" role="listbox">
+          {multi && (
+            <button type="button" role="option" aria-selected={combinee}
+              className={'boite-opt' + (combinee ? ' actif' : '')} onClick={voirToutes}>
+              <span className="boite-opt-nom">Toutes les boîtes</span>
+              {combinee && <Icone nom="etat-livre" />}
+            </button>
+          )}
+          {espaces.map((e) => (
+            <button key={e.id} type="button" role="option" aria-selected={!combinee && e.actif}
+              className={'boite-opt' + (!combinee && e.actif ? ' actif' : '')} onClick={() => changer(e.id)}>
+              <span className="boite-opt-nom" title={e.email || ''}>{nom(e)}</span>
+              {!combinee && e.actif && <Icone nom="etat-livre" />}
+            </button>
+          ))}
+          <Link className="boite-gerer" to="/reglages" onClick={() => setOuvert(false)}>Gérer mes boîtes</Link>
+        </div>
+      )}
+      <button type="button" className="boite-trigger" onClick={() => setOuvert((v) => !v)}
+        aria-haspopup="listbox" aria-expanded={ouvert}>
+        <span className="boite-trigger-txt">
+          <span className="boite-trigger-label">{combinee ? 'Vue' : 'Boîte active'}</span>
+          <span className="boite-trigger-nom">{combinee ? 'Toutes les boîtes' : nom(actif)}</span>
+        </span>
+        <span className="boite-chevron" aria-hidden="true">▾</span>
+      </button>
+    </div>
+  )
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(null)
   const [loginError, setLoginError] = useState('')
@@ -246,6 +311,18 @@ export default function App() {
       })
   }, [])
   useEffect(() => { check() }, [check])
+
+  // Retour d'un raccordement de boîte (redirection OAuth). On affiche le résultat
+  // puis on nettoie l'URL : ?connected=1 = succès, ?erreur=… = refus (par ex.
+  // adresse déjà raccordée à une autre boîte).
+  useEffect(() => {
+    if (!authed) return
+    const p = new URLSearchParams(window.location.search)
+    const err = p.get('erreur'); const ok = p.get('connected')
+    if (err) toast(err, true)
+    else if (ok) toast('Boîte raccordée. L’analyse démarre.')
+    if (err || ok) window.history.replaceState({}, '', window.location.pathname)
+  }, [authed])
 
   useEffect(() => {
     document.title = TITRES[pathname] ? `${TITRES[pathname]} · Ibalya` : 'Ibalya'
@@ -281,19 +358,22 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <div className="sidebar-user">
-            <b>{user?.nom || user?.email || '–'}</b>
-            <span>{user?.email}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 2 }}>
-            <button className="icon-btn" aria-label={dark ? 'Thème clair' : 'Thème sombre'} title={dark ? 'Thème clair' : 'Thème sombre'}
-              onClick={() => setDark(!dark)}>
-              <Icone nom={dark ? 'divers-theme-clair' : 'divers-theme-sombre'} />
-            </button>
-            <button className="icon-btn" aria-label="Se déconnecter" title="Se déconnecter" onClick={async () => {
-              try { await apiLogout() } catch { /* session déjà close */ }
-              setAuthed(false); setUser(null)
-            }}><Icone nom="divers-deconnexion" /></button>
+          <BoiteSwitcher />
+          <div className="sidebar-foot-bas">
+            <div className="sidebar-user">
+              <b>{user?.nom || user?.email || '—'}</b>
+              <span>{user?.email}</span>
+            </div>
+            <div className="sidebar-foot-actions">
+              <button className="icon-btn" aria-label={dark ? 'Thème clair' : 'Thème sombre'} title={dark ? 'Thème clair' : 'Thème sombre'}
+                onClick={() => setDark(!dark)}>
+                <Icone nom={dark ? 'divers-theme-clair' : 'divers-theme-sombre'} />
+              </button>
+              <button className="icon-btn" aria-label="Se déconnecter" title="Se déconnecter" onClick={async () => {
+                try { await apiLogout() } catch { /* session déjà close */ }
+                setAuthed(false); setUser(null)
+              }}><Icone nom="divers-deconnexion" /></button>
+            </div>
           </div>
         </div>
       </aside>
