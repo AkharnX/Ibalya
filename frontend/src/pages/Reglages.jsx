@@ -88,6 +88,85 @@ function Confidentialite({ valeur, onChange, onEnregistrer }) {
   )
 }
 
+// Gestion des boîtes du compte : lister, basculer, ajouter, supprimer. Chaque
+// boîte est un espace isolé ; basculer recharge l'app sur ses données.
+function MesBoites() {
+  const [espaces, setEspaces] = useState(null)
+  const [libelle, setLibelle] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const charger = useCallback(() => {
+    api('/espaces').then(setEspaces).catch((e) => toast(e.message, true))
+  }, [])
+  useEffect(charger, [charger])
+
+  const basculer = async (id) => {
+    try { await api(`/espaces/${id}/activer`, { method: 'POST' }); window.location.reload() }
+    catch (e) { toast(e.message, true) }
+  }
+  const ajouter = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      const r = await api('/espaces', { method: 'POST', body: JSON.stringify({ libelle: libelle.trim() || 'Nouvelle boîte' }) })
+      // On bascule aussitôt sur la nouvelle boîte : au rechargement, le panneau
+      // « Connexion » ci-dessous raccorde CETTE boîte.
+      await api(`/espaces/${r.id}/activer`, { method: 'POST' })
+      window.location.reload()
+    } catch (e) { toast(e.message, true); setBusy(false) }
+  }
+  const supprimer = async (e) => {
+    if (!window.confirm(`Supprimer la boîte « ${e.libelle || e.email || e.id} » et toutes ses données ? Votre messagerie d'origine n'est pas touchée.`)) return
+    try {
+      await api(`/espaces/${e.id}`, { method: 'DELETE' })
+      if (e.actif) { window.location.reload(); return }
+      charger()
+    } catch (err) { toast(err.message, true) }
+  }
+
+  return (
+    <div className="panel panel-large">
+      <h3>Mes boîtes</h3>
+      <p className="help">
+        Chaque boîte est un espace isolé, avec ses propres engagements et alertes. Vous basculez de
+        l'une à l'autre ; la boîte active est celle que vous voyez partout dans l'application.
+      </p>
+      <div className="tbl-wrap">
+        <table>
+          <thead><tr><th>Boîte</th><th>Adresse</th><th>État</th><th><span className="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            {(espaces || []).map((e) => (
+              <tr key={e.id}>
+                <td><b>{e.libelle || '—'}</b>{e.actif && <span className="muted"> · active</span>}</td>
+                <td className="sub">{e.email || <span className="muted">non raccordée</span>}</td>
+                <td className="sub">{e.connecte ? 'Connectée' : 'À raccorder'}</td>
+                <td>
+                  {!e.actif && <button className="ghost" onClick={() => basculer(e.id)}>Basculer</button>}
+                  {(espaces || []).length > 1 && <button className="ghost" onClick={() => supprimer(e)}>Supprimer</button>}
+                </td>
+              </tr>
+            ))}
+            {espaces && espaces.length === 0 && (
+              <tr><td colSpan={4} className="sub">Aucune boîte.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="setting">
+        <label htmlFor="new-boite">Ajouter une boîte</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input id="new-boite" placeholder="Nom de la boîte (ex. contact@, perso…)"
+            value={libelle} onChange={(ev) => setLibelle(ev.target.value)} />
+          <button className="primary" disabled={busy} onClick={ajouter}>
+            {busy ? 'Création…' : 'Ajouter et raccorder'}
+          </button>
+        </div>
+        <p className="help">Crée une boîte vide, bascule dessus, puis vous la raccordez via « Connexion » ci-dessous.</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Reglages() {
   const [settings, setSettings] = useState({
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
@@ -144,6 +223,7 @@ export default function Reglages() {
         </div>
       </div>
       <div className="reglages-grille">
+        <MesBoites />
         <div className="panel">
           <h3>Connexion</h3>
           <Canal statut={status} onChange={load} />

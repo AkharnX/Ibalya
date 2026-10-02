@@ -383,4 +383,63 @@ BEGIN
         WITH CHECK (user_id = current_setting('app.user_id', true)::bigint)$p$, t);
   END LOOP;
 END $rls$;
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Multi-boîtes, étape 3 : un login (compte) possède plusieurs espaces.
+--
+-- Chaque ligne 'users' reste un ESPACE de données isolé (son id sert
+-- d'app.user_id partout, RLS inchangée). On ajoute au-dessus une table
+-- 'comptes' qui porte désormais l'identité de connexion (email, mot de passe).
+-- Un compte possède un ou plusieurs espaces ; la session mémorise l'espace
+-- actif (sessions.user_id). Additif et rétrocompatible : chaque user existant
+-- devient un compte parent qui reprend ses identifiants, et reste son premier
+-- espace ; les sessions vivantes reçoivent leur compte_id (pas de déconnexion).
+-- ════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS comptes (
+  id BIGSERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  nom TEXT NOT NULL DEFAULT '',
+  password_hash TEXT NOT NULL,
+  actif BOOLEAN NOT NULL DEFAULT true,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  derniere_connexion TIMESTAMPTZ
+);
+
+-- Un espace (ligne users) appartient à un compte et porte un libellé lisible.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS compte_id BIGINT REFERENCES comptes(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS libelle TEXT NOT NULL DEFAULT '';
+
+-- Migration sans perte : chaque user existant sans compte devient un compte
+-- parent (identifiants recopiés), puis se rattache à lui. L'unicité email des
+-- deux côtés garantit l'appariement 1-1. Idempotent (WHERE compte_id IS NULL).
+INSERT INTO comptes (email, nom, password_hash, actif, cree_le, derniere_connexion)
+  SELECT u.email, u.nom, u.password_hash, u.actif, u.cree_le, u.derniere_connexion
+    FROM users u
+   WHERE u.compte_id IS NULL AND u.password_hash IS NOT NULL AND u.email IS NOT NULL
+     AND NOT EXISTS (SELECT 1 FROM comptes c WHERE lower(c.email) = lower(u.email));
+UPDATE users u SET compte_id = c.id
+  FROM comptes c
+ WHERE lower(c.email) = lower(u.email) AND u.compte_id IS NULL;
+UPDATE users SET libelle = COALESCE(NULLIF(nom, ''), email, 'Ma boîte')
+ WHERE libelle IS NULL OR libelle = '';
+
+-- Les identifiants de login vivent désormais sur 'comptes'. Sur 'users', le mot
+-- de passe n'est plus requis (un espace neuf n'a pas de login propre), et l'email
+-- (adresse de la boîte de l'espace) n'est plus unique globalement : deux espaces
+-- d'un même compte peuvent viser deux boîtes différentes, et un espace neuf n'a
+-- pas encore d'adresse. Unicité ramenée au couple (compte_id, email).
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_compte_email ON users(compte_id, email);
+CREATE INDEX IF NOT EXISTS idx_users_compte ON users(compte_id);
+
+-- Sessions : rattachées au compte (login) ; user_id devient l'ESPACE ACTIF.
+-- Remplir compte_id des sessions vivantes est CRITIQUE : sans lui, la jointure
+-- comptes de UserBySession renverrait 0 ligne et déconnecterait tout le monde.
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS compte_id BIGINT REFERENCES comptes(id) ON DELETE CASCADE;
+UPDATE sessions s SET compte_id = u.compte_id
+  FROM users u WHERE u.id = s.user_id AND s.compte_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_compte ON sessions(compte_id);
 `

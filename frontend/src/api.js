@@ -20,6 +20,13 @@ export const login = (email, motDePasse) =>
 
 export const logout = () => api('/logout', { method: 'POST' });
 
+// Boîtes (espaces) du compte connecté.
+export const espaces = () => api('/espaces');
+export const creerEspace = (libelle) =>
+  api('/espaces', { method: 'POST', body: JSON.stringify({ libelle }) });
+export const activerEspace = (id) => api(`/espaces/${id}/activer`, { method: 'POST' });
+export const supprimerEspace = (id) => api(`/espaces/${id}`, { method: 'DELETE' });
+
 // Toast minimaliste : dispatch d'un événement, écouté par <Toaster/>.
 export function toast(message, isError = false) {
   window.dispatchEvent(new CustomEvent('ibalya:toast', { detail: { message, isError } }));

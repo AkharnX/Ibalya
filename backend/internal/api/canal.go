@@ -155,6 +155,16 @@ func (s *Server) putCanal(w http.ResponseWriter, r *http.Request) {
 			httpError(w, 400, "connexion refusée, rien n'a été enregistré : "+err.Error())
 			return
 		}
+		// Garde-fou : une même adresse ne peut pas être raccordée à deux boîtes
+		// du même compte (sinon deux boîtes liraient la même messagerie).
+		if cpt := compteDe(r); cpt != nil {
+			if id, ok := s.tenantID(r); ok {
+				if dejaLa, _ := s.Store.AdresseRaccordeeAilleurs(ctx, cpt.ID, id, c.Utilisateur); dejaLa {
+					httpError(w, 409, "cette adresse est déjà raccordée à une autre de vos boîtes")
+					return
+				}
+			}
+		}
 		if mdp := strings.TrimSpace(c.MotDePasse); mdp != "" {
 			chiffre, err := s.Coffre.Chiffrer(mdp)
 			if err != nil {
@@ -171,6 +181,10 @@ func (s *Server) putCanal(w http.ResponseWriter, r *http.Request) {
 		s.Store.SetSetting(ctx, "smtp_hote", strings.TrimSpace(c.SMTPHote))
 		s.Store.SetSetting(ctx, "smtp_port", strconv.Itoa(c.SMTPPort))
 		s.Store.SetSetting(ctx, "imap_tls_skip_verify", boolStr(c.SansVerifCert))
+		// L'adresse IMAP devient l'identité de la boîte (sélecteur, unicité).
+		if id, ok := s.tenantID(r); ok {
+			s.Store.SetEspaceEmail(ctx, id, c.Utilisateur)
+		}
 	default:
 		httpError(w, 400, "type de canal inconnu : gmail ou imap")
 		return

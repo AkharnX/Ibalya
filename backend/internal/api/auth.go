@@ -24,9 +24,10 @@ const cookieSession = "ibalya_session"
 // varier la casse suffirait à repartir avec un compteur neuf.
 func normaliserEmail(e string) string { return strings.ToLower(strings.TrimSpace(e)) }
 
-type ctxUser struct{}
+type ctxUser struct{}   // l'espace actif (tenant) de la requête
+type ctxCompte struct{} // le compte (login) de la requête
 
-// utilisateur renvoie l'utilisateur de la requête, ou nil pour un accès service.
+// utilisateur renvoie l'espace actif de la requête, ou nil pour un accès service.
 func utilisateur(r *http.Request) *store.User {
 	if u, ok := r.Context().Value(ctxUser{}).(*store.User); ok {
 		return u
@@ -34,10 +35,21 @@ func utilisateur(r *http.Request) *store.User {
 	return nil
 }
 
-// acteur nomme l'auteur d'une action dans l'audit trail : l'email de
-// l'utilisateur connecté, ou « service » pour les scripts locaux.
+// compteDe renvoie le compte (login) de la requête, ou nil pour un accès service.
+func compteDe(r *http.Request) *store.Compte {
+	if c, ok := r.Context().Value(ctxCompte{}).(*store.Compte); ok {
+		return c
+	}
+	return nil
+}
+
+// acteur nomme l'auteur d'une action dans l'audit trail : l'email du compte
+// connecté (à défaut celui de l'espace), ou « service » pour les scripts locaux.
 func acteur(r *http.Request) string {
-	if u := utilisateur(r); u != nil {
+	if c := compteDe(r); c != nil && c.Email != "" {
+		return c.Email
+	}
+	if u := utilisateur(r); u != nil && u.Email != "" {
 		return u.Email
 	}
 	return "service"
@@ -143,7 +155,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 429, "trop de tentatives, réessayez dans quinze minutes")
 		return
 	}
-	u, err := s.Store.Authenticate(r.Context(), body.Email, body.MotDePasse)
+	compte, err := s.Store.Authenticate(r.Context(), body.Email, body.MotDePasse)
 	if err != nil {
 		s.limiteConnexion.Echec("ip:"+ip, cleCompte)
 		s.Store.Audit(r.Context(), "anonyme", "connexion_refusee", map[string]string{"email": body.Email})
@@ -151,16 +163,25 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.limiteConnexion.Succes("ip:"+ip, cleCompte)
-	// Plus de garde « propriétaire unique » : en multi-utilisateur, chaque
-	// compte actif ouvre sa propre session et ne voit que ses données (RLS).
-	token, expire, err := s.Store.CreateSession(r.Context(), u.ID)
+	// L'espace actif par défaut : de préférence une boîte déjà raccordée.
+	espaceID, err := s.Store.EspaceParDefaut(r.Context(), compte.ID)
+	if err != nil {
+		httpError(w, 500, "aucun espace n'est rattaché à ce compte")
+		return
+	}
+	token, expire, err := s.Store.CreateSession(r.Context(), compte.ID, espaceID)
 	if err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
 	s.poserCookie(w, token, expire)
-	s.Store.Audit(r.Context(), u.Email, "connexion", nil)
-	writeJSON(w, u)
+	s.Store.Audit(r.Context(), compte.Email, "connexion", nil)
+	// On renvoie l'espace actif (même forme que /api/me).
+	if info, err := s.Store.UserBySession(r.Context(), token); err == nil {
+		writeJSON(w, info.Espace)
+		return
+	}
+	writeJSON(w, map[string]any{"id": espaceID, "email": compte.Email, "nom": compte.Nom})
 }
 
 // POST /api/logout
@@ -184,8 +205,9 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/password — changement de son propre mot de passe
 func (s *Server) changerMotDePasse(w http.ResponseWriter, r *http.Request) {
+	c := compteDe(r)
 	u := utilisateur(r)
-	if u == nil {
+	if c == nil || u == nil {
 		httpError(w, 403, "réservé aux comptes nominatifs")
 		return
 	}
@@ -197,24 +219,24 @@ func (s *Server) changerMotDePasse(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, "requête invalide")
 		return
 	}
-	if _, err := s.Store.Authenticate(r.Context(), u.Email, body.Actuel); err != nil {
+	if _, err := s.Store.Authenticate(r.Context(), c.Email, body.Actuel); err != nil {
 		httpError(w, 401, "mot de passe actuel incorrect")
 		return
 	}
-	if err := s.Store.SetPassword(r.Context(), u.ID, body.Nouveau); err != nil {
+	if err := s.Store.SetPassword(r.Context(), c.ID, body.Nouveau); err != nil {
 		httpError(w, 400, err.Error())
 		return
 	}
-	// Toutes les sessions tombent, y compris celle-ci ; on en rouvre une pour
-	// l'auteur du changement afin qu'il ne soit pas déconnecté de son propre geste.
-	if err := s.Store.DeleteSessionsOf(r.Context(), u.ID); err != nil {
+	// Toutes les sessions du compte tombent, y compris celle-ci ; on en rouvre
+	// une (sur le même espace actif) pour ne pas déconnecter l'auteur du geste.
+	if err := s.Store.DeleteSessionsOf(r.Context(), c.ID); err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
-	if token, expire, err := s.Store.CreateSession(r.Context(), u.ID); err == nil {
+	if token, expire, err := s.Store.CreateSession(r.Context(), c.ID, u.ID); err == nil {
 		s.poserCookie(w, token, expire)
 	}
-	s.Store.Audit(r.Context(), u.Email, "mot_de_passe_modifie",
+	s.Store.Audit(r.Context(), c.Email, "mot_de_passe_modifie",
 		map[string]string{"sessions": "toutes révoquées"})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
@@ -299,19 +321,24 @@ func (s *Server) googleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Aucune création implicite : le compte doit exister et être actif.
-	u, err := s.Store.UserByEmail(ctx, email)
-	if err != nil || u == nil || !u.Actif {
+	compte, err := s.Store.CompteByEmail(ctx, email)
+	if err != nil || compte == nil || !compte.Actif {
 		s.Store.Audit(ctx, "anonyme", "connexion_google_refusee", map[string]string{"email": email})
 		echec("Aucun compte Ibalya n'est associé à " + email + ".")
 		return
 	}
-	token, expire, err := s.Store.CreateSession(ctx, u.ID)
+	espaceID, err := s.Store.EspaceParDefaut(ctx, compte.ID)
+	if err != nil {
+		echec("Aucun espace n'est rattaché à ce compte.")
+		return
+	}
+	token, expire, err := s.Store.CreateSession(ctx, compte.ID, espaceID)
 	if err != nil {
 		echec("Création de session impossible.")
 		return
 	}
 	s.poserCookie(w, token, expire)
-	s.Store.Audit(ctx, u.Email, "connexion", map[string]string{"methode": "google"})
+	s.Store.Audit(ctx, compte.Email, "connexion", map[string]string{"methode": "google"})
 	http.Redirect(w, r, "/app/", http.StatusFound)
 }
 

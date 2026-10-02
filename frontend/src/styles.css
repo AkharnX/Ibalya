@@ -128,9 +128,11 @@ body{
 }
 .nav-item.active .nav-count{background:var(--primary);color:#fff;}
 .sidebar-foot{
-  padding:16px;border-top:1px solid var(--sidebar-border);
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px;border-top:1px solid var(--sidebar-border);
+  display:flex;flex-direction:column;align-items:stretch;gap:10px;
 }
+.sidebar-foot-bas{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px;}
+.sidebar-foot-actions{display:flex;gap:2px;flex:0 0 auto;}
 .sidebar-user{display:flex;flex-direction:column;min-width:0;}
 .sidebar-user b{font-size:12px;font-weight:500;}
 .sidebar-user span{font-size:10px;font-family:var(--font-mono);color:var(--sidebar-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -181,6 +183,41 @@ h3,.section-title h2{
 .section-title h2{margin:32px 0 12px;}
 .lien-plus{background:none;border:none;padding:0;font:inherit;font-size:12.5px;color:var(--muted-foreground);cursor:pointer;white-space:nowrap;}
 .lien-plus:hover{color:var(--primary);}
+
+/* Sélecteur de boîte (multi-boîtes) dans la barre latérale */
+/* Sélecteur de boîte : bouton du bas qui ouvre un menu vers le haut. */
+.boite-switch{position:relative;}
+.boite-trigger{
+  width:100%;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;
+  padding:8px 10px;border:1px solid var(--sidebar-border);border-radius:8px;
+  background:var(--secondary);color:inherit;font-family:inherit;transition:border-color .12s,background .12s;
+}
+.boite-trigger:hover{border-color:var(--primary);}
+.boite-switch.ouvert .boite-trigger{border-color:var(--primary);}
+.boite-trigger-txt{display:flex;flex-direction:column;min-width:0;flex:1;}
+.boite-trigger-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--sidebar-muted);}
+.boite-trigger-nom{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.boite-chevron{flex:0 0 auto;color:var(--sidebar-muted);font-size:11px;transition:transform .15s;}
+.boite-switch.ouvert .boite-chevron{transform:rotate(180deg);}
+.boite-menu{
+  position:absolute;bottom:calc(100% + 6px);left:0;right:0;z-index:60;
+  background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px;
+  max-height:min(60vh,340px);overflow-y:auto;
+}
+.boite-opt{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;
+  padding:8px 10px;border:none;border-radius:6px;background:none;color:inherit;font-family:inherit;font-size:13px;
+}
+.boite-opt:hover{background:var(--secondary);}
+.boite-opt.actif{color:var(--primary);font-weight:600;}
+.boite-opt-nom{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.boite-opt .ic{flex:0 0 auto;color:var(--primary);}
+.boite-gerer{
+  display:block;margin-top:3px;padding:8px 10px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--muted-foreground);text-decoration:none;
+}
+.boite-gerer:hover{color:var(--primary);}
 
 /* ═══ tuiles KPI ═══ */
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px;}
