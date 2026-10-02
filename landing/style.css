@@ -1,16 +1,30 @@
 /* Page commerciale Ibalya — statique, sans dépendance ni étape de build.
    Reprend les jetons de l'application : angles droits, bleu cobalt, mono. */
 
+/* Clair par défaut (blanc chaud), sombre via le bouton (data-theme).
+   Jetons alignés sur l'app et le guide : teal #0e7490, serif Fraunces, mono Geist. */
 :root{
-  color-scheme: dark;
-  --background:#0b0f19; --foreground:#f8f9fa; --card:#111827;
-  --primary:#3b82f6; --secondary:#1e293b; --muted:#94a3b8; --border:#334155;
-  --risk:#f43f5e; --sidebar:#06080c;
-  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+  --primary:#0e7490;
+  --background:#f7f4f1; --foreground:#22272e; --card:#ffffff;
+  --secondary:#efe9e3; --muted:#605a66; --border:#e6ded7; --sidebar:#f1ece7;
+  --risk:#b5432a;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --mono:"Geist Mono","JetBrains Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
+[id]{scroll-margin-top:92px;}
+/* Anneau de focus clavier visible (aucun :focus-visible n'était défini). */
+a:focus-visible,button:focus-visible,.lp-btn:focus-visible,.lp-theme:focus-visible{
+  outline:2px solid var(--primary);outline-offset:3px;
+}
+.lp-skip{
+  position:absolute;left:12px;top:-60px;z-index:100;background:var(--card);color:var(--foreground);
+  border:1px solid var(--primary);padding:10px 16px;font-family:var(--mono);font-size:13px;
+  text-decoration:none;transition:top .15s;
+}
+.lp-skip:focus{top:12px;}
 body{
   background:var(--background);color:var(--foreground);font-family:var(--sans);
   font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
@@ -40,6 +54,9 @@ a{color:inherit;}
 .lp-lien-discret{color:var(--muted);text-decoration:none;font-size:14px;}
 .lp-lien-discret:hover{color:var(--foreground);}
 @media (max-width:820px){ .lp-nav,.lp-lien-discret{display:none;} }
+/* Sous 560px, le CTA du header déborde (mono, nowrap). On s'appuie sur le CTA du
+   hero, juste en dessous ; le header garde logo + bascule de thème. */
+@media (max-width:560px){ .lp-header-actions .lp-btn{display:none;} }
 
 /* ── boutons ── */
 .lp-btn{
@@ -66,14 +83,14 @@ a{color:inherit;}
   line-height:1.08;margin-bottom:26px;
 }
 .lp-chapeau{font-size:clamp(16px,1.6vw,18px);color:var(--muted);max-width:36em;}
-.lp-actions{display:flex;gap:14px;margin:34px 0 30px;flex-wrap:wrap;}
+.lp-actions{display:flex;gap:14px;margin:34px 0 14px;flex-wrap:wrap;}
 .lp-garanties{list-style:none;display:flex;gap:24px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px;color:var(--muted);}
 .lp-garanties li{display:flex;align-items:center;gap:8px;}
 .lp-check{color:var(--primary);font-weight:700;}
 
 /* ── démonstration ── */
 .lp-terminal-enveloppe{position:relative;}
-.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);box-shadow:0 20px 50px rgba(30,37,48,.10);}
+.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);}
 .lp-terminal-barre{
   display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--border);
 }
@@ -146,6 +163,18 @@ a{color:inherit;}
 .lp-cta h2{font-size:clamp(25px,3.2vw,34px);font-weight:700;letter-spacing:-.03em;margin-bottom:12px;}
 .lp-cta p{color:var(--muted);margin-bottom:30px;}
 
+/* ── FAQ ── */
+.lp-faq{max-width:820px;margin:0 auto;}
+.lp-faq-item{border-top:1px solid var(--border);padding:22px 2px;}
+.lp-faq-item:last-child{border-bottom:1px solid var(--border);}
+.lp-faq-item h3{font-size:17px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em;}
+.lp-faq-item p{font-size:14.5px;color:var(--muted);line-height:1.6;}
+
+/* Note bêta/invitation sous le CTA du hero. */
+.lp-hero-note{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 30px;}
+.lp-hero-note b{color:var(--foreground);font-weight:500;}
+.lp-hero-note a{color:var(--primary);text-decoration:underline;text-underline-offset:2px;}
+
 /* ── pied de page ── */
 .lp-footer{
   border-top:1px solid var(--border);padding:28px;text-align:center;
@@ -155,75 +184,10 @@ a{color:inherit;}
 .lp-footer a:hover{color:var(--foreground);}
 .lp-sep{margin:0 10px;opacity:.4;}
 
-/* ── chiffres de marché ── */
-.lp-chiffres{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
-  max-width:940px;margin:36px auto 0;text-align:left;
-}
-@media (max-width:820px){ .lp-chiffres{grid-template-columns:1fr;} }
-.lp-chiffres div{border-left:2px solid var(--primary);padding-left:16px;}
-.lp-chiffres b{
-  display:block;font-family:var(--mono);font-size:30px;font-weight:300;
-  letter-spacing:-1px;color:var(--foreground);line-height:1.1;
-}
-.lp-chiffres span{display:block;margin-top:8px;font-size:13.5px;color:var(--muted);line-height:1.5;}
-
 /* ── cartes du vide de marché ── */
 .lp-carte-mate{background:transparent;}
 .lp-carte-mate:hover{border-color:var(--border);}
 .lp-carte-mate h3{font-size:16px;}
-
-/* ── tarifs ── */
-.lp-tarifs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start;}
-@media (max-width:960px){ .lp-tarifs{grid-template-columns:1fr;} }
-.lp-tarif{border:1px solid var(--border);background:var(--card);padding:28px 24px;position:relative;}
-.lp-tarif-vedette{border-color:var(--primary);}
-.lp-ruban{
-  position:absolute;top:0;right:0;background:var(--primary);color:#fff;
-  font-family:var(--mono);font-size:10px;text-transform:uppercase;
-  letter-spacing:.12em;padding:4px 10px;
-}
-.lp-tarif h3{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px;}
-.lp-tarif-desc{font-size:13.5px;color:var(--muted);margin-bottom:22px;min-height:3em;}
-.lp-prix{padding:14px 0;border-top:1px solid var(--border);}
-.lp-pays{
-  display:block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;
-  letter-spacing:.14em;color:var(--muted);margin-bottom:5px;
-}
-.lp-prix b{font-family:var(--mono);font-size:23px;font-weight:400;letter-spacing:-.5px;}
-.lp-prix i{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:3px;}
-
-/* ── modules de la plateforme ── */
-.lp-modules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:44px;}
-@media (max-width:900px){ .lp-modules{grid-template-columns:1fr;} }
-.lp-module{border:1px solid var(--border);padding:22px 20px;opacity:.55;}
-.lp-module-actif{opacity:1;border-color:var(--primary);background:var(--card);}
-.lp-module-etat{
-  display:inline-block;font-family:var(--mono);font-size:10px;text-transform:uppercase;
-  letter-spacing:.12em;color:var(--muted);margin-bottom:10px;
-}
-.lp-module-actif .lp-module-etat{color:var(--primary);}
-.lp-module b{display:block;font-size:16px;font-weight:600;margin-bottom:8px;}
-.lp-module p{font-size:13.5px;color:var(--muted);}
-
-/* ── équipe ── */
-.lp-equipe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:820px;margin:0 auto;text-align:center;}
-@media (max-width:760px){ .lp-equipe{grid-template-columns:1fr;} }
-.lp-equipe div{border-top:1px solid var(--border);padding-top:16px;}
-.lp-equipe b{display:block;font-size:15px;font-weight:600;}
-.lp-equipe span{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;}
-
-/* Palier sur devis : pas de prix affiché, donc pas d'étiquette de pays. */
-.lp-prix-devis b{font-family:var(--sans);font-size:19px;font-weight:600;}
-.lp-prix-devis i{margin-top:5px;}
-
-/* Le délai de mise en valeur est l'argument le plus fort face aux agences,
-   dont le time-to-value se compte en mois. Il justifie les frais d'entrée. */
-.lp-delai{
-  margin-top:14px;padding-left:14px;border-left:2px solid var(--primary);
-  font-size:14.5px;
-}
-.lp-delai b{font-weight:600;}
 
 /* ═══ démonstration jouée ═══
    Montrer l'agent travailler plutôt que le décrire. Le visiteur voit une
@@ -254,7 +218,7 @@ a{color:inherit;}
 .lp-demo-msg p{font-size:13.5px;line-height:1.55;margin-top:4px;color:var(--muted);}
 .lp-demo-msg mark{
   background:none;color:var(--foreground);font-weight:500;
-  box-shadow:inset 0 -6px 0 rgba(14,116,144,.20);
+  box-shadow:inset 0 -6px 0 color-mix(in srgb, var(--primary) 22%, transparent);
 }
 .lp-demo-vous{border-left-color:var(--primary);}
 
@@ -299,6 +263,8 @@ a{color:inherit;}
 }
 @media (prefers-reduced-motion:reduce){
   .lp-t1,.lp-t2,.lp-t3,.lp-t4,.lp-t5{animation:none;opacity:1;}
+  .lp-curseur{animation:none;}
+  html{scroll-behavior:auto;}
 }
 @media (max-width:760px){
   .lp-demo{grid-template-columns:1fr;}
@@ -309,20 +275,14 @@ a{color:inherit;}
   src:url('/fonts/fraunces-600.woff2') format('woff2'); }
 @font-face { font-family:"Fraunces"; font-weight:700; font-display:swap;
   src:url('/fonts/fraunces-700.woff2') format('woff2'); }
+/* Mono auto-hébergée : --mono la nommait sans jamais la charger → repli Courier. */
+@font-face { font-family:"Geist Mono"; font-weight:400; font-display:swap;
+  src:url('/fonts/geist-mono-400.woff2') format('woff2'); }
 .lp-hero h1, .lp-section-tete h2, .lp-logo { font-family:"Fraunces", Georgia, serif; letter-spacing:-.01em; }
+.lp-hero h1, .lp-section-tete h2, .lp-securite h2, .lp-cta h2 { text-wrap:balance; }
 .lp-logo { font-weight:600; }
 .lp-securite h2, .lp-cta h2, .lp-bandeau-texte b { font-family:"Fraunces", Georgia, serif; }
 
-/* ═══ Landing en clair (blanc chaud), cohérente avec l'app et le guide ═══
-   Les gens répondent mieux à un site clair : fond chaud off-white, bleu-canard
-   et titres serif conservés. Mêmes jetons que l'app et le guide. */
-:root {
-  color-scheme:light;
-  --primary:#0e7490;
-  --background:#f7f4f1; --foreground:#22272e; --card:#ffffff;
-  --secondary:#efe9e3; --muted:#77707a; --border:#e6ded7; --sidebar:#f1ece7;
-  --risk:#b5432a;
-}
 /* Le bloc de configuration reste sombre : c'est un extrait de terminal montré
    comme un échantillon de code, pas le fond du site. Contraste volontaire. */
 .lp-config { background:#161320; color:#c4bfce; }
@@ -333,7 +293,7 @@ a{color:inherit;}
 
 /* ═══ Bouton de bascule clair / sombre ═══ */
 .lp-theme{
-  display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
+  display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;
   border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;
   transition:border-color .15s,color .15s;flex-shrink:0;
 }
@@ -351,4 +311,6 @@ a{color:inherit;}
   --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
   --risk:#e07a5f;
 }
-:root[data-theme="dark"] .lp-terminal{box-shadow:0 24px 60px rgba(0,0,0,.45);}
+/* Texte foncé sur le teal vif du bouton en sombre : le blanc échouait au
+   contraste (≈3:1). Le reste de --primary sert d'accent clair ailleurs. */
+:root[data-theme="dark"] .lp-btn-primary{color:#0b1a1f;}

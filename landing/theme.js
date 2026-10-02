@@ -10,14 +10,21 @@
     if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t);
   } catch (e) { /* stockage indisponible : on reste sur le clair par défaut */ }
 
+  function majPresse(btn) {
+    // aria-pressed reflète l'état sombre pour les lecteurs d'écran.
+    btn.setAttribute('aria-pressed', (root.getAttribute('data-theme') === 'dark') ? 'true' : 'false');
+  }
+
   function bind() {
     var btn = document.getElementById('lp-theme');
     if (!btn) return;
+    majPresse(btn);
     btn.addEventListener('click', function () {
       var cur = root.getAttribute('data-theme') || 'light';
       var next = cur === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
       try { localStorage.setItem('ibalya_theme', next); } catch (e) { /* sans effet */ }
+      majPresse(btn);
     });
   }
 
