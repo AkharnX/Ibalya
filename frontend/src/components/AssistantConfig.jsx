@@ -146,8 +146,11 @@ export default function AssistantConfig() {
   const numQ = Math.min(Math.max(idx, 1), totalQ)
 
   return (
-    <div className="overlay open" onMouseDown={(e) => { if (e.target === e.currentTarget) fermer(true) }}>
+    <div className="overlay open wiz-overlay">
       <div className="wiz" role="dialog" aria-modal="true" aria-label="Assistant de configuration">
+        {et.type !== 'intro' && et.type !== 'fin' && (
+          <button type="button" className="wiz-fermer" onClick={() => fermer(true)}>Plus tard</button>
+        )}
         {et.type === 'intro' ? (
           <div className="wiz-corps">
             <div className="wiz-kicker">Configuration</div>
