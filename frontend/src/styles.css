@@ -372,6 +372,19 @@ tbody tr:hover{background:var(--secondary);}
 }
 .eng-title{font-weight:500;font-size:13.5px;margin:0 0 3px;}
 .eng-flow{font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin:0;}
+/* Message cliquable (À valider) : objet + aperçu ouvrent le message (ou, en vue
+   combinée, sa boîte). Objet en teal au survol pour signaler qu'on peut l'ouvrir. */
+.msg-open{display:block;width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer;font:inherit;color:inherit;}
+.msg-open .eng-title{display:block;margin:0 0 3px;transition:color .12s;}
+.msg-open .eng-flow{display:block;}
+.msg-open:hover .eng-title{color:var(--primary);}
+/* Étiquette de boîte (vue combinée) : puce teal discrète, cliquable pour ouvrir
+   l'élément dans sa boîte d'origine. */
+.boite-tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 8px;
+  background:color-mix(in srgb, var(--primary) 12%, transparent);color:var(--primary);
+  border:1px solid color-mix(in srgb, var(--primary) 35%, transparent);border-radius:999px;
+  cursor:pointer;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;transition:background .12s;}
+.boite-tag:hover{background:color-mix(in srgb, var(--primary) 20%, transparent);border-color:var(--primary);}
 /* Bloc d'action suggérée, dans le panneau de traçabilité. */
 .suggestion{
   display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;

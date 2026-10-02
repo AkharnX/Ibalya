@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Icone from './components/Icone'
 import Recherche from './components/Recherche'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { api, AuthError, login as apiLogin, logout as apiLogout, toast } from './api'
+import { api, AuthError, login as apiLogin, logout as apiLogout, toast, estVueCombinee, definirVueCombinee } from './api'
 import { FournisseurEtatAgent, libelleCycle, useEtatAgent } from './etatAgent'
 import Synthese from './pages/Synthese'
 import Miroir from './pages/Miroir'
@@ -242,20 +242,35 @@ function BoiteSwitcher() {
   if (!espaces || espaces.length === 0) return null
   const actif = espaces.find((e) => e.actif) || espaces[0]
   const nom = (e) => e.libelle || e.email || ('Boîte ' + e.id)
+  const multi = espaces.length > 1
+  const combinee = multi && estVueCombinee()
   const changer = async (id) => {
-    if (String(id) === String(actif.id)) { setOuvert(false); return }
+    const memeBoite = String(id) === String(actif.id)
+    definirVueCombinee(false) // sortir de la vue combinée en choisissant une boîte
+    if (memeBoite) {
+      if (combinee) { window.location.reload(); return } // on quittait la vue combinée
+      setOuvert(false); return
+    }
     try { await api(`/espaces/${id}/activer`, { method: 'POST' }); window.location.reload() }
     catch (e) { toast(e.message, true) }
   }
+  const voirToutes = () => { definirVueCombinee(true); window.location.reload() }
   return (
     <div className={'boite-switch' + (ouvert ? ' ouvert' : '')} ref={ref}>
       {ouvert && (
         <div className="boite-menu" role="listbox">
+          {multi && (
+            <button type="button" role="option" aria-selected={combinee}
+              className={'boite-opt' + (combinee ? ' actif' : '')} onClick={voirToutes}>
+              <span className="boite-opt-nom">Toutes les boîtes</span>
+              {combinee && <Icone nom="etat-livre" />}
+            </button>
+          )}
           {espaces.map((e) => (
-            <button key={e.id} type="button" role="option" aria-selected={e.actif}
-              className={'boite-opt' + (e.actif ? ' actif' : '')} onClick={() => changer(e.id)}>
+            <button key={e.id} type="button" role="option" aria-selected={!combinee && e.actif}
+              className={'boite-opt' + (!combinee && e.actif ? ' actif' : '')} onClick={() => changer(e.id)}>
               <span className="boite-opt-nom" title={e.email || ''}>{nom(e)}</span>
-              {e.actif && <Icone nom="etat-livre" />}
+              {!combinee && e.actif && <Icone nom="etat-livre" />}
             </button>
           ))}
           <Link className="boite-gerer" to="/reglages" onClick={() => setOuvert(false)}>Gérer mes boîtes</Link>
@@ -264,8 +279,8 @@ function BoiteSwitcher() {
       <button type="button" className="boite-trigger" onClick={() => setOuvert((v) => !v)}
         aria-haspopup="listbox" aria-expanded={ouvert}>
         <span className="boite-trigger-txt">
-          <span className="boite-trigger-label">Boîte active</span>
-          <span className="boite-trigger-nom">{nom(actif)}</span>
+          <span className="boite-trigger-label">{combinee ? 'Vue' : 'Boîte active'}</span>
+          <span className="boite-trigger-nom">{combinee ? 'Toutes les boîtes' : nom(actif)}</span>
         </span>
         <span className="boite-chevron" aria-hidden="true">▾</span>
       </button>

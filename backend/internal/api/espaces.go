@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
+
+	"ibalya/backend/internal/engine"
+	"ibalya/backend/internal/store"
 )
 
 // Gestion des boîtes (espaces) d'un compte. Un compte (login) possède plusieurs
@@ -141,6 +145,137 @@ func (s *Server) supprimerEspace(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Store.Audit(r.Context(), acteur(r), "espace_supprime", map[string]any{"espace": id})
 	writeJSON(w, map[string]any{"status": "ok"})
+}
+
+// ─── Vue combinée : toutes les boîtes du compte ──────────────────────────────
+// Chaque boîte est un tenant RLS isolé : impossible de tout lire en une requête.
+// On boucle sur les boîtes du compte, on lit chacune dans son propre EnTenant, et
+// on fusionne en marquant chaque ligne par sa boîte d'origine. ListEspaces ne
+// renvoie que les boîtes du compte connecté : on ne croise jamais deux comptes.
+// Lecture seule : agir sur un élément (envoyer, résoudre) se fait dans le tenant
+// de sa boîte, donc le front renvoie l'utilisateur dans la boîte concernée.
+
+// GET /api/synthese/global — synthèse agrégée sur toutes les boîtes du compte.
+func (s *Server) syntheseGlobale(w http.ResponseWriter, r *http.Request) {
+	c := compteDe(r)
+	u := utilisateur(r)
+	if c == nil || u == nil {
+		httpError(w, 403, "réservé aux comptes nominatifs")
+		return
+	}
+	espaces, err := s.Store.ListEspaces(r.Context(), c.ID, u.ID)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+
+	type prioriteGlobale struct {
+		engine.PrioriteItem
+		Boite   string `json:"boite"`
+		BoiteID int64  `json:"boite_id"`
+	}
+	type alerteGlobale struct {
+		store.Detection
+		Boite   string `json:"boite"`
+		BoiteID int64  `json:"boite_id"`
+	}
+	var out struct {
+		KPI struct {
+			EngagementsSuivis int `json:"engagements_suivis"`
+			Retards           int `json:"retards"`
+			Risques           int `json:"risques"`
+			MessagesAValider  int `json:"messages_a_valider"`
+			MessagesLus       int `json:"messages_lus"`
+		} `json:"kpi"`
+		Priorites  []prioriteGlobale               `json:"priorites"`
+		Alertes    []alerteGlobale                 `json:"alertes"`
+		Categories map[string]engine.CategorieBloc `json:"categories"`
+		Boites     int                             `json:"boites"`
+	}
+	out.Priorites = []prioriteGlobale{}
+	out.Alertes = []alerteGlobale{}
+	out.Categories = map[string]engine.CategorieBloc{}
+	out.Boites = len(espaces)
+
+	for _, e := range espaces {
+		boite := e
+		_ = s.Store.EnTenant(r.Context(), boite.ID, func(tctx context.Context) error {
+			syn, err := s.Engine.GenerateSynthese(tctx)
+			if err != nil || syn == nil {
+				return nil // une boîte en échec ne casse pas la vue d'ensemble
+			}
+			out.KPI.EngagementsSuivis += syn.KPI.EngagementsSuivis
+			out.KPI.Retards += syn.KPI.Retards
+			out.KPI.Risques += syn.KPI.Risques
+			out.KPI.MessagesAValider += syn.KPI.MessagesAValider
+			out.KPI.MessagesLus += syn.KPI.MessagesLus
+			for _, p := range syn.Priorites {
+				out.Priorites = append(out.Priorites, prioriteGlobale{PrioriteItem: p, Boite: boite.Libelle, BoiteID: boite.ID})
+			}
+			for _, a := range syn.Alertes {
+				out.Alertes = append(out.Alertes, alerteGlobale{Detection: a, Boite: boite.Libelle, BoiteID: boite.ID})
+			}
+			for cat, bloc := range syn.Categories {
+				cur := out.Categories[cat]
+				cur.Nombre += bloc.Nombre
+				for _, ap := range bloc.Apercu {
+					if len(cur.Apercu) < 3 {
+						cur.Apercu = append(cur.Apercu, ap)
+					}
+				}
+				out.Categories[cat] = cur
+			}
+			return nil
+		})
+	}
+
+	// Mêmes règles de tri que la synthèse d'une boîte : le risque avant le retard.
+	rang := func(cat string) int {
+		if cat == engine.CatRisque {
+			return 0
+		}
+		return 1
+	}
+	sort.SliceStable(out.Priorites, func(i, j int) bool {
+		return rang(out.Priorites[i].Categorie) < rang(out.Priorites[j].Categorie)
+	})
+
+	writeJSON(w, out)
+}
+
+// GET /api/drafts/global — messages à valider de toutes les boîtes du compte.
+func (s *Server) draftsGlobaux(w http.ResponseWriter, r *http.Request) {
+	c := compteDe(r)
+	u := utilisateur(r)
+	if c == nil || u == nil {
+		httpError(w, 403, "réservé aux comptes nominatifs")
+		return
+	}
+	espaces, err := s.Store.ListEspaces(r.Context(), c.ID, u.ID)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	type draftGlobal struct {
+		store.Draft
+		Boite   string `json:"boite"`
+		BoiteID int64  `json:"boite_id"`
+	}
+	out := []draftGlobal{}
+	for _, e := range espaces {
+		boite := e
+		_ = s.Store.EnTenant(r.Context(), boite.ID, func(tctx context.Context) error {
+			drafts, err := s.Store.ListDrafts(tctx, "propose")
+			if err != nil {
+				return nil
+			}
+			for _, d := range drafts {
+				out = append(out, draftGlobal{Draft: d, Boite: boite.Libelle, BoiteID: boite.ID})
+			}
+			return nil
+		})
+	}
+	writeJSON(w, out)
 }
 
 // revoquerJetonEspace tente de révoquer chez Google le consentement de la boîte

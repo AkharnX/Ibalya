@@ -77,6 +77,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/espaces", s.auth(s.creerEspace))
 	mux.HandleFunc("POST /api/espaces/{id}/activer", s.auth(s.activerEspace))
 	mux.HandleFunc("DELETE /api/espaces/{id}", s.auth(s.supprimerEspace))
+	// vue combinée « toutes les boîtes » : agrégats en lecture seule
+	mux.HandleFunc("GET /api/synthese/global", s.auth(s.syntheseGlobale))
+	mux.HandleFunc("GET /api/drafts/global", s.auth(s.draftsGlobaux))
 
 	// santé (sans auth)
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
