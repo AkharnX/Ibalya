@@ -13,6 +13,7 @@ import AValider from './pages/AValider'
 import Alertes from './pages/Alertes'
 import Agent from './pages/Agent'
 import Chat from './pages/Chat'
+import AssistantConfig from './components/AssistantConfig'
 import Reglages from './pages/Reglages'
 
 function Toaster() {
@@ -326,6 +327,7 @@ export default function App() {
           </Routes>
         </main>
       </div>
+      <AssistantConfig />
       <Toaster />
     </div>
     </FournisseurEtatAgent>
