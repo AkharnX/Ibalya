@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Icone from '../components/Icone'
 import { useNavigate } from 'react-router-dom'
-import { api, toast } from '../api'
+import { api, toast, estVueCombinee, definirVueCombinee } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
 import Onboarding from '../components/Onboarding'
@@ -18,11 +18,23 @@ const CAT_META = {
 export default function Synthese() {
   const [syn, setSyn] = useState(null)
   const navigate = useNavigate()
+  const combinee = estVueCombinee()
 
   const load = useCallback(() => {
-    api('/synthese').then(setSyn).catch((e) => toast(e.message, true))
-  }, [])
+    api(combinee ? '/synthese/global' : '/synthese').then(setSyn).catch((e) => toast(e.message, true))
+  }, [combinee])
   useEffect(load, [load])
+
+  // Vue combinée : chaque élément vit dans sa boîte (tenant isolé). Pour agir
+  // dessus, on bascule la session sur cette boîte (et on quitte la vue combinée).
+  const ouvrirBoite = async (boiteId, dest) => {
+    definirVueCombinee(false)
+    try {
+      await api(`/espaces/${boiteId}/activer`, { method: 'POST' })
+      if (dest) navigate(dest)
+      window.location.reload()
+    } catch (e) { toast(e.message, true) }
+  }
 
   const d = useDraft(load)
   const [sourceId, setSourceId] = useState(null)
@@ -64,20 +76,24 @@ export default function Synthese() {
     <section>
       <div className="page-head">
         <div>
-          <h1>Synthèse</h1>
-          <p>L'essentiel de votre activité en un coup d'œil : ce qui bloque, ce qui arrive, ce que vous pouvez traiter sans quitter cette page.</p>
+          <h1>Synthèse{combinee ? ' · toutes les boîtes' : ''}</h1>
+          <p>{combinee
+            ? "Tout ce qui demande une décision, agrégé sur toutes vos boîtes. Chaque élément porte sa boîte ; cliquez pour l'ouvrir dans celle-ci et agir."
+            : "L'essentiel de votre activité en un coup d'œil : ce qui bloque, ce qui arrive, ce que vous pouvez traiter sans quitter cette page."}</p>
         </div>
-        <div className="page-actions">
-          <button className="btn" onClick={runCycle} disabled={enCours}
-            title={enCours ? libelleCycle(cycle) : 'Lire les nouveaux messages et mettre à jour le suivi'}>
-            {enCours ? <><span className="rotor" aria-hidden="true" />Analyse en cours…</> : <><Icone nom="action-analyser" /> Analyser</>}
-          </button>
-        </div>
+        {!combinee && (
+          <div className="page-actions">
+            <button className="btn" onClick={runCycle} disabled={enCours}
+              title={enCours ? libelleCycle(cycle) : 'Lire les nouveaux messages et mettre à jour le suivi'}>
+              {enCours ? <><span className="rotor" aria-hidden="true" />Analyse en cours…</> : <><Icone nom="action-analyser" /> Analyser</>}
+            </button>
+          </div>
+        )}
       </div>
 
-      <Onboarding />
+      {!combinee && <Onboarding />}
 
-      {enCours && (
+      {!combinee && enCours && (
         <div className="bandeau-cycle" role="status" aria-live="polite">
           <span className="rotor" aria-hidden="true" />
           <div>
@@ -93,7 +109,14 @@ export default function Synthese() {
       )}
 
       {!syn && <SqueletteKpi />}
-      {syn && <div className="kpi-row">
+      {syn && combinee && <div className="kpi-row">
+        <div className="kpi static"><span className="lbl">Actifs</span><span className="num">{k?.engagements_suivis ?? '—'}</span></div>
+        <div className="kpi static warn"><span className="lbl">En retard</span><span className="num">{k?.retards ?? '—'}</span></div>
+        <div className="kpi static risk flag"><span className="lbl">Critiques</span><span className="num">{k?.risques ?? '—'}</span></div>
+        <div className="kpi static accent flag"><span className="lbl">À valider</span><span className="num">{k?.messages_a_valider ?? '—'}</span></div>
+        <div className="kpi static"><span className="lbl">Messages lus / 30j</span><span className="num">{k?.messages_lus ?? '—'}</span></div>
+      </div>}
+      {syn && !combinee && <div className="kpi-row">
         <button className="kpi" onClick={() => navigate('/suivi')}>
           <span className="lbl">Actifs</span><span className="num">{k?.engagements_suivis ?? '–'}</span>
         </button>
@@ -116,20 +139,30 @@ export default function Synthese() {
         {!syn && <SqueletteLignes nombre={3} />}
         {syn && !syn.priorites?.length && <div className="empty">Rien à arbitrer, aucun retard ni engagement bloqué.</div>}
         {(syn?.priorites || []).map((p) => (
-          <div className={'priority-item ' + p.categorie} key={p.engagement_id}>
+          <div className={'priority-item ' + p.categorie} key={(p.boite_id || 0) + '-' + p.engagement_id}>
             <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'Retard probable' : 'En retard'}</span>
             <div className="p-body">
               <p className="p-title">
-                <button className="lien-source" title="Voir la conversation d'origine"
-                  onClick={() => setSourceId(p.engagement_id)}>{p.titre}</button>
+                {combinee
+                  ? <button className="lien-source" title={'Ouvrir dans ' + p.boite}
+                      onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.titre}</button>
+                  : <button className="lien-source" title="Voir la conversation d'origine"
+                      onClick={() => setSourceId(p.engagement_id)}>{p.titre}</button>}
               </p>
               <p className="p-sub">{p.contexte}</p>
             </div>
             <div className="p-actions">
-              <button className="btn-icon" aria-label="Marquer résolu" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
-              {p.action && (
-                <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
-                  onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
+              {combinee ? (
+                <button className="boite-tag" title={'Ouvrir dans ' + p.boite}
+                  onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.boite}</button>
+              ) : (
+                <>
+                  <button className="btn-icon" aria-label="Marquer résolu" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
+                  {p.action && (
+                    <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
+                      onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -143,19 +176,26 @@ export default function Synthese() {
             <button className="lien-plus" onClick={() => navigate('/alertes')}>Toutes les alertes →</button>
           </div>
           <div className="priority-list">
-            {syn.alertes.map((d) => (
-              <div className={'priority-item' + (d.critique ? ' risque' : '')} key={d.id}>
-                <span className={'p-badge' + (d.critique ? ' risque' : '')}>{DET_LABELS[d.type] || d.type}</span>
+            {syn.alertes.map((a) => (
+              <div className={'priority-item' + (a.critique ? ' risque' : '')} key={(a.boite_id || 0) + '-' + a.id}>
+                <span className={'p-badge' + (a.critique ? ' risque' : '')}>{DET_LABELS[a.type] || a.type}</span>
                 <div className="p-body">
                   <p className="p-title">
-                    {(d.engagement_id || d.thread_id)
-                      ? <button className="lien-source" title="Voir la conversation d'origine"
-                          onClick={() => setAlerteSrc(d)}>{d.titre}</button>
-                      : d.titre}
+                    {combinee
+                      ? <button className="lien-source" title={'Ouvrir dans ' + a.boite}
+                          onClick={() => ouvrirBoite(a.boite_id, '/alertes')}>{a.titre}</button>
+                      : (a.engagement_id || a.thread_id)
+                        ? <button className="lien-source" title="Voir la conversation d'origine"
+                            onClick={() => setAlerteSrc(a)}>{a.titre}</button>
+                        : a.titre}
                   </p>
-                  <p className="p-sub">{d.detail}</p>
+                  <p className="p-sub">{a.detail}</p>
                 </div>
-                <div className="p-actions"><Reli value={d.score} /></div>
+                <div className="p-actions">
+                  {combinee && <button className="boite-tag" title={'Ouvrir dans ' + a.boite}
+                    onClick={() => ouvrirBoite(a.boite_id, '/alertes')}>{a.boite}</button>}
+                  <Reli value={a.score} />
+                </div>
               </div>
             ))}
           </div>
@@ -175,7 +215,7 @@ export default function Synthese() {
                 {(bloc.apercu || []).map((a, i) => <div className="cat-preview-item" key={i}>{a}</div>)}
                 {!bloc.nombre && <div className="cat-preview-item">Aucun engagement dans cette catégorie.</div>}
               </div>
-              {bloc.nombre > 0 && (
+              {bloc.nombre > 0 && !combinee && (
                 <button type="button" className="cat-link" onClick={() => navigate('/suivi?cat=' + cat)}>
                   Voir {bloc.nombre === 1 ? "l'engagement" : `les ${bloc.nombre} engagements`} →
                 </button>

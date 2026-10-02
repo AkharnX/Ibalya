@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -70,6 +71,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/me", s.auth(s.me))
 	mux.HandleFunc("POST /api/password", s.auth(s.changerMotDePasse))
 	mux.HandleFunc("GET /api/users", s.auth(s.listUsers))
+
+	// boîtes (espaces) d'un compte : lister, ajouter, basculer, supprimer
+	mux.HandleFunc("GET /api/espaces", s.auth(s.listEspaces))
+	mux.HandleFunc("POST /api/espaces", s.auth(s.creerEspace))
+	mux.HandleFunc("POST /api/espaces/{id}/activer", s.auth(s.activerEspace))
+	mux.HandleFunc("DELETE /api/espaces/{id}", s.auth(s.supprimerEspace))
+	// vue combinée « toutes les boîtes » : agrégats en lecture seule
+	mux.HandleFunc("GET /api/synthese/global", s.auth(s.syntheseGlobale))
+	mux.HandleFunc("GET /api/drafts/global", s.auth(s.draftsGlobaux))
 
 	// santé (sans auth)
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -166,9 +176,12 @@ func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 		// ses données. Le jeton d'administration local agit comme le
 		// propriétaire de la boîte connectée.
 		if c, err := r.Cookie(cookieSession); err == nil && c.Value != "" {
-			if u, err := s.Store.UserBySession(r.Context(), c.Value); err == nil {
-				ctx := context.WithValue(r.Context(), ctxUser{}, u)
-				_ = s.Store.EnTenant(ctx, u.ID, func(tctx context.Context) error {
+			if info, err := s.Store.UserBySession(r.Context(), c.Value); err == nil {
+				// L'espace actif de la session devient le tenant : c'est SON id
+				// qui règle app.user_id, donc tout le cloisonnement RLS.
+				ctx := context.WithValue(r.Context(), ctxUser{}, info.Espace)
+				ctx = context.WithValue(ctx, ctxCompte{}, info.Compte)
+				_ = s.Store.EnTenant(ctx, info.Espace.ID, func(tctx context.Context) error {
 					next(w, r.WithContext(tctx))
 					return nil
 				})
@@ -277,8 +290,31 @@ func (s *Server) oauthCallback(w http.ResponseWriter, r *http.Request) {
 		// l'appel peut échouer plus tard. Pas de bascule de canal global : le
 		// résolveur par tenant lit canal_type dans les réglages de chacun.
 		if email, err := lecteur.AccountEmail(ctx); err == nil {
+			id, _ := s.tenantID(r)
+			// Garde-fou : une même adresse ne peut pas être raccordée à deux boîtes
+			// du même compte, sinon deux boîtes liraient la même messagerie. On
+			// révoque le consentement qu'on vient d'obtenir et on annule.
+			if c := compteDe(r); c != nil && id != 0 {
+				if dejaLa, _ := s.Store.AdresseRaccordeeAilleurs(ctx, c.ID, id, email); dejaLa {
+					// On NE révoque PAS chez Google : la révocation porte sur toute
+					// l'autorisation du compte Google (le grant), partagée avec la
+					// boîte qui détient déjà cette adresse — la révoquer casserait
+					// cette boîte-là. On retire seulement le jeton de la boîte
+					// refusée ; le grant reste valide pour la boîte légitime.
+					s.Store.AnnulerRaccordement(ctx)
+					s.Store.Audit(ctx, acteur(r), "canal_refuse_doublon", map[string]string{"email": email})
+					http.Redirect(w, r, "/app/?erreur="+url.QueryEscape(
+						"L'adresse "+email+" est déjà raccordée à une autre de vos boîtes."), http.StatusFound)
+					return
+				}
+			}
 			tokB, _, _ := s.Store.GetOAuthToken(ctx, provider)
 			_ = s.Store.SaveOAuthToken(ctx, provider, tokB, email)
+			// L'adresse de la boîte devient l'identité de l'espace : le sélecteur
+			// de boîtes l'affiche, et AdressesSoi/ProprietaireParDefaut la lisent.
+			if id != 0 {
+				s.Store.SetEspaceEmail(ctx, id, email)
+			}
 		}
 	}
 	s.Store.Audit(ctx, "dirigeant", "canal_connecte", map[string]string{"provider": provider})
@@ -435,7 +471,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		"dernier_cycle":     s.Store.GetSetting(ctx, "dernier_cycle", ""),
 		"seuil_publication": s.Store.GetSetting(ctx, "seuil_publication", "0.6"),
 		"compteurs":         counts,
-		"cycle":             s.Engine.Etat(),
+		"cycle":             s.Engine.Etat(ctx),
 	})
 }
 

@@ -6,6 +6,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"ibalya/backend/internal/store"
 )
 
 // CycleResult résume un cycle complet ingestion → extraction → graphe → détection.
@@ -38,22 +40,39 @@ type EtatCycle struct {
 	Duree     string    `json:"derniere_duree,omitempty"`
 }
 
+// L'état de cycle est cloisonné PAR BOÎTE (tenant) : sans cela, un cycle lancé
+// sur une boîte affichait « Analyse en cours » sur toutes les autres (et tous
+// les comptes), puisque l'état était un singleton de process. La clé est l'id de
+// l'espace courant, lu dans le contexte (posé par EnTenant).
 var (
-	etatMu sync.RWMutex
-	etat   EtatCycle
+	etatMu sync.Mutex
+	etats  = map[int64]EtatCycle{}
 )
 
-func majPhase(phase string) {
+// cléTenant identifie la boîte du contexte courant ; 0 hors tenant (ne devrait
+// pas arriver pour un cycle, mais évite un état partagé accidentel).
+func cléTenant(ctx context.Context) int64 {
+	if id, ok := store.TenantID(ctx); ok {
+		return id
+	}
+	return 0
+}
+
+func majPhase(ctx context.Context, phase string) {
+	id := cléTenant(ctx)
 	etatMu.Lock()
-	etat.Phase = phase
+	e := etats[id]
+	e.Phase = phase
+	etats[id] = e
 	etatMu.Unlock()
 }
 
-// Etat retourne une copie de l'état courant, avec le temps écoulé calculé.
-func (e *Engine) Etat() EtatCycle {
-	etatMu.RLock()
-	defer etatMu.RUnlock()
-	c := etat
+// Etat retourne l'état de cycle de la boîte du contexte, temps écoulé calculé.
+func (e *Engine) Etat(ctx context.Context) EtatCycle {
+	id := cléTenant(ctx)
+	etatMu.Lock()
+	c := etats[id]
+	etatMu.Unlock()
 	if c.EnCours && !c.Debut.IsZero() {
 		c.Secondes = int(time.Since(c.Debut).Seconds())
 	}
@@ -81,22 +100,24 @@ func (e *Engine) runCycle(ctx context.Context, ingestFn func(context.Context) (a
 	cycleMu.Lock()
 	defer cycleMu.Unlock()
 
+	id := cléTenant(ctx)
 	start := time.Now()
 	res := CycleResult{}
 
 	etatMu.Lock()
-	etat = EtatCycle{EnCours: true, Phase: "Démarrage", Origine: origine, Debut: start,
-		TermineLe: etat.TermineLe, Duree: etat.Duree}
+	prec := etats[id]
+	etats[id] = EtatCycle{EnCours: true, Phase: "Démarrage", Origine: origine, Debut: start,
+		TermineLe: prec.TermineLe, Duree: prec.Duree}
 	etatMu.Unlock()
 	defer func() {
 		etatMu.Lock()
-		etat = EtatCycle{EnCours: false, TermineLe: time.Now(),
+		etats[id] = EtatCycle{EnCours: false, TermineLe: time.Now(),
 			Duree: time.Since(start).Round(time.Second).String()}
 		etatMu.Unlock()
 	}()
 
 	if ingestFn != nil {
-		majPhase("Lecture de la boîte de réception")
+		majPhase(ctx, "Lecture de la boîte de réception")
 		ing, err := ingestFn(ctx)
 		if err != nil {
 			res.Erreur = fmt.Sprintf("ingestion: %v", err)
@@ -105,7 +126,7 @@ func (e *Engine) runCycle(ctx context.Context, ingestFn func(context.Context) (a
 		res.Ingestion = ing
 	}
 
-	majPhase("Analyse des messages par le modèle")
+	majPhase(ctx, "Analyse des messages par le modèle")
 	ext, err := e.RunExtraction(ctx, 8)
 	if err != nil && res.Erreur == "" {
 		res.Erreur = fmt.Sprintf("extraction: %v", err)
@@ -113,14 +134,14 @@ func (e *Engine) runCycle(ctx context.Context, ingestFn func(context.Context) (a
 	}
 	res.Extraction = ext
 
-	majPhase("Recherche des dépendances")
+	majPhase(ctx, "Recherche des dépendances")
 	links, err := e.RunGraphHeuristics(ctx)
 	if err != nil && res.Erreur == "" {
 		res.Erreur = fmt.Sprintf("graphe: %v", err)
 	}
 	res.Liens = links
 
-	majPhase("Surveillance des engagements")
+	majPhase(ctx, "Surveillance des engagements")
 	det, err := e.RunDetectors(ctx)
 	if err != nil && res.Erreur == "" {
 		res.Erreur = fmt.Sprintf("détecteurs: %v", err)
