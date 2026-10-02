@@ -442,4 +442,15 @@ ALTER TABLE sessions ADD COLUMN IF NOT EXISTS compte_id BIGINT REFERENCES compte
 UPDATE sessions s SET compte_id = u.compte_id
   FROM users u WHERE u.id = s.user_id AND s.compte_id IS NULL;
 CREATE INDEX IF NOT EXISTS idx_sessions_compte ON sessions(compte_id);
+
+-- Droits du rôle applicatif, RÉ-ÉMIS en fin de migration : le GRANT ON ALL TABLES
+-- plus haut s'exécute avant la création de 'comptes' (ajoutée par le multi-boîtes),
+-- qui n'héritait donc d'aucun droit — la connexion (lecture de comptes par le rôle
+-- applicatif) échouait alors en « aucun compte associé ». Idempotent.
+DO $grant2$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname='ibalya_app') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ibalya_app;
+    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ibalya_app;
+  END IF;
+END $grant2$;
 `
