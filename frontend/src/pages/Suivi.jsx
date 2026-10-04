@@ -101,6 +101,36 @@ export default function Suivi() {
     return okCat && okType && okSearch && okFiab
   })
 
+  // Tri par colonne : un clic sur un en-tête trie, un second inverse le sens.
+  const [tri, setTri] = useState({ col: null, sens: 'asc' })
+  const trierPar = (col) => setTri((t) => t.col === col ? { col, sens: t.sens === 'asc' ? 'desc' : 'asc' } : { col, sens: 'asc' })
+  const rangStatut = { retard: 0, risque: 1, encours: 2 }
+  const cleTri = (r, col) => {
+    switch (col) {
+      case 'type': return (TYPE_LABELS[r.type] || 'Autre').toLowerCase()
+      case 'objet': return (r.objet || '').toLowerCase()
+      case 'echeance': return r.echeance ? new Date(r.echeance).getTime() : Infinity // sans échéance en dernier
+      case 'confiance': return r.confiance ?? -1
+      case 'statut': return rangStatut[r.categorie] ?? 9
+      default: return 0
+    }
+  }
+  const lignes = tri.col
+    ? [...shown].sort((a, b) => {
+        const va = cleTri(a, tri.col), vb = cleTri(b, tri.col)
+        const c = va < vb ? -1 : va > vb ? 1 : 0
+        return tri.sens === 'asc' ? c : -c
+      })
+    : shown
+
+  const ColTri = ({ col, children }) => (
+    <th aria-sort={tri.col === col ? (tri.sens === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" className={'th-tri' + (tri.col === col ? ' actif' : '')} onClick={() => trierPar(col)}>
+        {children}<span className="th-fleche" aria-hidden="true">{tri.col === col ? (tri.sens === 'asc' ? '↑' : '↓') : '↕'}</span>
+      </button>
+    </th>
+  )
+
   const patch = async (id, body, msg) => {
     try { await api(`/engagements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }); toast(msg); load() }
     catch (e) { toast(e.message, true) }
@@ -172,10 +202,17 @@ export default function Suivi() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Type</th><th>Engagement</th><th>Échéance</th><th>Fiabilité</th><th>Statut</th><th><span className="sr-only">Actions</span></th></tr>
+              <tr>
+                <ColTri col="type">Type</ColTri>
+                <ColTri col="objet">Engagement</ColTri>
+                <ColTri col="echeance">Échéance</ColTri>
+                <ColTri col="confiance">Fiabilité</ColTri>
+                <ColTri col="statut">Statut</ColTri>
+                <th><span className="sr-only">Actions</span></th>
+              </tr>
             </thead>
             <tbody>
-              {shown.map((r) => (
+              {lignes.map((r) => (
                 <tr key={r.id}>
                   <td><span className={'badge ' + (r.type || 'autre')}>{TYPE_LABELS[r.type] || 'Autre'}</span></td>
                   <td>
