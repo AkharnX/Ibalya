@@ -40,6 +40,14 @@ type Message struct {
 	ExcludeReason   *string   `json:"exclude_reason"`
 }
 
+// Attachment : texte extrait d'une pièce jointe (jamais les octets bruts).
+type Attachment struct {
+	Nom       string `json:"nom"`
+	TypeMime  string `json:"type_mime"`
+	Texte     string `json:"texte"`
+	BesoinOCR bool   `json:"besoin_ocr"`
+}
+
 type Engagement struct {
 	ID                int64      `json:"id"`
 	EmetteurID        *int64     `json:"emetteur_id"`

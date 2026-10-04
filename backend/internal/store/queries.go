@@ -220,6 +220,38 @@ func (s *Store) InsertMessage(ctx context.Context, m Message) (int64, bool, erro
 	return id, true, nil
 }
 
+// InsertAttachment enregistre le TEXTE extrait d'une pièce jointe (jamais les
+// octets), rattaché à son message. user_id vient du défaut (tenant courant).
+func (s *Store) InsertAttachment(ctx context.Context, messageID int64, a Attachment) error {
+	_, err := s.q(ctx).Exec(ctx, `INSERT INTO attachments (message_id, nom, type_mime, texte, besoin_ocr)
+		VALUES ($1,$2,$3,$4,$5)`,
+		messageID, valideUTF8(a.Nom), valideUTF8(a.TypeMime), valideUTF8(a.Texte), a.BesoinOCR)
+	return err
+}
+
+// TexteAttachments concatène, étiqueté par fichier, le texte des pièces jointes
+// d'un message, pour enrichir l'entrée d'extraction du modèle.
+func (s *Store) TexteAttachments(ctx context.Context, messageID int64) (string, error) {
+	rows, err := s.q(ctx).Query(ctx, `SELECT nom, texte FROM attachments
+		WHERE message_id=$1 AND texte <> '' ORDER BY id`, messageID)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	var b strings.Builder
+	for rows.Next() {
+		var nom, texte string
+		if err := rows.Scan(&nom, &texte); err != nil {
+			return "", err
+		}
+		b.WriteString("\n\n--- Pièce jointe : ")
+		b.WriteString(nom)
+		b.WriteString(" ---\n")
+		b.WriteString(texte)
+	}
+	return b.String(), rows.Err()
+}
+
 func (s *Store) MarkMessage(ctx context.Context, id int64, status string, reason *string) error {
 	_, err := s.q(ctx).Exec(ctx, `UPDATE messages SET status=$2, exclude_reason=$3 WHERE id=$1`, id, status, reason)
 	return err

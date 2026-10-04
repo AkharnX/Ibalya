@@ -79,6 +79,21 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id, sent_at);
 
+-- Pièces jointes : on ne garde QUE le texte extrait (jamais les octets bruts),
+-- cloisonné par user_id comme le reste. besoin_ocr marque les images / PDF scannés
+-- en attente d'OCR (phase 2). Supprimé en cascade avec le message.
+CREATE TABLE IF NOT EXISTS attachments (
+  id BIGSERIAL PRIMARY KEY,
+  message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  nom TEXT NOT NULL DEFAULT '',
+  type_mime TEXT NOT NULL DEFAULT '',
+  texte TEXT NOT NULL DEFAULT '',
+  besoin_ocr BOOLEAN NOT NULL DEFAULT false,
+  user_id BIGINT NOT NULL DEFAULT nullif(current_setting('app.user_id', true),'')::bigint,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
+
 CREATE TABLE IF NOT EXISTS engagements (
   id BIGSERIAL PRIMARY KEY,
   emetteur_id BIGINT REFERENCES persons(id),
@@ -375,7 +390,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY['persons','threads','messages','engagements',
       'engagement_events','dependency_links','capsule','learned_rules',
       'detections','drafts','reports','settings','oauth_tokens',
-      'chat_messages'] LOOP
+      'chat_messages','attachments'] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
     EXECUTE format($p$CREATE POLICY tenant_isolation ON %I

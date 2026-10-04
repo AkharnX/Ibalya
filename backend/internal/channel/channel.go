@@ -20,7 +20,21 @@ type Message struct {
 	Body             string
 	Outbound         bool // envoyé par le compte connecté
 	ListUnsubscribe  bool // en-tête de désinscription présent (pré-filtre EF-11)
+	Attachments      []PieceJointe
 }
+
+// PieceJointe porte les octets BRUTS d'une pièce jointe. Le canal se contente de
+// les récupérer ; l'extraction du texte (et l'OCR) se fait dans l'ingestion, qui
+// ne conserve ensuite que le texte, jamais le fichier.
+type PieceJointe struct {
+	Nom     string
+	Type    string // type MIME
+	Donnees []byte
+}
+
+// TailleMaxPJ borne la taille d'une pièce jointe récupérée : au-delà, on n'ouvre
+// même pas (bande passante + coût d'analyse rarement justifiés).
+const TailleMaxPJ = 12 << 20 // 12 Mo
 
 // Reader est l'interface de lecture/action d'un canal.
 type Reader interface {
