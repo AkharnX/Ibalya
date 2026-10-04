@@ -4,6 +4,7 @@ import { api, toast } from '../api'
 import { SqueletteTable } from '../components/Squelette'
 import FichePersonne from '../components/FichePersonne'
 import SourcePanel from '../components/SourcePanel'
+import { useTri, EnteteTri } from '../components/tri'
 
 // Personnes et organisations (CDC 5.3). Le type et l'indicateur de sensibilité
 // nourrissent la capsule : un interlocuteur marqué comme sensible obtient une
@@ -53,6 +54,14 @@ export default function Interlocuteurs() {
     return okType && okSearch
   })
 
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(shown, {
+    nom: (p) => (p.name || p.email || '').toLowerCase(),
+    email: (p) => (p.email || '').toLowerCase(),
+    type: (p) => (p.type || 'autre'),
+    sensitive: (p) => (p.sensitive ? 1 : 0),
+  })
+
   // L'API attend le couple complet : on renvoie toujours type ET sensibilité.
   const mettreAJour = async (p, champs) => {
     const corps = { type: p.type, sensitive: p.sensitive, ...champs }
@@ -96,9 +105,14 @@ export default function Interlocuteurs() {
       ) : (
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Nom</th><th>Adresse</th><th>Type</th><th>À surveiller</th></tr></thead>
+            <thead><tr>
+              <EnteteTri col="nom" tri={tri} trierPar={trierPar}>Nom</EnteteTri>
+              <EnteteTri col="email" tri={tri} trierPar={trierPar}>Adresse</EnteteTri>
+              <EnteteTri col="type" tri={tri} trierPar={trierPar}>Type</EnteteTri>
+              <EnteteTri col="sensitive" tri={tri} trierPar={trierPar}>À surveiller</EnteteTri>
+            </tr></thead>
             <tbody>
-              {shown.map((p) => (
+              {lignes.map((p) => (
                 <tr key={p.id}>
                   <td className="obj">
                     <button className="lien-source" title="Ouvrir la fiche"

@@ -5,6 +5,7 @@ import { api, toast } from '../api'
 import { DET_LABELS, Empty, FiltreFiabilite, Reli, fmtDT, niveauFiabilite } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
 import SourcePanel from '../components/SourcePanel'
+import { useTri, EnteteTri } from '../components/tri'
 
 export default function Alertes() {
   const [dets, setDets] = useState(null)
@@ -23,6 +24,13 @@ export default function Alertes() {
   useEffect(load, [load])
 
   const visibles = (dets || []).filter((d) => !fiabilite || niveauFiabilite(d.score) === fiabilite)
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(visibles, {
+    alerte: (d) => (DET_LABELS[d.type] || d.type || '').toLowerCase(),
+    detail: (d) => (d.titre || '').toLowerCase(),
+    score: (d) => d.score ?? -1,
+    date: (d) => new Date(d.created_at).getTime(),
+  })
 
   const dismiss = async (id) => {
     try { await api(`/detections/${id}/dismiss`, { method: 'POST' }); toast('Alerte écartée'); load() }
@@ -58,10 +66,16 @@ export default function Alertes() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Alerte</th><th>Détail</th><th>Fiabilité</th><th>Date</th><th><span className="sr-only">Actions</span></th></tr>
+              <tr>
+                <EnteteTri col="alerte" tri={tri} trierPar={trierPar}>Alerte</EnteteTri>
+                <EnteteTri col="detail" tri={tri} trierPar={trierPar}>Détail</EnteteTri>
+                <EnteteTri col="score" tri={tri} trierPar={trierPar}>Fiabilité</EnteteTri>
+                <EnteteTri col="date" tri={tri} trierPar={trierPar}>Date</EnteteTri>
+                <th><span className="sr-only">Actions</span></th>
+              </tr>
             </thead>
             <tbody>
-              {visibles.map((d) => (
+              {lignes.map((d) => (
                 <tr key={d.id}>
                   <td><b>{d.critique ? '⚠ ' : ''}{DET_LABELS[d.type] || d.type}</b></td>
                   <td className="obj">
