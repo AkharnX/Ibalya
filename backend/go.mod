@@ -6,6 +6,7 @@ require (
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
 	github.com/emersion/go-message v0.18.2
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/ledongthuc/pdf v0.0.0-20260907135840-6c8c28e0e8a0
 	golang.org/x/crypto v0.55.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/term v0.45.0
