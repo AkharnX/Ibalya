@@ -5,11 +5,19 @@ import { api, toast } from '../api'
 import { Reli, TYPE_LABELS, fmtDT, fmtDate } from '../components/ui'
 import SourcePanel from '../components/SourcePanel'
 import { SqueletteKpi, SqueletteLignes } from '../components/Squelette'
+import { useTri, EnteteTri } from '../components/tri'
 
 // Miroir d'activité (CDC 9.1, EF-2) : le premier rapport, produit après lecture
 // des 30 derniers jours. Le CDC en fait le livrable d'activation, à montrer
 // AVANT de demander quoi que ce soit au dirigeant.
 function Liste({ titre, aide, rows, onSource }) {
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(rows, {
+    type: (e) => (TYPE_LABELS[e.type] || 'Autre').toLowerCase(),
+    objet: (e) => (e.objet || '').toLowerCase(),
+    echeance: (e) => (e.echeance ? new Date(e.echeance).getTime() : Infinity),
+    confiance: (e) => e.confiance ?? -1,
+  })
   return (
     <div className="miroir-bloc">
       <div className="section-title"><h2>{titre} <span className="muted">{rows.length}</span></h2></div>
@@ -17,9 +25,14 @@ function Liste({ titre, aide, rows, onSource }) {
       {!rows.length ? <div className="empty">Rien dans cette catégorie.</div> : (
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Type</th><th>Engagement</th><th>Échéance</th><th>Fiabilité</th></tr></thead>
+            <thead><tr>
+              <EnteteTri col="type" tri={tri} trierPar={trierPar}>Type</EnteteTri>
+              <EnteteTri col="objet" tri={tri} trierPar={trierPar}>Engagement</EnteteTri>
+              <EnteteTri col="echeance" tri={tri} trierPar={trierPar}>Échéance</EnteteTri>
+              <EnteteTri col="confiance" tri={tri} trierPar={trierPar}>Fiabilité</EnteteTri>
+            </tr></thead>
             <tbody>
-              {rows.map((e) => (
+              {lignes.map((e) => (
                 <tr key={e.id}>
                   <td><span className={'badge ' + (e.type || 'autre')}>{TYPE_LABELS[e.type] || 'Autre'}</span></td>
                   <td>
@@ -79,6 +92,12 @@ export default function Miroir() {
   }
 
   const m = rep?.content
+  const { tri: triFils, trierPar: trierFils, trier: trierListeFils } = useTri()
+  const filsTri = trierListeFils(m?.fils_sans_reponse || [], {
+    sujet: (f) => (f.sujet || '').toLowerCase(),
+    interlocuteur: (f) => (f.interlocuteur || '').toLowerCase(),
+    silence: (f) => f.jours_silence ?? -1,
+  })
 
   return (
     <section>
@@ -143,9 +162,13 @@ export default function Miroir() {
             ) : (
               <div className="tbl-wrap">
                 <table>
-                  <thead><tr><th>Sujet</th><th>Interlocuteur</th><th>Silence</th></tr></thead>
+                  <thead><tr>
+                    <EnteteTri col="sujet" tri={triFils} trierPar={trierFils}>Sujet</EnteteTri>
+                    <EnteteTri col="interlocuteur" tri={triFils} trierPar={trierFils}>Interlocuteur</EnteteTri>
+                    <EnteteTri col="silence" tri={triFils} trierPar={trierFils}>Silence</EnteteTri>
+                  </tr></thead>
                   <tbody>
-                    {m.fils_sans_reponse.map((f) => (
+                    {filsTri.map((f) => (
                       <tr key={f.thread_id}>
                         <td className="obj">
                           <button className="lien-source" title="Voir la conversation"

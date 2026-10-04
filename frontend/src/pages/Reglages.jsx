@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, toast } from '../api'
 import { fmtDT } from '../components/ui'
 import Canal from '../components/Canal'
+import { useTri, EnteteTri } from '../components/tri'
 
 // Signature composée depuis les quatre champs. Doit reproduire exactement la
 // règle du serveur (engine.SignatureComposee), sans quoi l'aperçu mentirait.
@@ -150,6 +151,12 @@ function MesBoites() {
   const [espaces, setEspaces] = useState(null)
   const [libelle, setLibelle] = useState('')
   const [busy, setBusy] = useState(false)
+  const { tri, trierPar, trier } = useTri()
+  const lignesBoites = trier(espaces || [], {
+    libelle: (e) => (e.libelle || '').toLowerCase(),
+    email: (e) => (e.email || '').toLowerCase(),
+    etat: (e) => (e.connecte ? 0 : 1),
+  })
 
   const charger = useCallback(() => {
     api('/espaces').then(setEspaces).catch((e) => toast(e.message, true))
@@ -189,9 +196,14 @@ function MesBoites() {
       </p>
       <div className="tbl-wrap">
         <table>
-          <thead><tr><th>Boîte</th><th>Adresse</th><th>État</th><th><span className="sr-only">Actions</span></th></tr></thead>
+          <thead><tr>
+            <EnteteTri col="libelle" tri={tri} trierPar={trierPar}>Boîte</EnteteTri>
+            <EnteteTri col="email" tri={tri} trierPar={trierPar}>Adresse</EnteteTri>
+            <EnteteTri col="etat" tri={tri} trierPar={trierPar}>État</EnteteTri>
+            <th><span className="sr-only">Actions</span></th>
+          </tr></thead>
           <tbody>
-            {(espaces || []).map((e) => (
+            {lignesBoites.map((e) => (
               <tr key={e.id}>
                 <td><b>{e.libelle || '—'}</b>{e.actif && <span className="muted"> · active</span>}</td>
                 <td className="sub">{e.email || <span className="muted">non raccordée</span>}</td>
@@ -235,6 +247,12 @@ export default function Reglages() {
   const [status, setStatus] = useState(null)
   const [kpis, setKpis] = useState(null)
   const [audit, setAudit] = useState([])
+  const { tri: triAudit, trierPar: trierAudit, trier: trierListeAudit } = useTri()
+  const auditTri = trierListeAudit(audit, {
+    ts: (e) => new Date(e.ts).getTime(),
+    actor: (e) => (e.actor || '').toLowerCase(),
+    event: (e) => (e.event_type || '').toLowerCase(),
+  })
 
   const load = useCallback(() => {
     api('/settings').then((s) => setSettings((p) => ({ ...p, ...s }))).catch((e) => toast(e.message, true))
@@ -383,9 +401,14 @@ export default function Reglages() {
       <h3>Journal d'audit <span className="muted">: chaque lecture, détection et action, horodatée</span></h3>
       <div className="tbl-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Acteur</th><th>Événement</th><th>Détails</th></tr></thead>
+          <thead><tr>
+            <EnteteTri col="ts" tri={triAudit} trierPar={trierAudit}>Date</EnteteTri>
+            <EnteteTri col="actor" tri={triAudit} trierPar={trierAudit}>Acteur</EnteteTri>
+            <EnteteTri col="event" tri={triAudit} trierPar={trierAudit}>Événement</EnteteTri>
+            <th>Détails</th>
+          </tr></thead>
           <tbody>
-            {audit.map((e) => (
+            {auditTri.map((e) => (
               <tr key={e.id}>
                 <td className="sub">{fmtDT(e.ts)}</td>
                 <td>{e.actor}</td>

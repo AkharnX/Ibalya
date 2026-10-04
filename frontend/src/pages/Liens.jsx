@@ -4,6 +4,7 @@ import { api, toast } from '../api'
 import { fmtDate } from '../components/ui'
 import SourcePanel from '../components/SourcePanel'
 import { SqueletteTable } from '../components/Squelette'
+import { useTri, EnteteTri } from '../components/tri'
 
 // Graphe de dépendances (CDC 8.1). Les liens sont proposés par heuristique,
 // jamais décidés par le modèle. Tant qu'un lien reste « candidat », le
@@ -34,6 +35,13 @@ export default function Liens() {
   }, [rows])
 
   const shown = (rows || []).filter((l) => !filtre || l.statut === filtre)
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(shown, {
+    amont: (l) => (l.amont_objet || '').toLowerCase(),
+    aval: (l) => (l.aval_objet || '').toLowerCase(),
+    raison: (l) => (l.raison || '').toLowerCase(),
+    created_at: (l) => new Date(l.created_at).getTime(),
+  })
 
   const decider = async (id, action) => {
     if (busy) return
@@ -77,10 +85,16 @@ export default function Liens() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Dépend de (amont)</th><th>Engagement concerné (aval)</th><th>Pourquoi ce lien</th><th>Proposé le</th><th><span className="sr-only">Actions</span></th></tr>
+              <tr>
+                <EnteteTri col="amont" tri={tri} trierPar={trierPar}>Dépend de (amont)</EnteteTri>
+                <EnteteTri col="aval" tri={tri} trierPar={trierPar}>Engagement concerné (aval)</EnteteTri>
+                <EnteteTri col="raison" tri={tri} trierPar={trierPar}>Pourquoi ce lien</EnteteTri>
+                <EnteteTri col="created_at" tri={tri} trierPar={trierPar}>Proposé le</EnteteTri>
+                <th><span className="sr-only">Actions</span></th>
+              </tr>
             </thead>
             <tbody>
-              {shown.map((l) => (
+              {lignes.map((l) => (
                 <tr key={l.id}>
                   <td className="obj">
                     <button className="lien-source" onClick={() => setSourceId(l.amont_id)}>{l.amont_objet}</button>

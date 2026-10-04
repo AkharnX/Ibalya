@@ -3,6 +3,7 @@ import Icone from '../components/Icone'
 import { api, toast } from '../api'
 import { Empty, fmtDate } from '../components/ui'
 import ListEditor from '../components/ListEditor'
+import { useTri, EnteteTri } from '../components/tri'
 
 // Champs connus de la capsule, présentés en formulaire. Les clés inconnues
 // renvoyées par le modèle sont conservées telles quelles à l'enregistrement.
@@ -63,6 +64,12 @@ export default function Agent() {
 
   const heures = Number(facts.silence_defaut_heures)
   const inconnues = Object.keys(facts).filter((k) => !CHAMPS_CONNUS.includes(k))
+  const { tri, trierPar, trier } = useTri()
+  const reglesTri = trier(rules, {
+    note: (r) => (r.note || '').toLowerCase(),
+    portee: (r) => (r.portee_type + ' ' + (r.portee_cible || '')).toLowerCase(),
+    created_at: (r) => new Date(r.created_at).getTime(),
+  })
 
   return (
     <section>
@@ -186,9 +193,14 @@ export default function Agent() {
       ) : (
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Règle</th><th>Portée</th><th>Apprise le</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <thead><tr>
+              <EnteteTri col="note" tri={tri} trierPar={trierPar}>Règle</EnteteTri>
+              <EnteteTri col="portee" tri={tri} trierPar={trierPar}>Portée</EnteteTri>
+              <EnteteTri col="created_at" tri={tri} trierPar={trierPar}>Apprise le</EnteteTri>
+              <th><span className="sr-only">Actions</span></th>
+            </tr></thead>
             <tbody>
-              {rules.map((r) => (
+              {reglesTri.map((r) => (
                 <tr key={r.id} style={r.active ? undefined : { opacity: 0.45 }}>
                   <td className="obj">{r.note}</td>
                   <td className="sub">{r.portee_type}{r.portee_cible ? ' · ' + r.portee_cible : ''}</td>

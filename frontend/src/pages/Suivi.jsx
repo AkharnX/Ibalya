@@ -5,6 +5,7 @@ import { api, toast } from '../api'
 import { DraftPanel, useDraft } from '../components/DraftPanel'
 import SourcePanel from '../components/SourcePanel'
 import { FiltreFiabilite, Reli, TYPE_LABELS, fmtDate, niveauFiabilite } from '../components/ui'
+import { useTri, EnteteTri } from '../components/tri'
 import { SqueletteTable } from '../components/Squelette'
 
 const CATEGORIES = [
@@ -101,35 +102,17 @@ export default function Suivi() {
     return okCat && okType && okSearch && okFiab
   })
 
-  // Tri par colonne : un clic sur un en-tête trie, un second inverse le sens.
-  const [tri, setTri] = useState({ col: null, sens: 'asc' })
-  const trierPar = (col) => setTri((t) => t.col === col ? { col, sens: t.sens === 'asc' ? 'desc' : 'asc' } : { col, sens: 'asc' })
+  // Tri par colonne (voir components/tri). Échéance sans date en dernier,
+  // statut par gravité (retard, retard probable, dans les temps).
   const rangStatut = { retard: 0, risque: 1, encours: 2 }
-  const cleTri = (r, col) => {
-    switch (col) {
-      case 'type': return (TYPE_LABELS[r.type] || 'Autre').toLowerCase()
-      case 'objet': return (r.objet || '').toLowerCase()
-      case 'echeance': return r.echeance ? new Date(r.echeance).getTime() : Infinity // sans échéance en dernier
-      case 'confiance': return r.confiance ?? -1
-      case 'statut': return rangStatut[r.categorie] ?? 9
-      default: return 0
-    }
-  }
-  const lignes = tri.col
-    ? [...shown].sort((a, b) => {
-        const va = cleTri(a, tri.col), vb = cleTri(b, tri.col)
-        const c = va < vb ? -1 : va > vb ? 1 : 0
-        return tri.sens === 'asc' ? c : -c
-      })
-    : shown
-
-  const ColTri = ({ col, children }) => (
-    <th aria-sort={tri.col === col ? (tri.sens === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" className={'th-tri' + (tri.col === col ? ' actif' : '')} onClick={() => trierPar(col)}>
-        {children}<span className="th-fleche" aria-hidden="true">{tri.col === col ? (tri.sens === 'asc' ? '↑' : '↓') : '↕'}</span>
-      </button>
-    </th>
-  )
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(shown, {
+    type: (r) => (TYPE_LABELS[r.type] || 'Autre').toLowerCase(),
+    objet: (r) => (r.objet || '').toLowerCase(),
+    echeance: (r) => (r.echeance ? new Date(r.echeance).getTime() : Infinity),
+    confiance: (r) => r.confiance ?? -1,
+    statut: (r) => rangStatut[r.categorie] ?? 9,
+  })
 
   const patch = async (id, body, msg) => {
     try { await api(`/engagements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }); toast(msg); load() }
@@ -203,11 +186,11 @@ export default function Suivi() {
           <table>
             <thead>
               <tr>
-                <ColTri col="type">Type</ColTri>
-                <ColTri col="objet">Engagement</ColTri>
-                <ColTri col="echeance">Échéance</ColTri>
-                <ColTri col="confiance">Fiabilité</ColTri>
-                <ColTri col="statut">Statut</ColTri>
+                <EnteteTri col="type" tri={tri} trierPar={trierPar}>Type</EnteteTri>
+                <EnteteTri col="objet" tri={tri} trierPar={trierPar}>Engagement</EnteteTri>
+                <EnteteTri col="echeance" tri={tri} trierPar={trierPar}>Échéance</EnteteTri>
+                <EnteteTri col="confiance" tri={tri} trierPar={trierPar}>Fiabilité</EnteteTri>
+                <EnteteTri col="statut" tri={tri} trierPar={trierPar}>Statut</EnteteTri>
                 <th><span className="sr-only">Actions</span></th>
               </tr>
             </thead>

@@ -6,11 +6,20 @@ import { api, toast, estVueCombinee, definirVueCombinee } from '../api'
 import { DraftPanel } from '../components/DraftPanel'
 import { Empty, fmtDT } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
+import { useTri, EnteteTri } from '../components/tri'
 
 export default function AValider() {
   const [drafts, setDrafts] = useState(null)
   const [selected, setSelected] = useState(null)
   const combinee = estVueCombinee()
+  const { tri, trierPar, trier } = useTri()
+  const lignes = trier(drafts || [], {
+    to: (d) => (d.to_email || '').toLowerCase(),
+    subject: (d) => (d.subject || '').toLowerCase(),
+    motif: (d) => (d.detection_titre || d.engagement_objet || '').toLowerCase(),
+    boite: (d) => (d.boite || '').toLowerCase(),
+    cree: (d) => new Date(d.created_at).getTime(),
+  })
 
   const load = useCallback(() => {
     api(combinee ? '/drafts/global' : '/drafts?statut=propose').then((r) => setDrafts(r || [])).catch((e) => toast(e.message, true))
@@ -49,10 +58,18 @@ export default function AValider() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Destinataire</th><th>Message proposé</th>{combinee ? <th>Boîte</th> : <th>Motif</th>}<th>Créé</th><th><span className="sr-only">Actions</span></th></tr>
+              <tr>
+                <EnteteTri col="to" tri={tri} trierPar={trierPar}>Destinataire</EnteteTri>
+                <EnteteTri col="subject" tri={tri} trierPar={trierPar}>Message proposé</EnteteTri>
+                {combinee
+                  ? <EnteteTri col="boite" tri={tri} trierPar={trierPar}>Boîte</EnteteTri>
+                  : <EnteteTri col="motif" tri={tri} trierPar={trierPar}>Motif</EnteteTri>}
+                <EnteteTri col="cree" tri={tri} trierPar={trierPar}>Créé</EnteteTri>
+                <th><span className="sr-only">Actions</span></th>
+              </tr>
             </thead>
             <tbody>
-              {drafts.map((d) => (
+              {lignes.map((d) => (
                 <tr key={(d.boite_id || 0) + '-' + d.id}>
                   <td className="sub">{d.to_email}</td>
                   <td>
