@@ -71,8 +71,8 @@ func TestExtraireDocx(t *testing.T) {
 func TestExtraireXlsx(t *testing.T) {
 	ss := `<?xml version="1.0"?><sst><si><t>Devis Dupont</t></si><si><t>Échéance 30/11</t></si></sst>`
 	data := zipAvec(t, map[string]string{
-		"[Content_Types].xml":    "<Types/>",
-		"xl/sharedStrings.xml":   ss,
+		"[Content_Types].xml":      "<Types/>",
+		"xl/sharedStrings.xml":     ss,
 		"xl/worksheets/sheet1.xml": `<worksheet><sheetData/></worksheet>`,
 	})
 	r, err := Extraire("prix.xlsx", "", data)

@@ -128,7 +128,7 @@ func extraireOOXML(data []byte, re *regexp.Regexp) (string, error) {
 		pertinent := nom == "word/document.xml" ||
 			nom == "xl/sharedStrings.xml" ||
 			(strings.HasPrefix(nom, "xl/worksheets/") && strings.HasSuffix(nom, ".xml")) ||
-			(strings.HasPrefix(nom, "word/") && strings.HasSuffix(nom, ".xml") && strings.Contains(nom, "header") )
+			(strings.HasPrefix(nom, "word/") && strings.HasSuffix(nom, ".xml") && strings.Contains(nom, "header"))
 		if !pertinent {
 			continue
 		}
