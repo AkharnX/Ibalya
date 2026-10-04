@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -142,9 +143,19 @@ func main() {
 		}
 		return reader
 	}
-	eng := &engine.Engine{Store: st, LLM: llm.New(cfg.LLMServiceURL), Channel: commutateur,
+	clientLLM := llm.New(cfg.LLMServiceURL)
+	eng := &engine.Engine{Store: st, LLM: clientLLM, Channel: commutateur,
 		CanalPour: resoudreCanal, BaseURL: cfg.PublicBaseURL, Courrier: envoi}
-	ing := &ingest.Ingester{Store: st, Channel: commutateur, CanalPour: resoudreCanal}
+	ing := &ingest.Ingester{Store: st, Channel: commutateur, CanalPour: resoudreCanal,
+		OCR: func(ctx context.Context, nom, typeMime string, data []byte) (string, error) {
+			resp, err := clientLLM.OCR(ctx, llm.OCRRequest{
+				Nom: nom, Type: typeMime, DataBase64: base64.StdEncoding.EncodeToString(data),
+			})
+			if err != nil {
+				return "", err
+			}
+			return resp.Texte, nil
+		}}
 	srv := &api.Server{Cfg: cfg, Store: st, Engine: eng, Ingester: ing, OAuth: oauthCfg,
 		Commutateur: commutateur, Coffre: coffre}
 

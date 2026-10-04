@@ -15,6 +15,9 @@ type Ingester struct {
 	Store     *store.Store
 	Channel   channel.Reader
 	CanalPour func(context.Context) channel.Reader
+	// OCR (optionnel) : texte d'une image ou d'un PDF scanné, via le service LLM
+	// (Mistral OCR, UE). Nil = pas d'OCR, on ignore simplement ces pièces.
+	OCR func(ctx context.Context, nom, typeMime string, data []byte) (string, error)
 }
 
 // canal résout le canal du tenant courant (voir Engine.Canal).
@@ -140,11 +143,21 @@ func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int
 		if err != nil {
 			continue
 		}
-		if r.Texte == "" && !r.BesoinOCR {
-			continue
+		texte := r.Texte
+		// Image ou PDF scanné : pas de couche texte -> OCR (les octets sont encore
+		// là, on ne les persiste jamais). Sans OCR disponible, on laisse tomber.
+		if r.BesoinOCR && ing.OCR != nil {
+			if t, err := ing.OCR(ctx, pj.Nom, pj.Type, pj.Donnees); err == nil {
+				texte = strings.TrimSpace(t)
+			} else {
+				log.Printf("ingest: OCR %q: %v", pj.Nom, err)
+			}
+		}
+		if texte == "" {
+			continue // rien d'exploitable : on n'encombre pas la base
 		}
 		if err := ing.Store.InsertAttachment(ctx, messageID, store.Attachment{
-			Nom: pj.Nom, TypeMime: pj.Type, Texte: r.Texte, BesoinOCR: r.BesoinOCR,
+			Nom: pj.Nom, TypeMime: pj.Type, Texte: texte, BesoinOCR: false,
 		}); err != nil {
 			log.Printf("ingest: pièce jointe %q: %v", pj.Nom, err)
 		}

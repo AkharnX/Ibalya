@@ -38,6 +38,10 @@ class LLMProvider(ABC):
     async def complete_json(self, system: str, user: str) -> dict:
         """Retourne la réponse du modèle parsée en JSON."""
 
+    async def ocr(self, nom: str, type_mime: str, data_base64: str) -> str:
+        """OCR d'une pièce jointe. Par défaut non disponible."""
+        raise NotImplementedError
+
 
 class MistralProvider(LLMProvider):
     BASE_URL = "https://api.mistral.ai/v1/chat/completions"
@@ -106,6 +110,55 @@ class MistralProvider(LLMProvider):
                 content = resp.json()["choices"][0]["message"]["content"]
                 return json.loads(content)
         raise derniere or RuntimeError("fournisseur injoignable")
+
+    OCR_URL = "https://api.mistral.ai/v1/ocr"
+
+    async def ocr(self, nom: str, type_mime: str, data_base64: str) -> str:
+        """OCR d'une pièce jointe (image ou PDF scanné) via Mistral OCR (UE).
+
+        On envoie le document en data URI base64 ; Mistral renvoie le texte par
+        page en markdown, qu'on concatène. Même sérialisation/limite de débit que
+        les autres appels, avec reprise sur 429/5xx.
+        """
+        mime = (type_mime or "").strip()
+        bas = nom.lower()
+        est_image = mime.startswith("image/") or bas.endswith(
+            (".png", ".jpg", ".jpeg", ".webp", ".gif", ".tiff", ".tif")
+        )
+        if not mime:
+            mime = "application/pdf" if bas.endswith(".pdf") else "application/octet-stream"
+        data_uri = f"data:{mime};base64,{data_base64}"
+        document = (
+            {"type": "image_url", "image_url": data_uri}
+            if est_image
+            else {"type": "document_url", "document_url": data_uri}
+        )
+        model = os.environ.get("MISTRAL_OCR_MODEL", "mistral-ocr-latest").strip()
+        attente = self.ATTENTE_INITIALE
+        async with _verrou_debit, httpx.AsyncClient(timeout=120) as client:
+            for tentative in range(1, self.TENTATIVES + 1):
+                await _attendre_creneau()
+                resp = await client.post(
+                    self.OCR_URL,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json={"model": model, "document": document, "include_image_base64": False},
+                )
+                if resp.status_code == 429 or resp.status_code >= 500:
+                    if tentative == self.TENTATIVES:
+                        resp.raise_for_status()
+                    pause = attente
+                    if entete := resp.headers.get("Retry-After"):
+                        try:
+                            pause = max(pause, float(entete))
+                        except ValueError:
+                            pass
+                    await asyncio.sleep(pause)
+                    attente *= 2
+                    continue
+                resp.raise_for_status()
+                pages = resp.json().get("pages", []) or []
+                return "\n\n".join(p.get("markdown", "") for p in pages).strip()
+        return ""
 
 
 class MockProvider(LLMProvider):
