@@ -10,7 +10,7 @@ export const ICONES = {
   "action-rechercher": { titre: "Rechercher", corps: "<rect x=\"4\" y=\"4\" width=\"11\" height=\"11\"/> <path d=\"M14.5 14.5L20 20\"/>" },
   "action-rejeter": { titre: "Rejeter", corps: "<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\"/> <path d=\"M8 8L16 16M16 8L8 16\"/>" },
   "action-valider-envoyer": { titre: "Valider et envoyer", corps: "<rect x=\"3.5\" y=\"5\" width=\"17\" height=\"13.5\"/> <path d=\"M4 6L12 12L20 6\"/> <path d=\"M8 15L10 17L15 12\"/>" },
-  "detecteur-contradiction": { titre: "Contradiction entre engagements", corps: "<path d=\"M4 7H15L12 4M15 7L12 10\"/> <path d=\"M20 17H9L12 14M9 17L12 20\"/> <path d=\"M8 11L16 19M16 11L8 19\"/>" },
+  "detecteur-contradiction": { titre: "Promesse menacée par un retard amont", corps: "<path d=\"M4 7H15L12 4M15 7L12 10\"/> <path d=\"M20 17H9L12 14M9 17L12 20\"/> <path d=\"M8 11L16 19M16 11L8 19\"/>" },
   "detecteur-echeance-risque": { titre: "\u00c9ch\u00e9ance \u00e0 risque", corps: "<circle cx=\"12\" cy=\"13\" r=\"7.5\"/> <path d=\"M10 3.5H14\"/> <path d=\"M12 5.5V6.5\"/> <path d=\"M12 9V14\"/> <path d=\"M12 16.8V17.3\"/> <path d=\"M12 5.5V7M4.5 13H6M18 13H19.5M12 19V20.5\"/>" },
   "detecteur-engagement-orphelin": { titre: "Engagement orphelin", corps: "<rect x=\"3.5\" y=\"7\" width=\"6\" height=\"10\"/> <rect x=\"14.5\" y=\"7\" width=\"6\" height=\"10\"/> <path d=\"M9.5 10H12M12 14H14.5\"/> <path d=\"M11 8V16\"/>" },
   "detecteur-silence-anormal": { titre: "Silence anormal", corps: "<path d=\"M4 5H20V16H10L6 20V16H4Z\"/> <path d=\"M8 10H16\"/> <path d=\"M10 13H14\"/>" },
