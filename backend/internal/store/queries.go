@@ -317,6 +317,23 @@ func (s *Store) CreateEngagement(ctx context.Context, e Engagement) (int64, erro
 	if e.Type == "" {
 		e.Type = "autre"
 	}
+	// Dédoublonnage de FIL : un même engagement (même objet) est souvent évoqué
+	// dans plusieurs messages d'un fil (rappel, relance, accusé). Le ON CONFLICT
+	// ci-dessous ne dédoublonne qu'au sein d'un message ; ici on évite qu'un même
+	// engagement actif soit recréé par un autre message du même fil.
+	if e.ThreadID != nil && strings.TrimSpace(e.Objet) != "" {
+		var dejaID int64
+		err := s.q(ctx).QueryRow(ctx, `SELECT id FROM engagements
+			WHERE thread_id=$1 AND lower(btrim(objet))=lower(btrim($2))
+			  AND statut IN ('ouvert','confirme','en_retard') LIMIT 1`,
+			*e.ThreadID, e.Objet).Scan(&dejaID)
+		if err == nil && dejaID != 0 {
+			return 0, nil // doublon de fil
+		}
+		if err != nil && err != pgx.ErrNoRows {
+			return 0, err
+		}
+	}
 	var id int64
 	err := s.q(ctx).QueryRow(ctx, `INSERT INTO engagements
 		(emetteur_id, destinataire_id, objet, type, echeance, echeance_inferee, echeance_confirmee, statut, confiance, priorite, source_message_id, thread_id, cree_le, maj_le)
