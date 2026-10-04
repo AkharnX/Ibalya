@@ -494,10 +494,36 @@ func (s *Server) runCycle(w http.ResponseWriter, r *http.Request) {
 	if body.Max > 2000 {
 		body.Max = 2000
 	}
-	res := s.Engine.RunCycleOrigine(r.Context(), func(ctx context.Context) (any, error) {
-		return s.Ingester.Run(ctx, time.Now().AddDate(0, 0, -body.SinceDays), body.Max)
-	}, "dirigeant")
-	writeJSON(w, res)
+	// Le cycle tourne sur un contexte DÉTACHÉ de la requête : l'ingestion peut
+	// durer (lecture des pièces jointes, OCR), et si le relai HTTP coupe avant la
+	// fin, le cycle ne doit pas être annulé en plein milieu (c'était la cause du
+	// « context canceled » qui faisait échouer le bouton Analyser). Le front sonde
+	// l'état du cycle et reprend la main à la fin. On garde son propre EnTenant :
+	// celui de la requête est libéré dès que le handler rend.
+	espace := utilisateur(r)
+	if espace == nil {
+		httpError(w, 403, "session requise")
+		return
+	}
+	done := make(chan any, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+		defer cancel()
+		_ = s.Store.EnTenant(ctx, espace.ID, func(tctx context.Context) error {
+			res := s.Engine.RunCycleOrigine(tctx, func(c context.Context) (any, error) {
+				return s.Ingester.Run(c, time.Now().AddDate(0, 0, -body.SinceDays), body.Max)
+			}, "dirigeant")
+			done <- res
+			return nil
+		})
+	}()
+	select {
+	case res := <-done:
+		writeJSON(w, res)
+	case <-r.Context().Done():
+		// requête expirée : le cycle se poursuit en fond, le front sonde l'état.
+		return
+	}
 }
 
 // --- miroir & capsule ---
