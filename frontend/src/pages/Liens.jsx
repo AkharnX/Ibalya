@@ -40,7 +40,7 @@ export default function Liens() {
     setBusy(id)
     try {
       await api(`/links/${id}/${action}`, { method: 'POST' })
-      toast(action === 'confirm' ? 'Lien confirmé, le détecteur de contradiction le prend en compte' : 'Lien rejeté')
+      toast(action === 'confirm' ? 'Lien confirmé, la détection des promesses menacées le prend en compte' : 'Lien rejeté')
       load()
     } catch (e) { toast(e.message, true) }
     finally { setBusy(0) }

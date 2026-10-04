@@ -293,7 +293,7 @@ func (e *Engine) detectContradiction(ctx context.Context, p capsuleParams, today
 		d := store.Detection{
 			Type: "contradiction", EngagementID: &aval.ID, ThreadID: aval.ThreadID,
 			Score: 0.9, Critique: true,
-			Titre: "Contradiction : promesse aval menacée par un blocage amont",
+			Titre: "Promesse menacée par un retard amont",
 			Detail: fmt.Sprintf("« %s » (échéance %s) dépend de « %s » qui est %s.",
 				aval.Objet, aval.Echeance.Format("02/01/2006"), amont.Objet, statutLabel(amont.Statut)),
 			Payload: mustJSON(map[string]any{"amont_id": amont.ID, "aval_id": aval.ID}),
