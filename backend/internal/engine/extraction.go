@@ -114,12 +114,18 @@ func (e *Engine) RunExtraction(ctx context.Context, batchSize int) (ExtractStats
 		}
 		seenEng := map[int64]bool{}
 		for _, m := range msgs {
+			// Le texte des pièces jointes (devis, bons de commande…) est ajouté au
+			// corps, étiqueté par fichier, pour que l'extraction en tienne compte.
+			corps := m.Body
+			if txt, err := e.Store.TexteAttachments(ctx, m.ID); err == nil && txt != "" {
+				corps += txt
+			}
 			req.Messages = append(req.Messages, llm.ExtractMessage{
 				ID:      m.ID,
 				Sender:  m.Sender,
 				To:      strings.Join(m.Recipients, ", "),
 				Subject: m.Subject,
-				Body:    m.Body,
+				Body:    corps,
 				SentAt:  m.SentAt.Format(time.RFC3339),
 			})
 			open, _ := e.Store.OpenEngagementsByThread(ctx, m.ThreadID)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"ibalya/backend/internal/channel"
+	"ibalya/backend/internal/piecejointe"
 	"ibalya/backend/internal/store"
 )
 
@@ -112,6 +113,10 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &reason)
 		} else {
 			st.Kept++
+			// Pièces jointes seulement sur les messages conservés : inutile d'extraire
+			// (et de stocker) le texte d'un devis attaché à une newsletter écartée, et
+			// on respecte la même règle de confidentialité que le corps.
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments)
 		}
 	}
 
@@ -120,6 +125,30 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 
 	ing.Store.Audit(ctx, "agent", "ingestion_cycle", st)
 	return st, nil
+}
+
+// enregistrerPiecesJointes extrait le texte des pièces jointes d'un message et le
+// stocke (jamais les octets). Les images et PDF scannés sont marqués besoin_ocr
+// pour la phase OCR. Une pièce illisible est simplement ignorée : le corps du mail
+// reste analysé normalement.
+func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int64, pjs []channel.PieceJointe) {
+	for _, pj := range pjs {
+		if !piecejointe.Traitable(pj.Nom, pj.Type) {
+			continue
+		}
+		r, err := piecejointe.Extraire(pj.Nom, pj.Type, pj.Donnees)
+		if err != nil {
+			continue
+		}
+		if r.Texte == "" && !r.BesoinOCR {
+			continue
+		}
+		if err := ing.Store.InsertAttachment(ctx, messageID, store.Attachment{
+			Nom: pj.Nom, TypeMime: pj.Type, Texte: r.Texte, BesoinOCR: r.BesoinOCR,
+		}); err != nil {
+			log.Printf("ingest: pièce jointe %q: %v", pj.Nom, err)
+		}
+	}
 }
 
 // ScanContexte lit l'historique en MÉTADONNÉES seules (expéditeur,

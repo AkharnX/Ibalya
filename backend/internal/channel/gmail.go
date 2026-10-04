@@ -254,6 +254,11 @@ func (g *Gmail) fetch(ctx context.Context, since time.Time, max int, format stri
 				continue
 			}
 			m := parseGmailMessage(full, self)
+			// Les pièces jointes n'ont de sens que pour l'extraction (format complet),
+			// pas pour le balayage de contexte (métadonnées seules).
+			if format == "full" {
+				m.Attachments = piecesJointesGmail(ctx, svc, ref.Id, full.Payload)
+			}
 			out = append(out, m)
 		}
 		if resp.NextPageToken == "" {
@@ -298,6 +303,35 @@ func parseGmailMessage(full *gmail.Message, selfEmail string) Message {
 	}
 	m.Body = cleanBody(extractBody(full.Payload))
 	return m
+}
+
+// piecesJointesGmail parcourt les parties d'un message et récupère les octets des
+// pièces jointes (celles qui ont un nom de fichier). Gmail ne livre pas les octets
+// avec le message : il faut un appel dédié par pièce, via son attachmentId.
+func piecesJointesGmail(ctx context.Context, svc *gmail.Service, msgID string, p *gmail.MessagePart) []PieceJointe {
+	var out []PieceJointe
+	var rec func(part *gmail.MessagePart)
+	rec = func(part *gmail.MessagePart) {
+		if part == nil || len(out) >= 8 { // garde-fou : au plus 8 pièces par message
+			return
+		}
+		if part.Filename != "" && part.Body != nil && part.Body.AttachmentId != "" &&
+			part.Body.Size > 0 && part.Body.Size <= TailleMaxPJ {
+			att, err := avecRepriseGmail(ctx, func() (*gmail.MessagePartBody, error) {
+				return svc.Users.Messages.Attachments.Get("me", msgID, part.Body.AttachmentId).Context(ctx).Do()
+			})
+			if err == nil && att != nil && att.Data != "" {
+				if b, err := base64.URLEncoding.DecodeString(att.Data); err == nil {
+					out = append(out, PieceJointe{Nom: part.Filename, Type: part.MimeType, Donnees: b})
+				}
+			}
+		}
+		for _, sub := range part.Parts {
+			rec(sub)
+		}
+	}
+	rec(p)
+	return out
 }
 
 func extractBody(p *gmail.MessagePart) string {
