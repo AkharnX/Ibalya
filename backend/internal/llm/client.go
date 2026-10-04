@@ -321,3 +321,23 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, erro
 	}
 	return &resp, nil
 }
+
+// OCRRequest/OCRResponse : OCR d'une pièce jointe (image ou PDF scanné) via le
+// service LLM (Mistral OCR, UE). data_base64 porte les octets du fichier.
+type OCRRequest struct {
+	Nom        string `json:"nom"`
+	Type       string `json:"type"`
+	DataBase64 string `json:"data_base64"`
+}
+
+type OCRResponse struct {
+	Texte string `json:"texte"`
+}
+
+func (c *Client) OCR(ctx context.Context, req OCRRequest) (*OCRResponse, error) {
+	var resp OCRResponse
+	if err := c.post(ctx, "/ocr", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

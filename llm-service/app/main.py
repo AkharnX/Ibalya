@@ -77,6 +77,29 @@ async def health():
     return {"status": "ok"}
 
 
+class OCRRequest(BaseModel):
+    nom: str = ""
+    type: str = ""
+    data_base64: str
+
+
+class OCRResponse(BaseModel):
+    texte: str
+
+
+@app.post("/ocr", response_model=OCRResponse)
+async def ocr(req: OCRRequest):
+    """OCR d'une pièce jointe (image / PDF scanné). Jamais exposé publiquement."""
+    try:
+        texte = await provider.ocr(req.nom, req.type, req.data_base64)
+    except NotImplementedError:
+        raise HTTPException(status_code=501, detail="OCR non disponible pour ce fournisseur")
+    except Exception as e:  # noqa: BLE001 — on ne casse pas l'ingestion sur un OCR raté
+        log.warning("OCR échoué pour %s : %s", req.nom, e)
+        return OCRResponse(texte="")
+    return OCRResponse(texte=texte)
+
+
 @app.post("/extract", response_model=ExtractResponse)
 async def extract(req: ExtractRequest):
     payload = {
