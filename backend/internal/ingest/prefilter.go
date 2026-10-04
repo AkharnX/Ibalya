@@ -13,7 +13,7 @@ import (
 // forme d'Apple, et elle échappait au motif. Quatre reçus sont ainsi passés au
 // modèle et ont produit deux engagements sur des renouvellements d'abonnement,
 // qui remontaient ensuite en alertes. Les variantes françaises sont ajoutées.
-var noReplyPattern = regexp.MustCompile(`(?i)(no[-_.]?reply|do[-_.]?not[-_.]?reply|ne[-_. ]?pas[-_. ]?repondre|nepasrepondre|notification|mailer-daemon|postmaster|newsletter|marketing@|info@.*\.(mailchimp|sendgrid|brevo))`)
+var noReplyPattern = regexp.MustCompile(`(?i)(no[-_.]?reply|do[-_.]?not[-_.]?reply|ne[-_. ]?pas[-_. ]?repondre|nepasrepondre|notification|mailer-daemon|postmaster|newsletter|marketing@|espace[-_.]?client@|info@.*\.(mailchimp|sendgrid|brevo))`)
 
 // domaines de services tiers exclus d'office
 var excludedDomains = []string{
