@@ -38,9 +38,22 @@ l'énergie). Sers-toi des deux : un engagement qui touche un dossier signalé
 comme sensible mérite une confiance et une attention accrues.
 
 Règles strictes :
-- N'invente JAMAIS un engagement : en cas de doute, baisse la confiance.
-- Une simple information, question ou opinion n'est PAS un engagement.
-- Les newsletters, notifications automatiques ne contiennent pas d'engagements.
+- N'invente JAMAIS un engagement : en cas de doute, baisse la confiance ou
+  n'extrais rien.
+- Un ENGAGEMENT suppose qu'une PERSONNE s'engage à FAIRE quelque chose À VENIR.
+  Une simple information, une question, une opinion ou un état de fait n'en est pas
+  un.
+- Les notifications AUTOMATIQUES et transactionnelles ne contiennent AUCUN
+  engagement, même si elles parlent de facture, de livraison, de paiement ou de
+  délai. Exemples à NE PAS extraire : « votre facture est disponible », « votre
+  commande a été expédiée », « votre relevé est prêt », « paiement reçu », « alerte
+  de sécurité », « un nouvel appareil s'est connecté », les confirmations et accusés
+  de réception. Elles t'informent d'un état, elles ne promettent rien.
+- Un expéditeur de service (espace client, no-reply, notifications de facturation
+  ou de livraison, newsletters) n'émet pas d'engagement.
+- Le type "facturation" ne vaut que si quelqu'un PROMET d'émettre une facture ou
+  d'effectuer un règlement (« je vous envoie la facture demain », « le virement
+  part vendredi »), jamais pour une facture déjà disponible ou déjà réglée.
 - La date du jour t'est donnée pour résoudre les dates relatives.
 
 Réponds UNIQUEMENT en JSON : {"results": [{"message_id": <id>,
