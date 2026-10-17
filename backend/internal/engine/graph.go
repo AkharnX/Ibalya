@@ -100,7 +100,18 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 			log.Printf("dépendance: jugement indisponible, candidat ignoré ce cycle: %v", err)
 			continue
 		case !rep.Depend || rep.Score < seuilRetenu:
-			// Jugé sans lien : on n'encombre pas le dirigeant avec.
+			// Jugé sans lien : on n'encombre pas le dirigeant avec. On MÉMORISE
+			// toutefois le verdict (statut 'ecarte') pour ne plus jamais reposer
+			// cette paire au modèle. Sans cette trace, une paire structurellement
+			// candidate mais sans lien réel était re-jugée à chaque cycle, à vie :
+			// des dizaines de milliers d'appels LLM pour zéro lien produit.
+			motif := "Jugé sans lien par le modèle"
+			if rep.Raison != "" {
+				motif = rep.Raison
+			}
+			if err := e.Store.EcarterLien(ctx, c.amont, c.aval, motif, rep.Score); err != nil {
+				log.Printf("dépendance: mémorisation du verdict négatif échouée (amont %d, aval %d): %v", c.amont, c.aval, err)
+			}
 			continue
 		default:
 			score = rep.Score

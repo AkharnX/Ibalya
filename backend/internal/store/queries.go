@@ -511,6 +511,22 @@ func (s *Store) CreateLink(ctx context.Context, amont, aval int64, raison string
 	return err
 }
 
+// EcarterLien mémorise qu'une paire candidate a été jugée SANS lien par le
+// modèle, pour ne plus jamais la reposer au cycle suivant. Le statut 'ecarte'
+// est volontairement distinct de 'rejete' (décision du dirigeant) : il n'est ni
+// proposé au dirigeant (liste = 'candidat'), ni suivi par les détecteurs
+// ('confirme'), ni repris comme exemple d'apprentissage (ExemplesDependance ne
+// lit que 'rejete'). Le filtre NOT EXISTS de l'heuristique, qui ne regarde que
+// la paire (amont, aval), l'exclut donc des candidats des prochains cycles.
+//
+// À n'appeler que sur un verdict RÉEL du modèle. Quand le modèle est injoignable,
+// on n'écrit rien : la paire reste candidate et sera jugée au retour du service.
+func (s *Store) EcarterLien(ctx context.Context, amont, aval int64, raison string, score float64) error {
+	_, err := s.q(ctx).Exec(ctx, `INSERT INTO dependency_links (amont_id, aval_id, statut, raison, score)
+		VALUES ($1,$2,'ecarte',$3,$4) ON CONFLICT (amont_id, aval_id) DO NOTHING`, amont, aval, raison, score)
+	return err
+}
+
 // ExemplesDependance renvoie les décisions déjà prises par le dirigeant sur des
 // liens : confirmés (dépendance réelle) et rejetés (sans lien). Elles servent
 // d'exemples au jugement du modèle — c'est ainsi que ses choix « nourrissent »
@@ -552,7 +568,10 @@ func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink,
 	if statut != "" {
 		rows, err = s.q(ctx).Query(ctx, q+`WHERE l.statut=$1 ORDER BY l.id DESC`, statut)
 	} else {
-		rows, err = s.q(ctx).Query(ctx, q+`ORDER BY l.id DESC`)
+		// 'ecarte' = paires jugées sans lien par le modèle, mémorisées seulement
+		// pour ne plus les reposer. Elles ne concernent jamais le dirigeant et ne
+		// doivent pas apparaître dans la liste générale.
+		rows, err = s.q(ctx).Query(ctx, q+`WHERE l.statut <> 'ecarte' ORDER BY l.id DESC`)
 	}
 	if err != nil {
 		return nil, err
