@@ -42,6 +42,13 @@ type Config struct {
 	IngestInterval   int // minutes
 	DetectInterval   int // minutes
 	DigestHour       int
+	// LectureAuto commande le cycle planifié qui lit les boîtes et analyse les
+	// messages en tâche de fond. Le passer à faux (LECTURE_AUTO=0) suspend tout
+	// le travail automatique — utile quand le service LLM est indisponible (ex.
+	// crédits épuisés) pour ne pas marteler le fournisseur. Le bouton « Analyser »
+	// et le reste de l'app continuent de fonctionner. Réactivation : LECTURE_AUTO=1
+	// (ou retirer la ligne) puis redémarrer le backend.
+	LectureAuto bool
 }
 
 // env lit une variable d'environnement en retirant les espaces parasites :
@@ -61,6 +68,22 @@ func envInt(key string, def int) int {
 		}
 	}
 	return def
+}
+
+// envBool lit un drapeau d'environnement. Vide ou absent, la valeur par défaut
+// s'applique ; sinon « 1 », « true », « oui », « on » (insensible à la casse)
+// valent vrai, tout le reste faux. Ainsi LECTURE_AUTO=0 suffit à désactiver.
+func envBool(key string, def bool) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if v == "" {
+		return def
+	}
+	switch v {
+	case "1", "true", "oui", "on", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 // motsDePasseParDefaut liste les valeurs de remplissage publiées dans le dépôt.
@@ -139,5 +162,6 @@ func Load() Config {
 		IngestInterval:   envInt("INGEST_INTERVAL_MINUTES", 15),
 		DetectInterval:   envInt("DETECT_INTERVAL_MINUTES", 30),
 		DigestHour:       envInt("DIGEST_HOUR", 7),
+		LectureAuto:      envBool("LECTURE_AUTO", true),
 	}
 }

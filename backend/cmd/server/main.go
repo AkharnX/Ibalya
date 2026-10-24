@@ -203,6 +203,17 @@ func imapDepuisReglages(ctx context.Context, st *store.Store, cfg config.Config)
 }
 
 func scheduler(ctx context.Context, cfg config.Config, st *store.Store, eng *engine.Engine, ing *ingest.Ingester) {
+	// Interrupteur global de la lecture automatique. Désactivé (LECTURE_AUTO=0),
+	// aucun cycle planifié ni digest ne tourne : on ne lit plus les boîtes et on
+	// n'appelle plus le modèle en tâche de fond. Le bouton « Analyser » et le
+	// reste de l'app restent fonctionnels. Pour réactiver : LECTURE_AUTO=1 (ou
+	// retirer la ligne de .env) puis redémarrer le backend.
+	if !cfg.LectureAuto {
+		log.Printf("scheduler: lecture automatique DÉSACTIVÉE (LECTURE_AUTO=0) — aucun cycle planifié ; « Analyser » reste disponible")
+		return
+	}
+	log.Printf("scheduler: lecture automatique active (cycle toutes les %d min)", cfg.IngestInterval)
+
 	cycleTicker := time.NewTicker(time.Duration(cfg.IngestInterval) * time.Minute)
 	digestTicker := time.NewTicker(10 * time.Minute)
 	defer cycleTicker.Stop()
