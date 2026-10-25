@@ -192,8 +192,11 @@ func imapDepuisReglages(ctx context.Context, st *store.Store, cfg config.Config)
 	return channel.NewIMAP(channel.IMAPConfig{
 		Hote: st.GetSetting(ctx, "imap_hote", ""), Port: nombre("imap_port", 993),
 		Utilisateur: st.GetSetting(ctx, "imap_utilisateur", ""), MotDePasse: mdp,
-		Dossier:  st.GetSetting(ctx, "imap_dossier", "INBOX"),
-		SMTPHote: st.GetSetting(ctx, "smtp_hote", ""), SMTPPort: nombre("smtp_port", 587),
+		Dossier: st.GetSetting(ctx, "imap_dossier", "INBOX"),
+		// Vide = détection automatique du dossier Envoyés (attribut \Sent). Ne
+		// sert qu'à forcer un nom sur un serveur qui ne l'annonce pas.
+		DossierEnvoyes: st.GetSetting(ctx, "imap_dossier_envoyes", ""),
+		SMTPHote:       st.GetSetting(ctx, "smtp_hote", ""), SMTPPort: nombre("smtp_port", 587),
 		// Bypass de vérification du certificat, PAR UTILISATEUR : réservé aux
 		// boîtes dont le serveur présente un certificat auto-signé ou expiré
 		// (cas d'un Plesk mal configuré). Compromis de sécurité assumé pour

@@ -40,8 +40,13 @@ type IMAPConfig struct {
 	Utilisateur string
 	MotDePasse  string
 	Dossier     string // INBOX par défaut
-	SMTPHote    string
-	SMTPPort    int
+	// DossierEnvoyes force le nom du dossier des messages envoyés. Vide (défaut),
+	// il est détecté automatiquement via l'attribut \Sent, avec repli sur les
+	// noms usuels. Ne sert qu'aux serveurs exotiques qui n'annoncent pas \Sent et
+	// nomment ce dossier autrement que les variantes connues.
+	DossierEnvoyes string
+	SMTPHote       string
+	SMTPPort       int
 	// TLSSansVerification accepte un certificat auto-signé. Réservé au
 	// développement : config.Verifier refuse le démarrage avec cette option
 	// sur une installation publique.
@@ -110,6 +115,53 @@ func (i *IMAP) connecter() (*imapclient.Client, error) {
 	return c, nil
 }
 
+// dossiersALire liste les dossiers à parcourir : la boîte de réception et, quand
+// on le trouve, le dossier des messages envoyés. Lire les Envoyés est ce qui
+// permet de voir les réponses du dirigeant — ses promesses sortantes, et de quoi
+// clore un engagement qu'il a déjà honoré. Sans cela, IMAP ne voyait que ce
+// qu'on lui écrit, jamais ce qu'il répond.
+func (i *IMAP) dossiersALire(c *imapclient.Client) []string {
+	liste := []string{i.cfg.Dossier}
+	if env := i.dossierEnvoyes(c); env != "" && !strings.EqualFold(env, i.cfg.Dossier) {
+		liste = append(liste, env)
+	}
+	return liste
+}
+
+// dossierEnvoyes localise le dossier « Envoyés », dont le nom varie d'un
+// hébergeur à l'autre (Sent, Envoyés, INBOX.Sent…). On interroge d'abord
+// l'attribut standard \Sent (RFC 6154, SPECIAL-USE), que la plupart des serveurs
+// annoncent ; à défaut on teste les noms usuels. Un nom forcé en configuration
+// l'emporte. Chaîne vide si rien n'est trouvé : on se contente alors d'INBOX.
+func (i *IMAP) dossierEnvoyes(c *imapclient.Client) string {
+	if forced := strings.TrimSpace(i.cfg.DossierEnvoyes); forced != "" {
+		return forced
+	}
+	// 1) Attribut \Sent — la voie fiable, indépendante de la langue.
+	if data, err := c.List("", "*", &imap.ListOptions{ReturnSpecialUse: true}).Collect(); err == nil {
+		for _, d := range data {
+			for _, attr := range d.Attrs {
+				if attr == imap.MailboxAttrSent {
+					return d.Mailbox
+				}
+			}
+		}
+	}
+	// 2) Repli : noms courants, en LIST exacte pour ne retenir qu'un dossier
+	// réellement présent sur le serveur.
+	for _, nom := range []string{
+		"Sent", "Sent Items", "Sent Messages",
+		"Envoyés", "Éléments envoyés", "Messages envoyés",
+		"INBOX.Sent", "INBOX.Envoyés",
+		"[Gmail]/Messages envoyés", "[Gmail]/Sent Mail",
+	} {
+		if data, err := c.List("", nom, nil).Collect(); err == nil && len(data) > 0 {
+			return data[0].Mailbox
+		}
+	}
+	return ""
+}
+
 func (i *IMAP) FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
 	c, err := i.connecter()
 	if err != nil {
@@ -120,8 +172,31 @@ func (i *IMAP) FetchSince(ctx context.Context, since time.Time, max int) ([]Mess
 	// l'authentification et le SELECT recevait une connexion fermée.
 	defer func() { _ = c.Logout().Wait() }()
 
-	if _, err := c.Select(i.cfg.Dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
-		return nil, fmt.Errorf("dossier %q : %w", i.cfg.Dossier, err)
+	var out []Message
+	for idx, dossier := range i.dossiersALire(c) {
+		budget := 0 // 0 = sans plafond, cohérent avec les tests « max > 0 »
+		if max > 0 {
+			if budget = max - len(out); budget <= 0 {
+				break
+			}
+		}
+		msgs, err := i.fetchDossier(c, dossier, since, budget)
+		if err != nil {
+			if idx == 0 {
+				return nil, err // la boîte de réception est obligatoire
+			}
+			continue // le dossier Envoyés est optionnel : ne pas casser le cycle
+		}
+		out = append(out, msgs...)
+	}
+	return out, nil
+}
+
+// fetchDossier lit un dossier : sélection, recherche depuis la date, puis
+// récupération du corps. Isolée pour servir chaque dossier (INBOX, Envoyés).
+func (i *IMAP) fetchDossier(c *imapclient.Client, dossier string, since time.Time, max int) ([]Message, error) {
+	if _, err := c.Select(dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
+		return nil, fmt.Errorf("dossier %q : %w", dossier, err)
 	}
 
 	// SINCE ne compare que la date, l'heure est ignorée par le protocole : on
@@ -188,8 +263,31 @@ func (i *IMAP) FetchMetaSince(ctx context.Context, since time.Time, max int) ([]
 	}
 	defer func() { _ = c.Logout().Wait() }()
 
-	if _, err := c.Select(i.cfg.Dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
-		return nil, fmt.Errorf("dossier %q : %w", i.cfg.Dossier, err)
+	var out []Message
+	for idx, dossier := range i.dossiersALire(c) {
+		budget := 0
+		if max > 0 {
+			if budget = max - len(out); budget <= 0 {
+				break
+			}
+		}
+		msgs, err := i.fetchMetaDossier(c, dossier, since, budget)
+		if err != nil {
+			if idx == 0 {
+				return nil, err
+			}
+			continue
+		}
+		out = append(out, msgs...)
+	}
+	return out, nil
+}
+
+// fetchMetaDossier lit un dossier en enveloppe seule (aucun corps rapatrié),
+// pour le scan de contexte sur l'historique.
+func (i *IMAP) fetchMetaDossier(c *imapclient.Client, dossier string, since time.Time, max int) ([]Message, error) {
+	if _, err := c.Select(dossier, &imap.SelectOptions{ReadOnly: true}).Wait(); err != nil {
+		return nil, fmt.Errorf("dossier %q : %w", dossier, err)
 	}
 	res, err := c.Search(&imap.SearchCriteria{Since: since.AddDate(0, 0, -1)}, nil).Wait()
 	if err != nil {
