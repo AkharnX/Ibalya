@@ -17,7 +17,7 @@
 - Palette claire « paper » (verbatim charte) : `--paper #F7F4F1`, `--paper-deep #F1EDE9`, `--paper-border #E6DED7`, `--ink #22272E`, `--ink-mute #746D73`, `--ink-fade #938B90`, `--teal #0E7490`, `--teal-hover #0B637A`, `--teal-light #E5F0F2`, `--ok #3A7D5C`, `--warn #A86523`, `--risk #B5432A`.
 - Canard (`--teal`) = accent **rare**, jamais couleur de remplissage.
 - Rayons charte : 12px (champs/boutons/chips), 16px (icônes), 24px (cartes/panneaux), 9999px (pastilles). Ombre carte : `0 8px 32px rgba(34,39,46,0.08)`.
-- Polices auto-hébergées, CSP-propre : **Fraunces** (titres, déjà en woff2 dans `landing/fonts/`), **JetBrains Mono** (mono), **Instrument Serif** (accents). Aucune dépendance CDN.
+- Polices auto-hébergées, CSP-propre : **Fraunces** (titres, déjà auto-hébergé dans `frontend/src/assets/fonts/`, poids 600/700), **JetBrains Mono** (mono, à ajouter), **Instrument Serif** (accents, à ajouter). Aucune dépendance CDN. Les `@font-face` existent déjà en bas de `styles.css` (~l.1304) — on ajoute à côté.
 - Zéro fioriture marketing dans le produit (pas de curseur fluide, metaballs, confettis, boutons magnétiques). Transitions sobres uniquement.
 - Respect de `prefers-reduced-motion`.
 - Aucune modification de logique/fonctionnalité : on repeint, on ne reconstruit pas. La bascule de thème reste la classe `.light`.
@@ -34,7 +34,7 @@
 ## File Structure
 
 - Modify `frontend/src/styles.css` : blocs de tokens (clair/sombre), échelle de rayons/ombres, `@font-face`, application arrondis+ombres aux composants. Cœur du lot.
-- Create `frontend/src/fonts/` : woff2 auto-hébergés (Fraunces repris de `landing/fonts/`, JetBrains Mono + Instrument Serif récupérés depuis Google Fonts OFL).
+- Modify `frontend/src/assets/fonts/` (dossier existant) : y ajouter les woff2 JetBrains Mono + Instrument Serif (Google Fonts OFL). Fraunces et Geist Mono y sont déjà.
 - Modify `frontend/index.html` : `<link rel="preload">` des polices critiques (Fraunces titres, JetBrains Mono).
 - `frontend/src/App.jsx` : **inchangé** (bascule de thème conservée) — référencé seulement.
 
@@ -67,16 +67,16 @@ git commit -m "charte: tokens paper (clair) + sombre chaud + échelle de rayons/
 ### Task 2 : Polices de la charte (auto-hébergées) + titres serif
 
 **Files:**
-- Create: `frontend/src/fonts/*.woff2`
-- Modify: `frontend/src/styles.css` (`@font-face`, tokens de police, titres), `frontend/index.html` (preload)
+- Modify: `frontend/src/assets/fonts/` (ajouter JetBrains Mono + Instrument Serif woff2 ; Fraunces & Geist Mono déjà là)
+- Modify: `frontend/src/styles.css` (`@font-face` existants ~l.1304 + nouveaux, tokens de police, titres), `frontend/index.html` (preload)
 
 **Interfaces:**
 - Consumes : tokens de Task 1.
 - Produces : `--font-serif` (Fraunces, titres), `--font-sans` (corps), `--font-mono` (JetBrains Mono) ; titres `h1..h3`/classes de titre en serif.
 
-- [ ] **Step 1 — Récupérer les woff2.** Copier `landing/fonts/fraunces-*.woff2` vers `frontend/src/fonts/`. Récupérer **JetBrains Mono** (400,500) et **Instrument Serif** (400) en woff2 (Google Fonts, licence OFL). Si réseau indisponible à l'exécution : le signaler et s'arrêter (ne pas inventer de fichiers).
+- [ ] **Step 1 — Récupérer les woff2.** Télécharger **JetBrains Mono** (400,500) et **Instrument Serif** (400) en woff2 (Google Fonts, licence OFL) dans `frontend/src/assets/fonts/`. Fraunces (600/700) y est déjà — le réutiliser. Si réseau indisponible à l'exécution : le signaler et s'arrêter (ne pas inventer de fichiers).
 
-- [ ] **Step 2 — `@font-face`.** Déclarer chaque police dans `styles.css` avec `font-display:swap` et le bon `format('woff2')`. Pointer `--font-serif:"Fraunces", Georgia, serif`, `--font-mono:"JetBrains Mono", ui-monospace, monospace`, garder `--font-sans` (Inter + fallback système). Ajouter `--font-accent:"Instrument Serif", serif`.
+- [ ] **Step 2 — `@font-face`.** Ajouter, près des `@font-face` existants (~l.1304 de `styles.css`), ceux de JetBrains Mono (400,500) et Instrument Serif (400), avec `font-display:swap` et `format('woff2')`, chemins `./assets/fonts/...` comme les existants. Définir `--font-serif:"Fraunces", Georgia, serif`, basculer `--font-mono:"JetBrains Mono", ui-monospace, monospace` (retirer Geist Mono du token, les woff2 peuvent rester ou être supprimés), garder `--font-sans` (Inter + fallback). Ajouter `--font-accent:"Instrument Serif", serif`.
 
 - [ ] **Step 3 — Titres en serif.** Appliquer `font-family:var(--font-serif)` aux titres de page/section (repérer les classes de titre existantes dans `styles.css` et les composants). Ne pas serifier les étiquettes mono ni le corps.
 
@@ -86,8 +86,8 @@ git commit -m "charte: tokens paper (clair) + sombre chaud + échelle de rayons/
 
 - [ ] **Step 6 — Commit.**
 ```bash
-git add frontend/src/fonts frontend/src/styles.css frontend/index.html
-git commit -m "charte: polices auto-hébergées (Fraunces/JetBrains Mono/Instrument Serif) + titres serif"
+git add frontend/src/assets/fonts frontend/src/styles.css frontend/index.html
+git commit -m "charte: polices JetBrains Mono + Instrument Serif + titres serif"
 ```
 
 ---
