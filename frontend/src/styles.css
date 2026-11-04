@@ -63,9 +63,9 @@
   --border: #E6DED7;               /* paper-border */
   --primary: #0E7490;              /* teal : accent rare, jamais en remplissage */
   --primary-foreground: #FFFFFF;
-  --risk: #B5432A;      --risk-bg: #F3E0DB;
-  --delay: #A86523;     --delay-bg: #F3E8D7;
-  --healthy: #3A7D5C;   --healthy-bg: #DDEBE3;
+  --risk: #A63D25;      --risk-bg: #F6E7E3;
+  --delay: #8C5114;     --delay-bg: #F6EEDF;
+  --healthy: #2F6F4C;   --healthy-bg: #E6F0EA;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #22272E;
   --sidebar-muted: #746D73;
