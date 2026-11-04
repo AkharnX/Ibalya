@@ -5,72 +5,83 @@
 /* ── thème sombre (défaut) ──
    Déclaré EN PREMIER : `:root` et `:root.light` doivent être dans cet ordre,
    sinon (même spécificité) le sombre écraserait le clair. */
+/* Charte « paper » : crème / encre / bleu-canard, formes arrondies.
+   Une seule définition par thème (plus de blocs d'override en fin de fichier). */
 :root {
   color-scheme: dark; /* fait suivre les contrôles natifs : select, scrollbars… */
-  --background: #0b0f19;
-  --foreground: #f8f9fa;
-  --card: #111827;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --muted-foreground: #94a3b8;
-  --border: #334155;
-  --risk: #f43f5e;      --risk-bg: rgba(225, 29, 72, .15);
-  --delay: #fbbf24;     --delay-bg: rgba(217, 119, 6, .15);
-  --healthy: #34d399;   --healthy-bg: rgba(5, 150, 105, .15);
-  --sidebar: #06080c;
-  --sidebar-foreground: #f8f9fa;
-  --sidebar-muted: #8b93a5;
-  --sidebar-item: #c9d1de;
-  --sidebar-hover: #151c2b;
-  --sidebar-border: #1e293b;
-  --logo-ink: #f8f9fa;
+  /* neutres chauds */
+  --background: #17151c;
+  --foreground: #f4f2f0;
+  --card: #221f2a;
+  --secondary: #2c2836;
+  --muted-foreground: #a8a2b0;
+  --border: #39333f;
+  /* accent canard, éclairci pour contraster sur fond sombre */
+  --primary: #3FA7C0;
+  --primary-foreground: #0b1418;
+  --risk: #E5735A;      --risk-bg: rgba(229, 115, 90, .16);
+  --delay: #E0A04A;     --delay-bg: rgba(224, 160, 74, .16);
+  --healthy: #5DB88A;   --healthy-bg: rgba(93, 184, 138, .16);
+  --sidebar: #131117;
+  --sidebar-foreground: #f4f2f0;
+  --sidebar-muted: #9a94a4;
+  --sidebar-item: #cec8d6;
+  --sidebar-hover: #221f2a;
+  --sidebar-border: #2a2732;
+  --logo-ink: #f4f2f0;
 
   /* couleurs de catégorie (identité du type, jamais la gravité) */
-  --t-livraison: #60a5fa;
-  --t-devis: #c084fc;
-  --t-facturation: #f472b6;
-  --t-rendez_vous: #34d399;
-  --t-prise_de_contact: #22d3ee;
-  --t-relance: #fbbf24;
-  --t-autre: #94a3b8;
+  --t-livraison: #6FA8E8;
+  --t-devis: #B58AE0;
+  --t-facturation: #E27AA0;
+  --t-rendez_vous: #5DB88A;
+  --t-prise_de_contact: #3FA7C0;
+  --t-relance: #E0A04A;
+  --t-autre: #a8a2b0;
 
   /* invariants */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
-  --radius: 0px; /* angles droits : signature du design */
+  /* échelle de formes */
+  --radius-sm: 12px;    /* champs, boutons, chips */
+  --radius-md: 16px;    /* icônes */
+  --radius-lg: 24px;    /* cartes, panneaux */
+  --radius-pill: 9999px;
+  --radius: var(--radius-sm); /* alias de compatibilité */
+  --shadow-card: 0 8px 32px rgba(34,39,46,.08);
+  --shadow-soft: 0 2px 8px rgba(34,39,46,.06);
 }
 
-/* ── thème clair ── */
+/* ── thème clair « paper » ── */
 :root.light {
   color-scheme: light;
-  --background: #f8f9fa;
-  --foreground: #111827;
-  --card: #ffffff;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --risk: #be123c;      --risk-bg: #ffe4e6;
-  --delay: #b45309;     --delay-bg: #fef3c7;
-  --healthy: #047857;   --healthy-bg: #d1fae5;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #111827;
-  --sidebar-muted: #64748b;
-  --sidebar-item: #334155;
-  --sidebar-hover: #f1f5f9;
-  --sidebar-border: #e2e8f0;
-  --logo-ink: #2563eb;
+  --background: #F7F4F1;           /* paper */
+  --secondary: #F1EDE9;            /* paper-deep */
+  --card: #FFFFFF;
+  --foreground: #22272E;           /* ink */
+  --muted-foreground: #746D73;     /* ink-mute */
+  --border: #E6DED7;               /* paper-border */
+  --primary: #0E7490;              /* teal : accent rare, jamais en remplissage */
+  --primary-foreground: #FFFFFF;
+  --risk: #B5432A;      --risk-bg: #F3E0DB;
+  --delay: #A86523;     --delay-bg: #F3E8D7;
+  --healthy: #3A7D5C;   --healthy-bg: #DDEBE3;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #22272E;
+  --sidebar-muted: #746D73;
+  --sidebar-item: #3A363B;
+  --sidebar-hover: #F1EDE9;
+  --sidebar-border: #E6DED7;
+  --logo-ink: #22272E;
 
-  /* teintes de catégorie assombries pour rester lisibles sur fond clair */
-  --t-livraison: #1d4ed8;
-  --t-devis: #7e22ce;
-  --t-facturation: #be185d;
-  --t-rendez_vous: #047857;
-  --t-prise_de_contact: #0e7490;
-  --t-relance: #b45309;
-  --t-autre: #475569;
+  /* teintes de catégorie, toutes >= 4.5:1 sur crème */
+  --t-livraison: #1D5FA8;
+  --t-devis: #7A3FA0;
+  --t-facturation: #B03060;
+  --t-rendez_vous: #34724F;
+  --t-prise_de_contact: #0E7490;
+  --t-relance: #9A5A1D;
+  --t-autre: #6B6470;
 }
 
 *{box-sizing:border-box;}
@@ -1168,38 +1179,6 @@ button.chat-source{font:inherit;}
    Bloc d'override en fin de fichier : se retire d'un coup si non retenu.
    Trois leviers : neutres réchauffés, coins arrondis, moins de monospace.
    ═══════════════════════════════════════════════════════════════════ */
-:root {
-  /* neutres dé-bleuis, réchauffés */
-  --background: #17151c;
-  --foreground: #f4f2f0;
-  --card: #221f2a;
-  --secondary: #2c2836;
-  --muted-foreground: #a8a2b0;
-  --border: #39333f;
-  --sidebar: #131117;
-  --sidebar-foreground: #f4f2f0;
-  --sidebar-muted: #9a94a4;
-  --sidebar-item: #cec8d6;
-  --sidebar-hover: #221f2a;
-  --sidebar-border: #2a2732;
-  --logo-ink: #f4f2f0;
-  /* accent indigo plus doux/chaleureux que le cobalt */
-  --primary: #7c83ff;
-  --primary-foreground: #ffffff;
-  --radius: 10px;
-}
-:root.light {
-  --background: #faf7f5;   /* blanc cassé chaud plutôt que gris bleu */
-  --card: #ffffff;
-  --secondary: #f4efeb;
-  --border: #e7e0da;
-  --muted-foreground: #6b6470;
-  --primary: #5b61e6;
-  --sidebar: #ffffff;
-  --sidebar-hover: #f4efeb;
-  --sidebar-border: #ece5df;
-}
-
 /* Coins arrondis sur les surfaces (la « signature angles droits » adoucie) */
 .panel, .kpi, .card, .lp-carte, .badge, button, .btn, .btn-icon,
 .search-wrap input, input, textarea, select, .chat-bulle, .chat-source,
@@ -1282,9 +1261,6 @@ main { padding: 36px; }
 /* ═══ Dé-« IA » : retirer les tells du SaaS généré ═══
    (indigo/violet, ombres flottantes partout, tout arrondi au même rayon,
    effets gadget). On garde la chaleur, mais un rendu éditorial et assumé. */
-:root { --primary: #2563eb; --radius: 6px; }      /* bleu franc, PAS indigo/violet */
-:root.light { --primary: #1d4ed8; }
-:root:not(.light) { --primary: #4a86ff; }         /* lisible sur fond sombre */
 
 /* Structure par bordures nettes, pas par ombres douces de cartes flottantes */
 .panel, .kpi, .card, .cat-card { box-shadow: none; }
@@ -1320,20 +1296,8 @@ button:hover, .btn:hover { transform: none; }     /* pas d'effet de survol gadge
 @font-face { font-family:"Geist Mono"; font-style:normal; font-weight:600; font-display:swap;
   src:url('./assets/fonts/geist-mono-600.woff2') format('woff2'); }
 
-/* accent bleu-canard (distinctif, non « IA », ne colle pas au sens ambre/vert/rouge) */
-:root { --primary:#0e7490; }
-:root.light { --primary:#0e7490; }
-:root:not(.light) { --primary:#2ca6c9; }   /* plus clair pour rester lisible sur fond sombre */
-
 /* Signature typographique : gros titres et logo en serif éditorial */
 .page-head h1, .page-head h2 { font-family:var(--font-serif); font-weight:600; letter-spacing:-.005em; font-size:26px; }
 .logo span { font-family:var(--font-serif); font-weight:600; letter-spacing:0; }
 .login-box .logo span { font-size:22px; }
 
-/* Logo monochrome ink (le mark bleu jurait avec l'accent teal) */
-:root { --logo-ink:#17151c; }
-:root:not(.light) { --logo-ink:#f4f2f0; }
-
-/* Mark du logo en teal (cohérent app + landing + accent) */
-:root { --logo-ink:#2ca6c9; }
-:root.light { --logo-ink:#0e7490; }
