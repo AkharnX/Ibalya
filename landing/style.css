@@ -20,12 +20,13 @@ html{scroll-behavior:smooth;}
 [id]{scroll-margin-top:92px;}
 /* Anneau de focus clavier visible (aucun :focus-visible n'était défini). */
 a:focus-visible,button:focus-visible,.lp-btn:focus-visible,.lp-theme:focus-visible{
-  outline:2px solid var(--primary);outline-offset:3px;
+  outline:2px solid transparent;outline-offset:2px;
+  box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);
 }
 .lp-skip{
   position:absolute;left:12px;top:-60px;z-index:100;background:var(--card);color:var(--foreground);
   border:1px solid var(--primary);padding:10px 16px;font-family:var(--mono);font-size:13px;
-  text-decoration:none;transition:top .15s;
+  text-decoration:none;transition:top .15s;border-radius:var(--radius-sm);
 }
 .lp-skip:focus{top:12px;}
 body{
@@ -67,7 +68,8 @@ a{color:inherit;}
   padding:11px 20px;border:1px solid var(--border);background:var(--card);
   color:var(--foreground);text-decoration:none;font-size:14px;font-weight:500;
   font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;
-  transition:border-color .15s,background .15s;white-space:nowrap;
+  transition:border-color .2s,background .15s,box-shadow .2s;white-space:nowrap;
+  border-radius:var(--radius-sm);
 }
 .lp-btn:hover{border-color:var(--primary);}
 .lp-btn-primary{background:var(--primary);border-color:var(--primary);color:#fff;}
@@ -93,7 +95,7 @@ a{color:inherit;}
 
 /* ── démonstration ── */
 .lp-terminal-enveloppe{position:relative;}
-.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);}
+.lp-terminal{position:relative;border:1px solid var(--border);background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);overflow:hidden;}
 .lp-terminal-barre{
   display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--border);
 }
@@ -105,7 +107,7 @@ a{color:inherit;}
 .lp-terminal-corps{padding:22px 20px;font-family:var(--mono);font-size:13px;line-height:1.85;}
 .lp-terminal-corps p{margin-bottom:12px;}
 .lp-terminal-corps b{color:var(--primary);margin-right:8px;}
-.lp-terminal-corps mark{background:var(--secondary);color:var(--foreground);padding:3px 6px;}
+.lp-terminal-corps mark{background:var(--secondary);color:var(--foreground);padding:3px 8px;border-radius:var(--radius-pill);}
 .lp-extraction{border-left:2px solid var(--primary);padding:10px 0 10px 16px;margin:18px 0;}
 .lp-extraction p{display:flex;gap:14px;margin-bottom:6px;}
 .lp-extraction span{color:var(--muted);width:112px;flex-shrink:0;}
@@ -129,7 +131,7 @@ a{color:inherit;}
 @media (max-width:900px){ .lp-cartes{grid-template-columns:1fr;} }
 /* Colonne de démonstration du chat : lisible et centrée. */
 .lp-chat-fil{max-width:640px;margin:0 auto;}
-.lp-carte{border:1px solid var(--border);background:var(--card);padding:30px 26px;position:relative;transition:border-color .18s;}
+.lp-carte{border:1px solid var(--border);background:var(--card);padding:30px 26px;position:relative;transition:box-shadow .2s,border-color .2s;border-radius:var(--radius-lg);box-shadow:var(--shadow-card);}
 .lp-carte:hover{border-color:var(--primary);}
 .lp-numero{
   font-family:var(--mono);font-size:11px;color:var(--primary);
@@ -155,6 +157,7 @@ a{color:inherit;}
 .lp-config{
   border:1px solid var(--border);background:#06080c;padding:26px 22px;
   font-family:var(--mono);font-size:12.5px;line-height:2;color:var(--muted);
+  border-radius:var(--radius-lg);
 }
 .lp-c-mot{color:#c084fc;}
 .lp-c-val{color:#34d399;}
@@ -188,7 +191,7 @@ a{color:inherit;}
 .lp-sep{margin:0 10px;opacity:.4;}
 
 /* ── cartes du vide de marché ── */
-.lp-carte-mate{background:transparent;}
+.lp-carte-mate{background:transparent;box-shadow:none;}
 .lp-carte-mate:hover{border-color:var(--border);}
 .lp-carte-mate h3{font-size:16px;}
 
@@ -200,7 +203,7 @@ a{color:inherit;}
 .lp-demo{
   display:grid;grid-template-columns:1fr 1fr;gap:1px;
   background:var(--border);border:1px solid var(--border);
-  margin:0 0 40px;
+  margin:0 0 40px;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-card);
 }
 .lp-demo > div{background:var(--card);padding:20px;}
 .lp-demo-etiq{
@@ -227,7 +230,7 @@ a{color:inherit;}
 
 /* ce que l'agent produit */
 .lp-demo-carte{
-  border:1px solid var(--border);padding:13px 15px;margin-bottom:12px;
+  border:1px solid var(--border);padding:13px 15px;margin-bottom:12px;border-radius:var(--radius-sm);
 }
 .lp-demo-carte:last-child{margin-bottom:0;}
 .lp-demo-tag{
@@ -300,7 +303,7 @@ a{color:inherit;}
 .lp-theme{
   display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;
   border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;
-  transition:border-color .15s,color .15s;flex-shrink:0;
+  transition:border-color .15s,color .15s;flex-shrink:0;border-radius:var(--radius-sm);
 }
 .lp-theme:hover{border-color:var(--primary);color:var(--foreground);}
 .lp-theme .i-sun{display:none;}
