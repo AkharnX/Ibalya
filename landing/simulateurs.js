@@ -984,3 +984,152 @@
 
   S.registerSim('validation', init);
 })();
+
+/* ═══ Simulateur 6 : Fiabilité (interrupteurs + entonnoir) ═══ */
+(function () {
+  'use strict';
+  var S = window.IbSim;
+  if (!S) return;
+
+  // Modèle ILLUSTRATIF de pondération : ce n'est pas une mesure de précision.
+  var BASE = 55;      // précision de départ sans aucun signal, en %
+  var PLAFOND = 95;   // la précision reste strictement sous 100 %
+  var LUS = 1000;     // messages lus (échelle fictive de l'entonnoir)
+  var TAUX_DETECTION = 0.4; // part des messages lus qui contiennent un engagement détecté (illustratif)
+  var SIGNAUX = [
+    { id: 'date', label: 'Date citée dans le message', poids: 9 },
+    { id: 'engagement', label: 'Verbe d\'engagement explicite', poids: 9 },
+    { id: 'interlocuteur', label: 'Interlocuteur identifié', poids: 8 },
+    { id: 'contexte', label: 'Contexte du fil de discussion', poids: 8 },
+    { id: 'formulation', label: 'Formulation sans ambiguïté', poids: 6 }
+  ];
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function calc(actifs) {
+    var p = BASE;
+    SIGNAUX.forEach(function (s) { if (actifs[s.id]) p += s.poids; });
+    p = Math.min(PLAFOND, Math.max(0, p));
+    var detectes = Math.round(LUS * TAUX_DETECTION);
+    var fiables = Math.round(detectes * p / 100);
+    return { precision: p, lus: LUS, detectes: detectes, fiables: fiables };
+  }
+
+  function init(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps) return;
+    var actifs = {}, ready = false;
+
+    corps.appendChild(el('p', 'sim-etiquette', 'Modèle illustratif de pondération, pas une mesure'));
+
+    var fs = document.createElement('fieldset');
+    fs.className = 'sim-signaux';
+    fs.appendChild(el('legend', null, 'Signaux pris en compte'));
+    SIGNAUX.forEach(function (s) {
+      actifs[s.id] = true;
+      var ligne = el('div', 'sim-champ sim-toggle');
+      var inp = document.createElement('input');
+      inp.type = 'checkbox'; inp.id = 'sim6-' + s.id; inp.checked = true;
+      var lab = el('label', null, s.label + ' (+' + s.poids + ' points)');
+      lab.setAttribute('for', inp.id);
+      ligne.appendChild(inp); ligne.appendChild(lab);
+      fs.appendChild(ligne);
+      inp.addEventListener('change', function () { actifs[s.id] = inp.checked; if (ready) update(false); });
+    });
+    corps.appendChild(fs);
+
+    var sorties = el('div', 'sim-sorties');
+    sorties.setAttribute('aria-live', 'polite');
+    var boxP = el('div', 'sim-out');
+    var sP = el('strong', null, '—');
+    boxP.appendChild(sP); boxP.appendChild(el('span', null, 'Précision (illustrative)'));
+    sorties.appendChild(boxP);
+    var etapes = [
+      { cle: 'lus', nom: 'Messages lus' },
+      { cle: 'detectes', nom: 'Engagements détectés' },
+      { cle: 'fiables', nom: 'Engagements fiables' }
+    ];
+    etapes.forEach(function (e) {
+      var b = el('div', 'sim-out');
+      e.val = el('strong', null, '—');
+      b.appendChild(e.val); b.appendChild(el('span', null, e.nom));
+      sorties.appendChild(b);
+    });
+    corps.appendChild(sorties);
+
+    // Entonnoir : 3 segments, largeurs proportionnelles aux volumes (décoratif, résumé en aria-label).
+    var W = 320, H = 150, SEG = 36, GAP = 10, PADT = 6, MINW = 14;
+    var rects = [], vals = [];
+    var g = S.svg('g', { 'aria-hidden': 'true' });
+    var classes = ['sim-fun-lus', 'sim-fun-det', 'sim-fun-fia'];
+    for (var i = 0; i < 3; i++) {
+      var y = PADT + i * (SEG + GAP);
+      var r = S.svg('rect', { x: 0, y: y, width: W, height: SEG, rx: 4, 'class': 'sim-fun ' + classes[i] });
+      var t = S.svg('text', { x: W / 2, y: y + SEG / 2 + 4, 'text-anchor': 'middle', 'class': 'sim-fun-txt' }, '');
+      rects.push(r); vals.push(t); g.appendChild(r); g.appendChild(t);
+    }
+    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [g]);
+    var chart = el('div', 'sim-chart');
+    chart.appendChild(chartSvg);
+    corps.appendChild(chart);
+    corps.appendChild(el('p', 'sim-aide',
+      'Le volume de départ (' + S.fmtInt(LUS) + ' messages) est fictif. Chaque signal activé ajoute des points à la précision illustrée, ' +
+      'et la dernière étape de l\'entonnoir en découle. Ce n\'est pas la précision mesurée sur vos données.'));
+
+    var det = document.createElement('details');
+    det.className = 'sim-formule';
+    det.appendChild(el('summary', null, 'Voir le calcul'));
+    var pondTxt = SIGNAUX.map(function (s) { return s.label.toLowerCase() + ' +' + s.poids; }).join(', ');
+    det.appendChild(el('p', 'sim-formule-texte',
+      'Précision = ' + BASE + ' % de base + points des signaux actifs (' + pondTxt + '), plafonnée à ' + PLAFOND + ' %. ' +
+      'Tous signaux actifs : ' + Math.min(PLAFOND, BASE + 40) + ' % ; aucun : ' + BASE + ' %. ' +
+      'Entonnoir : ' + S.fmtInt(LUS) + ' messages lus, ' + Math.round(TAUX_DETECTION * 100) + ' % d\'engagements détectés, ' +
+      'puis engagements fiables = détectés × précision. ' +
+      'Pondération paramétrique et illustrative : aucune précision réelle n\'est mesurée ici.'));
+    corps.appendChild(det);
+
+    var first = true;
+    function update(animate) {
+      var res = calc(actifs);
+      if (sP._ibRaf) { cancelAnimationFrame(sP._ibRaf); sP._ibRaf = 0; }
+      var fmtP = function (n) { return S.fmtInt(n) + ' %'; };
+      if (animate) S.animateCount(sP, 0, res.precision, fmtP);
+      else sP.textContent = fmtP(res.precision);
+      etapes.forEach(function (e, i) {
+        var v = res[e.cle];
+        e.val.textContent = S.fmtInt(v);
+        var w = Math.max(MINW, W * v / res.lus);
+        rects[i].setAttribute('x', ((W - w) / 2).toFixed(1));
+        rects[i].setAttribute('width', w.toFixed(1));
+        vals[i].textContent = S.fmtInt(v);
+        if (w < 60) {
+          vals[i].setAttribute('class', 'sim-fun-txt sim-fun-txt-hors');
+          vals[i].setAttribute('x', ((W + w) / 2 + 6).toFixed(1));
+          vals[i].setAttribute('text-anchor', 'start');
+        } else {
+          vals[i].setAttribute('class', 'sim-fun-txt');
+          vals[i].setAttribute('x', W / 2);
+          vals[i].setAttribute('text-anchor', 'middle');
+        }
+        if (animate && first && !S.prefersReducedMotion) {
+          rects[i].style.animationDelay = (i * 120) + 'ms';
+          rects[i].classList.add('sim-fun-reveal');
+        }
+      });
+      first = false;
+      chartSvg.setAttribute('aria-label', 'Entonnoir illustratif : ' + S.fmtInt(res.lus) + ' messages lus, ' +
+        S.fmtInt(res.detectes) + ' engagements détectés, ' + S.fmtInt(res.fiables) + ' engagements fiables, soit une précision illustrée de ' +
+        S.fmtInt(res.precision) + ' %.');
+    }
+
+    ready = true;
+    update(true);
+  }
+
+  S.registerSim('fiabilite', init);
+})();
