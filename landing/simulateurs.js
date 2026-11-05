@@ -104,6 +104,34 @@
     var note = root.querySelector('.sim-note');
     if (note) note.hidden = true;
     registry[id](root);
+    annonceCalme(root, id);
+  }
+
+  // Annonces lecteur d'écran calmes et identiques pour tous les simulateurs : les sorties ne sont pas
+  // des zones live (sinon chaque pas de curseur et chaque image de compteur seraient lus) ; un seul
+  // résumé est posé dans une zone status, après 900 ms sans changement. Sim 5 a son propre statut.
+  function annonceCalme(root, id) {
+    if (id === 'validation' || !window.MutationObserver) return;
+    var sorties = root.querySelector('.sim-sorties');
+    if (!sorties) return;
+    var statut = document.createElement('p');
+    statut.className = 'sim-sr';
+    statut.setAttribute('role', 'status');
+    statut.setAttribute('aria-atomic', 'true');
+    sorties.parentNode.insertBefore(statut, sorties.nextSibling);
+    var timer = 0, premier = true;
+    function resume() {
+      return Array.prototype.map.call(sorties.children, function (b) {
+        return Array.prototype.map.call(b.children, function (c) { return c.textContent; }).join(' ');
+      }).join(', ');
+    }
+    new MutationObserver(function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (premier) { premier = false; return; } // pas d'annonce à la première révélation
+        statut.textContent = resume();
+      }, 900);
+    }).observe(sorties, { childList: true, characterData: true, subtree: true });
   }
 
   function registerSim(id, initFn) {
@@ -224,13 +252,12 @@
 
     // Sorties
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
     var DEFS = [
       { k: 'temps', label: 'Temps gagné (h/mois)', fmt: S.fmtH },
       { k: 'engagements', label: 'Engagements sécurisés (/mois)', fmt: S.fmtInt },
       { k: 'oublisEvites', label: 'Oublis évités (€/an)', fmt: S.fmtEUR },
       { k: 'economies', label: 'Économies (€/an)', fmt: S.fmtEUR, cls: 'sim-out-ok' },
-      { k: 'roi', label: 'ROI', fmt: function (n) { return S.fmtInt(n) + ' %'; }, cls: 'sim-out-ok' },
+      { k: 'roi', label: 'ROI', fmt: function (n) { return n > 10000 ? '> 10 000 %' : S.fmtInt(n) + ' %'; }, cls: 'sim-out-ok' },
       { k: 'payback', label: 'Retour en (jours)', fmt: S.fmtInt }
     ];
     var outs = {};
@@ -382,7 +409,6 @@
     });
 
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
     var DEFS = [
       { k: 'direct', label: 'Coût direct (€/an)' },
       { k: 'indirect', label: 'Coût indirect, opportunités perdues (€/an)', cls: 'sim-out-warn' },
@@ -415,7 +441,7 @@
     var gauge = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [
       arc(0, 1 / 3, 'sim-jauge-ok'), arc(1 / 3, 2 / 3, 'sim-jauge-warn'), arc(2 / 3, 1, 'sim-jauge-risk'),
       S.svg('text', { x: CX - R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '≤ ' + S.fmtEUR(PLANCHER_JAUGE)),
-      S.svg('text', { x: CX + R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '1 M€+'),
+      S.svg('text', { x: CX + R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, (PLAFOND_JAUGE / 1000000) + ' M€+'),
       needle, valTxt
     ]);
     var chart = el('div', 'sim-chart');
@@ -532,7 +558,6 @@
     });
 
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
     var DEFS = [
       { k: 'hParAn', label: 'Heures perdues par an', fmt: S.fmtH },
       { k: 'jours', label: 'Jours ouvrés équivalents', fmt: fmtJ, cls: 'sim-out-warn' },
@@ -548,7 +573,7 @@
     });
     corps.appendChild(sorties);
 
-    // Heatmap : une case = un jour ouvré, rangées en colonnes de 12 (décorative, le résumé est dans aria-label).
+    // Heatmap : une case = un jour ouvré, rangées en colonnes de 10 (décorative, le résumé est dans aria-label).
     var CELL = 14, GAP = 3, PAD = 2, LEG = 22;
     var W = PAD * 2 + COLS * (CELL + GAP) - GAP, H = PAD * 2 + ROWS * (CELL + GAP) - GAP + LEG;
     var cells = [];
@@ -696,7 +721,6 @@
     });
 
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
     var boxScore = el('div', 'sim-out');
     var sScore = el('strong', null, '—');
     boxScore.appendChild(sScore); boxScore.appendChild(el('span', null, 'Score de risque (0 à 100)'));
@@ -779,7 +803,15 @@
         else node.textContent = a[2](a[1]);
       });
       sNiveau.textContent = res.lib.charAt(0).toUpperCase() + res.lib.slice(1);
+      var aucun = vals.tauxRetard === 0 && vals.tauxSilence === 0;
       res.top.forEach(function (c, i) {
+        if (aucun) {
+          lis[i].nom.textContent = i === 0 ? 'Aucun risque identifié avec ces réglages' : '';
+          lis[i].nb.textContent = '';
+          lis[i].nom.parentNode.hidden = i > 0;
+          return;
+        }
+        lis[i].nom.parentNode.hidden = false;
         lis[i].nom.textContent = (i + 1) + '. ' + c.nom + ' ';
         lis[i].nb.textContent = '≈ ' + S.fmtInt(c.n) + ' engagement' + (Math.round(c.n) > 1 ? 's' : '');
       });
@@ -854,12 +886,9 @@
 
     var statut = el('p', 'sim-sr');
     statut.setAttribute('role', 'status');
-    statut.setAttribute('aria-live', 'polite');
     corps.appendChild(statut);
 
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
-    sorties.setAttribute('aria-atomic', 'true');
     var boxV = el('div', 'sim-out'), outV = el('strong', null, '0');
     boxV.appendChild(outV); boxV.appendChild(el('span', null, 'Messages validés'));
     var boxT = el('div', 'sim-out sim-out-ok'), outT = el('strong', null, '0 min');
@@ -1044,7 +1073,6 @@
     corps.appendChild(fs);
 
     var sorties = el('div', 'sim-sorties');
-    sorties.setAttribute('aria-live', 'polite');
     var boxP = el('div', 'sim-out');
     var sP = el('strong', null, '—');
     boxP.appendChild(sP); boxP.appendChild(el('span', null, 'Précision (illustrative)'));

@@ -360,7 +360,7 @@ a{color:inherit;}
 .sim-range::-moz-range-track{height:6px;border-radius:var(--radius-pill);background:var(--border);}
 .sim-range::-moz-range-progress{height:6px;border-radius:var(--radius-pill);background:var(--primary);}
 .sim-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:-7px;border-radius:var(--radius-pill);background:var(--primary);border:3px solid var(--card);box-shadow:var(--shadow-soft);}
-.sim-range::-moz-range-thumb{width:14px;height:14px;border-radius:var(--radius-pill);background:var(--primary);border:3px solid var(--card);box-shadow:var(--shadow-soft);}
+.sim-range::-moz-range-thumb{box-sizing:border-box;width:20px;height:20px;border-radius:var(--radius-pill);background:var(--primary);border:3px solid var(--card);box-shadow:var(--shadow-soft);}
 .sim-range:focus{outline:none;}
 .sim-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
 .sim-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
@@ -407,9 +407,9 @@ a{color:inherit;}
 
 /* Simulateur 5 : pile de cartes de validation */
 .sim-pile{position:relative;height:190px;margin:4px 0 6px;}
-.sim-carte{position:absolute;inset:0 0 auto 0;height:170px;display:flex;flex-direction:column;gap:6px;justify-content:center;padding:18px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);}
+.sim-carte{position:absolute;inset:0 0 auto 0;min-height:170px;display:flex;flex-direction:column;gap:6px;justify-content:center;padding:18px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);}
 .sim-carte-fond{pointer-events:none;}
-.sim-carte-haut{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .25s ease,border-color .15s;}
+.sim-carte-haut{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .25s ease,border-color .15s;}
 .sim-carte-glisse{cursor:grabbing;transition:none;}
 .sim-carte-sortie{pointer-events:none;}
 .sim-carte-oui{border-color:var(--ok);}
@@ -443,3 +443,17 @@ a{color:inherit;}
 .sim-chart .sim-fun-reveal{animation:sim-fun-in .6s ease-out backwards;transform-box:fill-box;transform-origin:center;}
 @keyframes sim-fun-in{from{opacity:0;transform:scaleX(.2);}}
 @media (prefers-reduced-motion:reduce){.sim-chart .sim-fun{transition:none;}.sim-chart .sim-fun-reveal{animation:none;}}
+
+/* Intégration (Task 8) */
+.sim-grille > .sim{min-width:0;}
+.sim-chart svg{max-width:100%;}
+.sim-out strong{overflow-wrap:anywhere;}
+@media (max-width:900px){.sim-grille{grid-template-columns:1fr;}}
+@media (max-width:480px){
+  .sim{padding:22px 16px;}
+  .sim-pile{height:250px;}
+  .sim-carte{min-height:230px;}
+  .sim-range-val{min-width:4.5em;}
+  .sim-chart .sim-heat-case{stroke:none;}
+}
+.sim-actions .sim-btn,.sim-formule summary{touch-action:manipulation;}
