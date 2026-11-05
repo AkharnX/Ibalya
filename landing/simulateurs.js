@@ -467,7 +467,7 @@
   var JOURS_OUVRES = 230;      // jours travaillés par an
   var MIN_PAR_H = 60;          // minutes par heure
   var H_PAR_JOUR = 8;          // heures par jour ouvré (équivalence en jours)
-  var COLS = 20, ROWS = 12;    // grille 20 x 12 = 240 cases, 230 remplies (une case = un jour ouvré)
+  var COLS = 23, ROWS = 10;    // grille 23 x 10 = 230 cases = exactement les jours ouvrés (une case = un jour ouvré)
   var SEUIL_PLEIN = 120;       // minutes perdues par jour pour la teinte pleine (échelle fixe, pour que la grille réagisse)
   var AMPLITUDE = 0.45;        // variation illustrative autour de la moyenne
 
@@ -487,7 +487,6 @@
   })();
 
   var CHAMPS = [
-    { id: 'msgJour', label: 'Messages reçus par jour', min: 10, max: 300, val: 80, step: 10, unit: 'msg' },
     { id: 'minRecherche', label: 'Durée d\'une recherche', min: 1, max: 10, val: 2, step: 1, unit: 'min' },
     { id: 'recherchesJour', label: 'Recherches par jour', min: 1, max: 40, val: 10, step: 1, unit: '/jour' },
     { id: 'coutHoraire', label: 'Coût horaire', min: 20, max: 150, val: 50, step: 5, unit: '€/h' }
@@ -583,7 +582,6 @@
       'Heures par an = minutes par jour × ' + JOURS_OUVRES + ' jours ouvrés ÷ ' + MIN_PAR_H + '. ' +
       'Jours équivalents = heures par an ÷ ' + H_PAR_JOUR + ' h. ' +
       'Coût par an = heures par an × coût horaire. ' +
-      'Le curseur « messages reçus par jour » donne le contexte de volume ; il n\'entre pas dans la formule, le nombre de recherches étant votre propre estimation. ' +
       'La grille répartit ce total selon un motif fixe (ondulation et rythme de semaine), normalisé pour que la moyenne égale exactement les minutes par jour calculées. ' +
       'Ce motif est illustratif, pas une mesure. Toutes les valeurs sont des estimations que vous réglez.'));
     corps.appendChild(det);
