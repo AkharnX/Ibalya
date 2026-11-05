@@ -271,6 +271,7 @@ a{color:inherit;}
   .lp-t1,.lp-t2,.lp-t3,.lp-t4,.lp-t5{animation:none;opacity:1;}
   .lp-curseur{animation:none;}
   html{scroll-behavior:auto;}
+  .reveal,.reveal.is-visible,.reveal:not(.is-visible){animation:none;opacity:1;transform:none;}
 }
 @media (max-width:760px){
   .lp-demo{grid-template-columns:1fr;}
@@ -323,3 +324,11 @@ a{color:inherit;}
 /* Texte foncé sur le teal vif du bouton en sombre : le blanc échouait au
    contraste (≈3:1). Le reste de --primary sert d'accent clair ailleurs. */
 :root[data-theme="dark"] .lp-btn-primary{color:#0b1a1f;}
+
+/* Révélation au scroll (classes posées par animations.js ; sans JS tout reste visible) */
+@keyframes lp-reveal{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.reveal:not(.is-visible){opacity:0;}
+.reveal.is-visible{animation:lp-reveal .6s cubic-bezier(.16,1,.3,1) both;}
+@media (prefers-reduced-motion:reduce){
+  .reveal,.reveal:not(.is-visible),.reveal.is-visible{animation:none;opacity:1;transform:none;}
+}
