@@ -1063,15 +1063,17 @@
     corps.appendChild(sorties);
 
     // Entonnoir : 3 segments, largeurs proportionnelles aux volumes (décoratif, résumé en aria-label).
-    var W = 320, H = 150, SEG = 36, GAP = 10, PADT = 6, MINW = 14;
+    // Libellés placés au-dessus de chaque segment, sur le fond de la carte (contraste AA garanti, 2 thèmes).
+    var W = 320, SEG = 18, LIGNE = 16, GAP = 10, PADT = 2, MINW = 14;
+    var H = PADT + 3 * (LIGNE + SEG) + 2 * GAP + 2;
     var rects = [], vals = [];
     var g = S.svg('g', { 'aria-hidden': 'true' });
     var classes = ['sim-fun-lus', 'sim-fun-det', 'sim-fun-fia'];
     for (var i = 0; i < 3; i++) {
-      var y = PADT + i * (SEG + GAP);
-      var r = S.svg('rect', { x: 0, y: y, width: W, height: SEG, rx: 4, 'class': 'sim-fun ' + classes[i] });
-      var t = S.svg('text', { x: W / 2, y: y + SEG / 2 + 4, 'text-anchor': 'middle', 'class': 'sim-fun-txt' }, '');
-      rects.push(r); vals.push(t); g.appendChild(r); g.appendChild(t);
+      var y = PADT + i * (LIGNE + SEG + GAP);
+      var t = S.svg('text', { x: 0, y: y + 12, 'class': 'sim-fun-txt' }, '');
+      var r = S.svg('rect', { x: 0, y: y + LIGNE, width: W, height: SEG, rx: 4, 'class': 'sim-fun ' + classes[i] });
+      rects.push(r); vals.push(t); g.appendChild(t); g.appendChild(r);
     }
     var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [g]);
     var chart = el('div', 'sim-chart');
@@ -1087,7 +1089,7 @@
     var pondTxt = SIGNAUX.map(function (s) { return s.label.toLowerCase() + ' +' + s.poids; }).join(', ');
     det.appendChild(el('p', 'sim-formule-texte',
       'Précision = ' + BASE + ' % de base + points des signaux actifs (' + pondTxt + '), plafonnée à ' + PLAFOND + ' %. ' +
-      'Tous signaux actifs : ' + Math.min(PLAFOND, BASE + 40) + ' % ; aucun : ' + BASE + ' %. ' +
+      'Tous signaux actifs : ' + Math.min(PLAFOND, BASE + SIGNAUX.reduce(function (a, s) { return a + s.poids; }, 0)) + ' % ; aucun : ' + BASE + ' %. ' +
       'Entonnoir : ' + S.fmtInt(LUS) + ' messages lus, ' + Math.round(TAUX_DETECTION * 100) + ' % d\'engagements détectés, ' +
       'puis engagements fiables = détectés × précision. ' +
       'Pondération paramétrique et illustrative : aucune précision réelle n\'est mesurée ici.'));
@@ -1106,16 +1108,7 @@
         var w = Math.max(MINW, W * v / res.lus);
         rects[i].setAttribute('x', ((W - w) / 2).toFixed(1));
         rects[i].setAttribute('width', w.toFixed(1));
-        vals[i].textContent = S.fmtInt(v);
-        if (w < 60) {
-          vals[i].setAttribute('class', 'sim-fun-txt sim-fun-txt-hors');
-          vals[i].setAttribute('x', ((W + w) / 2 + 6).toFixed(1));
-          vals[i].setAttribute('text-anchor', 'start');
-        } else {
-          vals[i].setAttribute('class', 'sim-fun-txt');
-          vals[i].setAttribute('x', W / 2);
-          vals[i].setAttribute('text-anchor', 'middle');
-        }
+        vals[i].textContent = e.nom + ' : ' + S.fmtInt(v);
         if (animate && first && !S.prefersReducedMotion) {
           rects[i].style.animationDelay = (i * 120) + 'ms';
           rects[i].classList.add('sim-fun-reveal');

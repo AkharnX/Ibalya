@@ -436,11 +436,10 @@ a{color:inherit;}
 .sim-toggle label{text-transform:none;letter-spacing:0;font-family:inherit;font-size:14px;color:var(--foreground);cursor:pointer;}
 .sim-toggle input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 .sim-chart .sim-fun{transition:width .35s ease,x .35s ease;}
-.sim-chart .sim-fun-lus{fill:var(--muted);opacity:.55;}
-.sim-chart .sim-fun-det{fill:var(--primary);opacity:.7;}
+.sim-chart .sim-fun-lus{fill:var(--muted);}
+.sim-chart .sim-fun-det{fill:var(--primary);}
 .sim-chart .sim-fun-fia{fill:var(--ok);}
-.sim-chart .sim-fun-txt{fill:#fff;font-weight:700;font-size:12px;}
-.sim-chart .sim-fun-txt-hors{fill:var(--foreground);}
+.sim-chart .sim-fun-txt{fill:var(--foreground);font-weight:700;font-size:12px;}
 .sim-chart .sim-fun-reveal{animation:sim-fun-in .6s ease-out backwards;transform-box:fill-box;transform-origin:center;}
 @keyframes sim-fun-in{from{opacity:0;transform:scaleX(.2);}}
 @media (prefers-reduced-motion:reduce){.sim-chart .sim-fun{transition:none;}.sim-chart .sim-fun-reveal{animation:none;}}
