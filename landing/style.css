@@ -1,16 +1,19 @@
 /* Page commerciale Ibalya — statique, sans dépendance ni étape de build.
-   Reprend les jetons de l'application : angles droits, bleu cobalt, mono. */
+   Reprend les jetons de l'application : arrondis, teal, JetBrains Mono. */
 
 /* Clair par défaut (blanc chaud), sombre via le bouton (data-theme).
-   Jetons alignés sur l'app et le guide : teal #0e7490, serif Fraunces, mono Geist. */
+   Jetons alignés sur l'app et le guide : teal #0e7490, serif Fraunces, mono JetBrains. */
 :root{
   color-scheme:light;
   --primary:#0e7490;
   --background:#f7f4f1; --foreground:#22272e; --card:#ffffff;
   --secondary:#efe9e3; --muted:#605a66; --border:#e6ded7; --sidebar:#f1ece7;
-  --risk:#b5432a;
+  --risk:#A63D25;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --mono:"Geist Mono","JetBrains Mono",ui-monospace,monospace;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --accent:"Instrument Serif",Georgia,serif;
+  --radius-sm:12px; --radius-md:16px; --radius-lg:24px; --radius-pill:9999px;
+  --shadow-card:0 8px 32px rgba(34,39,46,.08); --shadow-soft:0 2px 8px rgba(34,39,46,.06);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -276,8 +279,10 @@ a{color:inherit;}
 @font-face { font-family:"Fraunces"; font-weight:700; font-display:swap;
   src:url('/fonts/fraunces-700.woff2') format('woff2'); }
 /* Mono auto-hébergée : --mono la nommait sans jamais la charger → repli Courier. */
-@font-face { font-family:"Geist Mono"; font-weight:400; font-display:swap;
-  src:url('/fonts/geist-mono-400.woff2') format('woff2'); }
+@font-face { font-family:"JetBrains Mono"; font-weight:100 800; font-display:swap;
+  src:url('/fonts/jetbrains-mono-latin.woff2') format('woff2'); }
+@font-face { font-family:"Instrument Serif"; font-weight:400; font-display:swap;
+  src:url('/fonts/instrument-serif-400.woff2') format('woff2'); }
 .lp-hero h1, .lp-section-tete h2, .lp-logo { font-family:"Fraunces", Georgia, serif; letter-spacing:-.01em; }
 .lp-hero h1, .lp-section-tete h2, .lp-securite h2, .lp-cta h2 { text-wrap:balance; }
 .lp-logo { font-weight:600; }
@@ -306,10 +311,11 @@ a{color:inherit;}
    Fond charcoal chaud dé-bleui, teal éclairci pour rester lisible sur sombre. */
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --primary:#22a4c4;
+  --primary:#3FA7C0;
   --background:#17151c; --foreground:#f4f2f0; --card:#221f2a;
   --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
-  --risk:#e07a5f;
+  --risk:#E5735A;
+  --shadow-card:0 8px 32px rgba(0,0,0,.45); --shadow-soft:0 2px 8px rgba(0,0,0,.35);
 }
 /* Texte foncé sur le teal vif du bouton en sombre : le blanc échouait au
    contraste (≈3:1). Le reste de --primary sert d'accent clair ailleurs. */
