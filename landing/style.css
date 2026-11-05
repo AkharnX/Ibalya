@@ -394,3 +394,8 @@ a{color:inherit;}
 .sim-chart .sim-aiguille-trait{stroke:var(--foreground);stroke-width:3;stroke-linecap:round;}
 .sim-chart .sim-aiguille-pivot{fill:var(--foreground);}
 @media (prefers-reduced-motion:reduce){.sim-chart .sim-aiguille{transition:none;}}
+/* Simulateur 3 : heatmap calendaire (crème -> canard par opacité sur fond de carte) */
+.sim-chart .sim-heat-case{fill:var(--primary);}
+.sim-chart .sim-heat-reveal{animation:sim-heat-in .5s ease-out backwards;}
+@keyframes sim-heat-in{from{opacity:0;}to{opacity:1;}}
+@media (prefers-reduced-motion:reduce){.sim-chart .sim-heat-reveal{animation:none;}}

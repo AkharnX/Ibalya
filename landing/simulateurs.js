@@ -456,3 +456,162 @@
 
   S.registerSim('oubli', init);
 })();
+
+/* ═══ Simulateur 3 : Temps perdu (heatmap calendaire) ═══ */
+(function () {
+  'use strict';
+  var S = window.IbSim;
+  if (!S) return;
+
+  // Hypothèses : estimations paramétrables, jamais des faits mesurés.
+  var JOURS_OUVRES = 230;      // jours travaillés par an
+  var MIN_PAR_H = 60;          // minutes par heure
+  var H_PAR_JOUR = 8;          // heures par jour ouvré (équivalence en jours)
+  var COLS = 20, ROWS = 12;    // grille 20 x 12 = 240 cases, 230 remplies (une case = un jour ouvré)
+  var SEUIL_PLEIN = 120;       // minutes perdues par jour pour la teinte pleine (échelle fixe, pour que la grille réagisse)
+  var AMPLITUDE = 0.45;        // variation illustrative autour de la moyenne
+
+  // Répartition illustrative et DÉTERMINISTE : fonction fixe de l'indice de case (aucun hasard).
+  // Normalisée pour que la moyenne sur les 230 jours vaille exactement 1 : la grille redistribue
+  // le total calculé, elle n'invente aucun volume.
+  var FACTEURS = (function () {
+    var f = [], i, s = 0, m;
+    for (i = 0; i < JOURS_OUVRES; i++) {
+      var onde = Math.sin(i * 0.37) * 0.6 + Math.sin(i * 1.3 + 1) * 0.4;  // ondulation lente + rapide
+      var semaine = [0.25, 0, -0.1, 0.05, -0.3][i % 5];                    // lundi chargé, vendredi plus calme
+      f.push(Math.max(0.05, 1 + AMPLITUDE * onde + semaine));
+      s += f[i];
+    }
+    m = s / JOURS_OUVRES;
+    return f.map(function (x) { return x / m; });
+  })();
+
+  var CHAMPS = [
+    { id: 'msgJour', label: 'Messages reçus par jour', min: 10, max: 300, val: 80, step: 10, unit: 'msg' },
+    { id: 'minRecherche', label: 'Durée d\'une recherche', min: 1, max: 10, val: 2, step: 1, unit: 'min' },
+    { id: 'recherchesJour', label: 'Recherches par jour', min: 1, max: 40, val: 10, step: 1, unit: '/jour' },
+    { id: 'coutHoraire', label: 'Coût horaire', min: 20, max: 150, val: 50, step: 5, unit: '€/h' }
+  ];
+
+  function fin(x) { return isFinite(x) ? x : 0; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function calc(v) {
+    var minParJour = fin(v.recherchesJour * v.minRecherche);
+    var hParAn = fin(minParJour * JOURS_OUVRES / MIN_PAR_H);
+    return { minParJour: minParJour, hParAn: hParAn, jours: fin(hParAn / H_PAR_JOUR), coutParAn: fin(hParAn * v.coutHoraire) };
+  }
+
+  function fmtJ(n) { return S.fmtH(n).replace(/\s*h$/, ' j'); }
+
+  function init(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps) return;
+    var vals = {}, ready = false;
+
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation paramétrable, non garantie'));
+
+    CHAMPS.forEach(function (c) {
+      var champ = el('div', 'sim-champ');
+      var lab = el('label', null, c.label);
+      lab.setAttribute('for', 'sim3-' + c.id);
+      var ligne = el('div', 'sim-range-ligne');
+      var inp = document.createElement('input');
+      inp.type = 'range'; inp.className = 'sim-range'; inp.id = 'sim3-' + c.id;
+      inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = c.val;
+      inp.setAttribute('data-unit', c.unit);
+      ligne.appendChild(inp);
+      champ.appendChild(lab); champ.appendChild(ligne);
+      corps.appendChild(champ);
+      vals[c.id] = c.val;
+      S.bindRange(inp, function (v) { vals[c.id] = fin(v); if (ready) update(false); });
+    });
+
+    var sorties = el('div', 'sim-sorties');
+    sorties.setAttribute('aria-live', 'polite');
+    var DEFS = [
+      { k: 'hParAn', label: 'Heures perdues par an', fmt: S.fmtH },
+      { k: 'jours', label: 'Jours ouvrés équivalents', fmt: fmtJ, cls: 'sim-out-warn' },
+      { k: 'coutParAn', label: 'Coût estimé (€/an)', fmt: S.fmtEUR, cls: 'sim-out-risk' }
+    ];
+    var outs = {};
+    DEFS.forEach(function (d) {
+      var box = el('div', 'sim-out' + (d.cls ? ' ' + d.cls : ''));
+      var strong = el('strong', null, '—');
+      box.appendChild(strong); box.appendChild(el('span', null, d.label));
+      sorties.appendChild(box);
+      outs[d.k] = strong;
+    });
+    corps.appendChild(sorties);
+
+    // Heatmap : une case = un jour ouvré, rangées en colonnes de 12 (décorative, le résumé est dans aria-label).
+    var CELL = 14, GAP = 3, PAD = 2, LEG = 22;
+    var W = PAD * 2 + COLS * (CELL + GAP) - GAP, H = PAD * 2 + ROWS * (CELL + GAP) - GAP + LEG;
+    var cells = [];
+    var grid = S.svg('g', { 'aria-hidden': 'true' });
+    for (var i = 0; i < JOURS_OUVRES; i++) {
+      var r = S.svg('rect', {
+        x: PAD + Math.floor(i / ROWS) * (CELL + GAP), y: PAD + (i % ROWS) * (CELL + GAP),
+        width: CELL, height: CELL, rx: 3, 'class': 'sim-heat-case', 'fill-opacity': 0.1
+      });
+      cells.push(r); grid.appendChild(r);
+    }
+    var legY = H - 8;
+    var legende = S.svg('g', { 'aria-hidden': 'true' }, [
+      S.svg('text', { x: PAD, y: legY, 'class': 'sim-lib' }, '0 min'),
+      S.svg('text', { x: W / 2, y: legY, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'répartition illustrative'),
+      S.svg('text', { x: W - PAD, y: legY, 'text-anchor': 'end', 'class': 'sim-lib' }, '≥ ' + SEUIL_PLEIN + ' min/jour')
+    ]);
+    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [grid, legende]);
+    var chart = el('div', 'sim-chart');
+    chart.appendChild(chartSvg);
+    corps.appendChild(chart);
+    corps.appendChild(el('p', 'sim-aide',
+      'Chaque case est un jour ouvré (' + JOURS_OUVRES + ' par an). Plus la teinte est foncée, plus le temps perdu ce jour-là est élevé. ' +
+      'La répartition entre les jours est illustrative : seule la moyenne est calculée.'));
+
+    var det = document.createElement('details');
+    det.className = 'sim-formule';
+    det.appendChild(el('summary', null, 'Voir le calcul'));
+    det.appendChild(el('p', 'sim-formule-texte',
+      'Minutes perdues par jour = recherches par jour × durée d\'une recherche. ' +
+      'Heures par an = minutes par jour × ' + JOURS_OUVRES + ' jours ouvrés ÷ ' + MIN_PAR_H + '. ' +
+      'Jours équivalents = heures par an ÷ ' + H_PAR_JOUR + ' h. ' +
+      'Coût par an = heures par an × coût horaire. ' +
+      'Le curseur « messages reçus par jour » donne le contexte de volume ; il n\'entre pas dans la formule, le nombre de recherches étant votre propre estimation. ' +
+      'La grille répartit ce total selon un motif fixe (ondulation et rythme de semaine), normalisé pour que la moyenne égale exactement les minutes par jour calculées. ' +
+      'Ce motif est illustratif, pas une mesure. Toutes les valeurs sont des estimations que vous réglez.'));
+    corps.appendChild(det);
+
+    function update(animate) {
+      var res = calc(vals);
+      DEFS.forEach(function (d) {
+        var node = outs[d.k], v = res[d.k];
+        if (node._ibRaf) { cancelAnimationFrame(node._ibRaf); node._ibRaf = 0; }
+        // Animation réservée à la première révélation ; ensuite écriture directe (pas de scintillement).
+        if (animate) S.animateCount(node, 0, v, d.fmt);
+        else node.textContent = d.fmt(v);
+      });
+      for (var k = 0; k < cells.length; k++) {
+        var t = Math.min(1, fin(res.minParJour * FACTEURS[k]) / SEUIL_PLEIN);
+        cells[k].setAttribute('fill-opacity', (0.1 + 0.9 * t).toFixed(3));
+        if (animate && !S.prefersReducedMotion) {
+          cells[k].style.animationDelay = (Math.floor(k / ROWS) * 35) + 'ms';
+          cells[k].classList.add('sim-heat-reveal');
+        }
+      }
+      chartSvg.setAttribute('aria-label', 'Temps perdu en recherches : ' + S.fmtH(res.hParAn) + ' par an, soit ' +
+        S.fmtEUR(res.coutParAn) + ' (estimation). Grille de ' + JOURS_OUVRES + ' jours ouvrés, répartition illustrative.');
+    }
+
+    ready = true;
+    update(true);
+  }
+
+  S.registerSim('temps', init);
+})();
