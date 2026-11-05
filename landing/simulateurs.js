@@ -119,17 +119,24 @@
     statut.setAttribute('role', 'status');
     statut.setAttribute('aria-atomic', 'true');
     sorties.parentNode.insertBefore(statut, sorties.nextSibling);
-    var timer = 0, premier = true;
+    var timer = 0, touche = false;
     function resume() {
       return Array.prototype.map.call(sorties.children, function (b) {
         return Array.prototype.map.call(b.children, function (c) { return c.textContent; }).join(' ');
       }).join(', ');
     }
+    var derniere = resume();
+    ['input', 'change', 'click', 'keydown'].forEach(function (ev) {
+      root.addEventListener(ev, function () { touche = true; }, true);
+    });
     new MutationObserver(function () {
       clearTimeout(timer);
       timer = setTimeout(function () {
-        if (premier) { premier = false; return; } // pas d'annonce à la première révélation
-        statut.textContent = resume();
+        var r = resume();
+        if (r === derniere) return;
+        // Tant que le visiteur n'a rien touché, c'est la révélation initiale : mémorisée, jamais annoncée.
+        if (touche) statut.textContent = r;
+        derniere = r;
       }, 900);
     }).observe(sorties, { childList: true, characterData: true, subtree: true });
   }

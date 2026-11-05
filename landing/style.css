@@ -457,3 +457,4 @@ a{color:inherit;}
   .sim-chart .sim-heat-case{stroke:none;}
 }
 .sim-actions .sim-btn,.sim-formule summary{touch-action:manipulation;}
+.sim-top-liste li[hidden]{display:none;}
