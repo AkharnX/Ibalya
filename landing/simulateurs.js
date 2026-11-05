@@ -155,7 +155,8 @@
 
   function calc(v) {
     var engagements = fin(v.boites * v.msgJour * PART_ENGAGEMENTS * JOURS_OUVRES);
-    var temps = engagements * MIN_PAR_ENGAGEMENT / 60;
+    // Plus la part de réponses en retard est élevée, plus le relancement manuel épargné est important.
+    var temps = engagements * MIN_PAR_ENGAGEMENT / 60 * (1 + v.tauxRetard / 100);
     var valeurTemps = temps * 12 * v.coutHoraire;
     var oublisEvites = v.freqOubli * 12 * v.coutOubli * TAUX_OUBLI_EVITE;
     var economies = valeurTemps + oublisEvites;
@@ -253,7 +254,8 @@
     det.appendChild(el('summary', null, 'Voir le calcul'));
     det.appendChild(el('p', 'sim-formule-texte',
       'Engagements/mois = boîtes × messages/jour × ' + PART_ENGAGEMENTS + ' × ' + JOURS_OUVRES + ' jours. ' +
-      'Temps gagné = engagements × ' + MIN_PAR_ENGAGEMENT + ' min ÷ 60. ' +
+      'Temps gagné = engagements × ' + MIN_PAR_ENGAGEMENT + ' min ÷ 60 × (1 + part en retard ÷ 100) : ' +
+      'plus d\'engagements en retard, plus de temps de relance manuel épargné. ' +
       'Valeur du temps/an = temps gagné × 12 × coût horaire. ' +
       'Oublis évités/an = oublis par mois × 12 × coût d\'un oubli × ' + TAUX_OUBLI_EVITE + '. ' +
       'Économies/an = valeur du temps + oublis évités. ' +
