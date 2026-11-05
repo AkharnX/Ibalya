@@ -8,7 +8,7 @@
   --primary:#0e7490;
   --background:#f7f4f1; --foreground:#22272e; --card:#ffffff;
   --secondary:#efe9e3; --muted:#605a66; --border:#e6ded7; --sidebar:#f1ece7;
-  --risk:#A63D25;
+  --risk:#A63D25; --ok:#3A7D5C; --warn:#A86523;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
   --accent:"Instrument Serif",Georgia,serif;
@@ -318,7 +318,7 @@ a{color:inherit;}
   --primary:#3FA7C0;
   --background:#17151c; --foreground:#f4f2f0; --card:#221f2a;
   --secondary:#2c2836; --muted:#a8a2b0; --border:#39333f; --sidebar:#131117;
-  --risk:#E5735A;
+  --risk:#E5735A; --ok:#4FB286; --warn:#D99A4E;
   --shadow-card:0 8px 32px rgba(0,0,0,.45); --shadow-soft:0 2px 8px rgba(0,0,0,.35);
 }
 /* Texte foncé sur le teal vif du bouton en sombre : le blanc échouait au
@@ -332,3 +332,36 @@ a{color:inherit;}
 @media (prefers-reduced-motion:reduce){
   .reveal,.reveal:not(.is-visible),.reveal.is-visible{animation:none;opacity:1;transform:none;}
 }
+
+/* ═══ Simulateurs ROI (#simulateurs) ═══ */
+.sim-disclaimer{max-width:44em;margin:0 auto 36px;padding:12px 18px;border:1px solid var(--border);background:var(--secondary);border-radius:var(--radius-sm);font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;}
+.sim-grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;}
+.sim{border:1px solid var(--border);background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px 26px;display:flex;flex-direction:column;gap:14px;}
+.sim h3{font-size:20px;font-weight:700;letter-spacing:-.02em;}
+.sim > p{color:var(--muted);font-size:15px;}
+.sim > .sim-note{font-family:var(--mono);font-size:12px;}
+.sim-note[hidden]{display:none;}
+.sim-corps{display:flex;flex-direction:column;gap:14px;}
+.sim-corps:empty{display:none;}
+.sim-champ{display:flex;flex-direction:column;gap:6px;font-size:14px;}
+.sim-champ label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sim-range-ligne{display:flex;align-items:center;gap:14px;}
+.sim-range-val{min-width:5.5em;text-align:right;font-family:var(--mono);font-size:13px;color:var(--foreground);}
+.sim-out{border:1px solid var(--border);background:var(--secondary);border-radius:var(--radius-md);padding:14px 16px;font-family:var(--mono);}
+.sim-out strong{display:block;font-size:26px;font-weight:700;color:var(--primary);letter-spacing:-.02em;}
+.sim-out span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sim-out-ok strong{color:var(--ok);} .sim-out-warn strong{color:var(--warn);} .sim-out-risk strong{color:var(--risk);}
+.sim-chart{width:100%;min-height:140px;border-radius:var(--radius-md);}
+.sim-chart svg{display:block;width:100%;height:auto;}
+
+/* Curseurs : piste + pouce teal, WebKit et Firefox. --fill posé par bindRange. */
+.sim-range{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:24px;background:transparent;cursor:pointer;--fill:50%;}
+.sim-range::-webkit-slider-runnable-track{height:6px;border-radius:var(--radius-pill);background:linear-gradient(to right,var(--primary) var(--fill),var(--border) var(--fill));}
+.sim-range::-moz-range-track{height:6px;border-radius:var(--radius-pill);background:var(--border);}
+.sim-range::-moz-range-progress{height:6px;border-radius:var(--radius-pill);background:var(--primary);}
+.sim-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:-7px;border-radius:var(--radius-pill);background:var(--primary);border:3px solid var(--card);box-shadow:var(--shadow-soft);}
+.sim-range::-moz-range-thumb{width:14px;height:14px;border-radius:var(--radius-pill);background:var(--primary);border:3px solid var(--card);box-shadow:var(--shadow-soft);}
+.sim-range:focus{outline:none;}
+.sim-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
+.sim-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
+@media (prefers-reduced-motion:reduce){.sim,.sim *{transition:none !important;animation:none !important;}}

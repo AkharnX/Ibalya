@@ -32,6 +32,7 @@
     <a href="#probleme">Le problème</a>
     <a href="#fonctionnement">Fonctionnement</a>
     <a href="#assistant">Assistant</a>
+    <a href="#simulateurs">Votre ROI</a>
     <a href="#securite">Sécurité</a>
   </nav>
   <div class="lp-header-actions">
@@ -225,6 +226,54 @@
     </div>
   </section>
 
+  <!-- ── Simulateurs ROI ── -->
+  <section class="lp-section" id="simulateurs">
+    <div class="lp-section-tete">
+      <p class="lp-surtitre lp-accent">Votre ROI</p>
+      <h2>Combien Ibalya vous fait gagner</h2>
+      <p>Six simulateurs pour chiffrer le gain à partir de votre propre activité.</p>
+    </div>
+    <p class="sim-disclaimer" role="note">Estimations paramétrables : ajustez les hypothèses, rien n'est garanti. Les résultats sont indicatifs et dépendent de votre activité.</p>
+    <div class="sim-grille">
+      <div class="sim" id="sim-1" data-sim="roi">
+        <h3>Retour sur investissement</h3>
+        <p>Estimez ce que le temps gagné sur vos tâches répétitives représente en euros sur un an.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-2" data-sim="oubli">
+        <h3>Coût de l'oubli</h3>
+        <p>Chiffrez ce que coûtent les relances et devis qui passent entre les mailles.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-3" data-sim="temps">
+        <h3>Temps récupéré</h3>
+        <p>Voyez où vos heures de tri, de saisie et de relance se libèrent dans la semaine.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-4" data-sim="risque">
+        <h3>Exposition au risque</h3>
+        <p>Repérez les échéances et dossiers les plus exposés selon votre volume.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-5" data-sim="validation">
+        <h3>Validation humaine</h3>
+        <p>Mesurez la part des actions que vous validez vous-même avant envoi.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-6" data-sim="fiabilite">
+        <h3>Fiabilité</h3>
+        <p>Comparez votre taux d'erreur actuel à celui d'un traitement assisté et contrôlé.</p>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Sécurité ── -->
   <section class="lp-securite" id="securite">
     <div class="lp-securite-grille">
@@ -315,5 +364,6 @@
 
 <script src="/annee.js"></script>
 <script src="/animations.js"></script>
+<script src="/simulateurs.js"></script>
 </body>
 </html>
