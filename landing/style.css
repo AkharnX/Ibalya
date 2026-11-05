@@ -399,3 +399,8 @@ a{color:inherit;}
 .sim-chart .sim-heat-reveal{animation:sim-heat-in .5s ease-out backwards;}
 @keyframes sim-heat-in{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){.sim-chart .sim-heat-reveal{animation:none;}}
+.sim-top{border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;}
+.sim-top-titre{margin:0 0 6px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sim-top-liste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
+.sim-top-liste li{display:flex;justify-content:space-between;gap:12px;font-size:14px;}
+.sim-top-n{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap;}

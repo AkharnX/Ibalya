@@ -613,3 +613,192 @@
 
   S.registerSim('temps', init);
 })();
+
+/* ═══ Simulateur 4 : Exposition au risque (heatmap 7 x 24) ═══ */
+(function () {
+  'use strict';
+  var S = window.IbSim;
+  if (!S) return;
+
+  // Modèle illustratif : estimations paramétrables, jamais des faits mesurés.
+  var P_RETARD = 0.6, P_SILENCE = 0.4;   // poids des deux taux dans le score
+  var NORM = 30;                          // pondéré (en points de %) donnant 100 à volume maximal
+  var VOL_MIN = 0.4, VOL_MAX = 200;       // effet du volume : 0,4 à 1 (échelle logarithmique)
+  var SEUIL_MOYEN = 33, SEUIL_ELEVE = 66; // libellés : < 33 faible, < 66 moyen, sinon élevé
+  var JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+  // Profil déterministe jour x heure (aucun hasard) : plus chaud en journée et en semaine.
+  // Normalisé pour que la moyenne sur les 168 cases vaille 1.
+  var PROFIL = (function () {
+    var jf = [1.0, 1.1, 1.1, 1.05, 0.95, 0.25, 0.12], p = [], s = 0, d, h, m;
+    for (d = 0; d < 7; d++) {
+      for (h = 0; h < 24; h++) {
+        var jour = Math.exp(-Math.pow((h - 13) / 4.5, 2) / 2);              // pic en milieu de journée
+        var pause = (h === 12 || h === 13) ? 0.85 : 1;                      // léger creux à midi
+        var v = jf[d] * (0.04 + jour * pause);
+        p.push(v); s += v;
+      }
+    }
+    m = s / p.length;
+    return p.map(function (x) { return x / m; });
+  })();
+
+  var CHAMPS = [
+    { id: 'engagements', label: 'Engagements suivis', min: 1, max: 200, val: 40, step: 1, unit: '' },
+    { id: 'tauxRetard', label: 'Part en retard', min: 0, max: 60, val: 20, step: 1, unit: '%' },
+    { id: 'tauxSilence', label: 'Part sans réponse', min: 0, max: 60, val: 15, step: 1, unit: '%' }
+  ];
+
+  function fin(x) { return isFinite(x) ? x : 0; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function clamp(x, a, b) { return Math.min(b, Math.max(a, x)); }
+
+  function calc(v) {
+    var vol = VOL_MIN + (1 - VOL_MIN) * clamp(Math.log(v.engagements) / Math.log(VOL_MAX), 0, 1);
+    var pond = P_RETARD * v.tauxRetard + P_SILENCE * v.tauxSilence;
+    var score = clamp(fin(100 * (pond / NORM) * vol), 0, 100);
+    var aRisque = clamp(fin(v.engagements * (v.tauxRetard + v.tauxSilence) / 100), 0, v.engagements);
+    var lib = score < SEUIL_MOYEN ? 'faible' : (score < SEUIL_ELEVE ? 'moyen' : 'élevé');
+    var cats = [
+      { nom: 'Échéance à risque', n: v.engagements * v.tauxRetard / 100, ordre: 0 },
+      { nom: 'Silence anormal', n: v.engagements * v.tauxSilence / 100, ordre: 1 },
+      { nom: 'Promesse menacée', n: v.engagements * Math.min(v.tauxRetard, v.tauxSilence) / 100, ordre: 2 }
+    ].sort(function (a, b) { return (b.n - a.n) || (a.ordre - b.ordre); });
+    return { score: score, lib: lib, aRisque: aRisque, top: cats };
+  }
+
+  function init(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps) return;
+    var vals = {}, ready = false;
+
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation illustrative, non garantie'));
+
+    CHAMPS.forEach(function (c) {
+      var champ = el('div', 'sim-champ');
+      var lab = el('label', null, c.label);
+      lab.setAttribute('for', 'sim4-' + c.id);
+      var ligne = el('div', 'sim-range-ligne');
+      var inp = document.createElement('input');
+      inp.type = 'range'; inp.className = 'sim-range'; inp.id = 'sim4-' + c.id;
+      inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = c.val;
+      if (c.unit) inp.setAttribute('data-unit', c.unit);
+      ligne.appendChild(inp);
+      champ.appendChild(lab); champ.appendChild(ligne);
+      corps.appendChild(champ);
+      vals[c.id] = c.val;
+      S.bindRange(inp, function (v) { vals[c.id] = fin(v); if (ready) update(false); });
+    });
+
+    var sorties = el('div', 'sim-sorties');
+    sorties.setAttribute('aria-live', 'polite');
+    var boxScore = el('div', 'sim-out');
+    var sScore = el('strong', null, '—');
+    boxScore.appendChild(sScore); boxScore.appendChild(el('span', null, 'Score de risque (0 à 100)'));
+    var boxNiveau = el('div', 'sim-out');
+    var sNiveau = el('strong', null, '—');
+    boxNiveau.appendChild(sNiveau); boxNiveau.appendChild(el('span', null, 'Niveau'));
+    var boxRisque = el('div', 'sim-out sim-out-warn');
+    var sRisque = el('strong', null, '—');
+    boxRisque.appendChild(sRisque); boxRisque.appendChild(el('span', null, 'Engagements à risque'));
+    sorties.appendChild(boxScore); sorties.appendChild(boxNiveau); sorties.appendChild(boxRisque);
+    corps.appendChild(sorties);
+
+    var topBox = el('div', 'sim-top');
+    topBox.appendChild(el('p', 'sim-top-titre', 'Top 3 des risques (catégories dérivées de vos réglages)'));
+    var ul = el('ul', 'sim-top-liste');
+    var lis = [];
+    for (var q = 0; q < 3; q++) {
+      var li = el('li');
+      var nom = el('span', 'sim-top-nom'), nb = el('span', 'sim-top-n');
+      li.appendChild(nom); li.appendChild(nb); ul.appendChild(li);
+      lis.push({ nom: nom, nb: nb });
+    }
+    topBox.appendChild(ul);
+    corps.appendChild(topBox);
+
+    // Heatmap 7 x 24 (décorative, le résumé est dans aria-label).
+    var CELL = 11, GAP = 2, PADL = 28, PADT = 14, LEG = 22;
+    var W = PADL + 24 * (CELL + GAP) - GAP + 2, H = PADT + 7 * (CELL + GAP) - GAP + LEG;
+    var cells = [];
+    var grid = S.svg('g', { 'aria-hidden': 'true' });
+    var d, h;
+    for (d = 0; d < 7; d++) {
+      grid.appendChild(S.svg('text', { x: 0, y: PADT + d * (CELL + GAP) + CELL - 2, 'class': 'sim-lib' }, JOURS[d]));
+      for (h = 0; h < 24; h++) {
+        var r = S.svg('rect', {
+          x: PADL + h * (CELL + GAP), y: PADT + d * (CELL + GAP),
+          width: CELL, height: CELL, rx: 2, 'class': 'sim-heat-case', 'fill-opacity': 0.1
+        });
+        cells.push(r); grid.appendChild(r);
+      }
+    }
+    [0, 6, 12, 18, 23].forEach(function (hh) {
+      var ax = PADL + hh * (CELL + GAP) + CELL / 2;
+      grid.appendChild(S.svg('text', hh === 23 ? { x: ax + CELL / 2, y: 9, 'text-anchor': 'end', 'class': 'sim-lib' } : { x: ax, y: 9, 'text-anchor': 'middle', 'class': 'sim-lib' }, hh + ' h'));
+    });
+    var legY = H - 8;
+    var legende = S.svg('g', { 'aria-hidden': 'true' }, [
+      S.svg('text', { x: PADL, y: legY, 'class': 'sim-lib' }, 'risque faible'),
+      S.svg('text', { x: W / 2 + 14, y: legY, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'illustratif'),
+      S.svg('text', { x: W - 4, y: legY, 'text-anchor': 'end', 'class': 'sim-lib' }, 'risque élevé')
+    ]);
+    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [grid, legende]);
+    var chart = el('div', 'sim-chart');
+    chart.appendChild(chartSvg);
+    corps.appendChild(chart);
+    corps.appendChild(el('p', 'sim-aide',
+      'Chaque case est une heure d\'un jour de la semaine. Le niveau global de la grille suit le score ; ' +
+      'la répartition entre jours et heures est illustrative (plus chaud en journée et en semaine), pas une mesure de vos données.'));
+
+    var det = document.createElement('details');
+    det.className = 'sim-formule';
+    det.appendChild(el('summary', null, 'Voir le calcul'));
+    det.appendChild(el('p', 'sim-formule-texte',
+      'Score = 100 × (' + P_RETARD + ' × part en retard + ' + P_SILENCE + ' × part sans réponse) ÷ ' + NORM +
+      ' × effet du volume, borné entre 0 et 100. L\'effet du volume croît de ' + VOL_MIN + ' à 1 selon le logarithme du nombre d\'engagements (1 à ' + VOL_MAX + '). ' +
+      'Niveau : faible sous ' + SEUIL_MOYEN + ', moyen sous ' + SEUIL_ELEVE + ', élevé au-delà. ' +
+      'Engagements à risque = engagements × (part en retard + part sans réponse) ÷ 100, plafonné au total. ' +
+      'Top 3 : trois catégories génériques classées par effectif estimé (retard, silence, et le recoupement des deux pour « promesse menacée »). ' +
+      'Aucun client, montant ou date n\'est supposé. Modèle illustratif, valeurs estimées.'));
+    corps.appendChild(det);
+
+    function update(animate) {
+      var res = calc(vals);
+      var cls = res.lib === 'faible' ? 'sim-out-ok' : (res.lib === 'moyen' ? 'sim-out-warn' : 'sim-out-risk');
+      boxScore.className = 'sim-out ' + cls; boxNiveau.className = 'sim-out ' + cls;
+      [[sScore, res.score, S.fmtInt], [sRisque, res.aRisque, S.fmtInt]].forEach(function (a) {
+        var node = a[0];
+        if (node._ibRaf) { cancelAnimationFrame(node._ibRaf); node._ibRaf = 0; }
+        if (animate) S.animateCount(node, 0, a[1], a[2]);
+        else node.textContent = a[2](a[1]);
+      });
+      sNiveau.textContent = res.lib.charAt(0).toUpperCase() + res.lib.slice(1);
+      res.top.forEach(function (c, i) {
+        lis[i].nom.textContent = (i + 1) + '. ' + c.nom + ' ';
+        lis[i].nb.textContent = '≈ ' + S.fmtInt(c.n) + ' engagement' + (Math.round(c.n) > 1 ? 's' : '');
+      });
+      for (var k = 0; k < cells.length; k++) {
+        var t = clamp(res.score / 100 * PROFIL[k], 0, 1);
+        cells[k].style.fill = t < 0.33 ? 'var(--ok)' : (t < 0.66 ? 'var(--warn)' : 'var(--risk)');
+        cells[k].setAttribute('fill-opacity', (0.12 + 0.88 * t).toFixed(3));
+        if (animate && !S.prefersReducedMotion) {
+          cells[k].style.animationDelay = (Math.floor(k / 24) * 60) + 'ms';
+          cells[k].classList.add('sim-heat-reveal');
+        }
+      }
+      chartSvg.setAttribute('aria-label', 'Exposition au risque : score ' + S.fmtInt(res.score) + ' sur 100 (' + res.lib +
+        '), environ ' + S.fmtInt(res.aRisque) + ' engagements à risque (estimation). Grille de 7 jours par 24 heures, répartition illustrative.');
+    }
+
+    ready = true;
+    update(true);
+  }
+
+  S.registerSim('risque', init);
+})();
