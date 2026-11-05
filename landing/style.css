@@ -365,3 +365,22 @@ a{color:inherit;}
 .sim-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
 .sim-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary);}
 @media (prefers-reduced-motion:reduce){.sim,.sim *{transition:none !important;animation:none !important;}}
+
+/* Simulateur 1 : ROI */
+.sim-etiquette{align-self:flex-start;margin:0;padding:3px 10px;border:1px dashed var(--border);border-radius:var(--radius-pill);font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);}
+.sim-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--foreground);font-family:var(--mono);font-size:14px;}
+.sim-input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+.sim-aide{font-size:12px;color:var(--muted);line-height:1.5;}
+.sim-sorties{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.sim-chart text{font-family:var(--mono);font-size:10px;}
+.sim-chart .sim-val{fill:var(--foreground);font-weight:700;}
+.sim-chart .sim-lib{fill:var(--muted);}
+.sim-chart .sim-axe{stroke:var(--border);stroke-width:1.5;}
+.sim-chart .sim-bar-sans{fill:var(--risk);opacity:.85;}
+.sim-chart .sim-bar-avec{fill:var(--ok);}
+.sim-chart .sim-ligne{stroke:var(--primary);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
+.sim-chart .sim-point{fill:var(--primary);}
+.sim-formule{font-size:13px;color:var(--muted);}
+.sim-formule summary{cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--primary);}
+.sim-formule summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:var(--radius-sm);}
+.sim-formule-texte{margin-top:8px;line-height:1.6;}
