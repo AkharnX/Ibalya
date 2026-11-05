@@ -325,3 +325,132 @@
 
   S.registerSim('roi', init);
 })();
+
+/* ═══ Simulateur 2 : Coût de l'oubli (jauge) ═══ */
+(function () {
+  'use strict';
+  var S = window.IbSim;
+  if (!S) return;
+
+  // Hypothèses : estimations paramétrables, jamais des faits mesurés.
+  var MOIS_PAR_AN = 12;        // conversion fréquence mensuelle -> annuelle
+  var PLAFOND_JAUGE = 50000;   // € par an : bout de l'échelle de la jauge (coût élevé mais plausible pour une TPE/PME) ; au-delà, l'aiguille reste en butée
+
+  var CHAMPS = [
+    { id: 'coutMoyenOubli', label: 'Coût moyen d\'un oubli', min: 50, max: 5000, val: 400, step: 50, unit: '€' },
+    { id: 'frequenceMois', label: 'Oublis par mois', min: 0, max: 30, val: 4, step: 1, unit: '/mois' },
+    { id: 'tauxTransfo', label: 'Taux de transformation perdu', min: 0, max: 100, val: 30, step: 5, unit: '%' }
+  ];
+
+  function fin(x) { return isFinite(x) ? x : 0; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function calc(v) {
+    var direct = fin(v.coutMoyenOubli * v.frequenceMois * MOIS_PAR_AN);
+    var indirect = fin(direct * v.tauxTransfo / 100);
+    return { direct: direct, indirect: indirect, total: direct + indirect };
+  }
+
+  function init(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps) return;
+    var vals = {}, ready = false;
+
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation paramétrable, non garantie'));
+
+    CHAMPS.forEach(function (c) {
+      var champ = el('div', 'sim-champ');
+      var lab = el('label', null, c.label);
+      lab.setAttribute('for', 'sim2-' + c.id);
+      var ligne = el('div', 'sim-range-ligne');
+      var inp = document.createElement('input');
+      inp.type = 'range'; inp.className = 'sim-range'; inp.id = 'sim2-' + c.id;
+      inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = c.val;
+      inp.setAttribute('data-unit', c.unit);
+      ligne.appendChild(inp);
+      champ.appendChild(lab); champ.appendChild(ligne);
+      corps.appendChild(champ);
+      vals[c.id] = c.val;
+      S.bindRange(inp, function (v) { vals[c.id] = fin(v); if (ready) update(false); });
+    });
+
+    var sorties = el('div', 'sim-sorties');
+    sorties.setAttribute('aria-live', 'polite');
+    var DEFS = [
+      { k: 'direct', label: 'Coût direct (€/an)' },
+      { k: 'indirect', label: 'Coût indirect, opportunités perdues (€/an)', cls: 'sim-out-warn' },
+      { k: 'total', label: 'Coût total estimé (€/an)', cls: 'sim-out-risk' }
+    ];
+    var outs = {};
+    DEFS.forEach(function (d) {
+      var box = el('div', 'sim-out' + (d.cls ? ' ' + d.cls : ''));
+      var strong = el('strong', null, '—');
+      box.appendChild(strong); box.appendChild(el('span', null, d.label));
+      sorties.appendChild(box);
+      outs[d.k] = strong;
+    });
+    corps.appendChild(sorties);
+
+    // Jauge demi-cercle : 3 tronçons (vert, ambre, brique) + aiguille.
+    var W = 320, H = 190, CX = 160, CY = 150, R = 110, NEEDLE = 96;
+    function pt(frac, r) { // frac 0 = gauche, 1 = droite, sur le demi-cercle supérieur
+      var a = Math.PI * (1 - frac);
+      return (CX + r * Math.cos(a)).toFixed(2) + ' ' + (CY - r * Math.sin(a)).toFixed(2);
+    }
+    function arc(f0, f1, cls) {
+      return S.svg('path', { d: 'M' + pt(f0, R) + ' A' + R + ' ' + R + ' 0 0 1 ' + pt(f1, R), fill: 'none', 'class': 'sim-jauge-arc ' + cls });
+    }
+    var needle = S.svg('g', { 'class': 'sim-aiguille' }, [
+      S.svg('line', { x1: CX, y1: CY, x2: CX - NEEDLE, y2: CY, 'class': 'sim-aiguille-trait' }),
+      S.svg('circle', { cx: CX, cy: CY, r: 7, 'class': 'sim-aiguille-pivot' })
+    ]);
+    var valTxt = S.svg('text', { x: CX, y: CY + 30, 'text-anchor': 'middle', 'class': 'sim-val' }, '');
+    var gauge = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [
+      arc(0, 1 / 3, 'sim-jauge-ok'), arc(1 / 3, 2 / 3, 'sim-jauge-warn'), arc(2 / 3, 1, 'sim-jauge-risk'),
+      S.svg('text', { x: CX - R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '0 €'),
+      S.svg('text', { x: CX + R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, S.fmtEUR(PLAFOND_JAUGE) + '+'),
+      needle, valTxt
+    ]);
+    var chart = el('div', 'sim-chart');
+    chart.appendChild(gauge);
+    corps.appendChild(chart);
+
+    var det = document.createElement('details');
+    det.className = 'sim-formule';
+    det.appendChild(el('summary', null, 'Voir le calcul'));
+    det.appendChild(el('p', 'sim-formule-texte',
+      'Coût direct/an = coût moyen d\'un oubli × oublis par mois × ' + MOIS_PAR_AN + ' mois. ' +
+      'Coût indirect/an = coût direct × taux de transformation perdu ÷ 100 (opportunités qui ne se concrétisent pas). ' +
+      'Total = direct + indirect. ' +
+      'L\'aiguille se place sur le total rapporté à une échelle de ' + S.fmtEUR(PLAFOND_JAUGE) + ' par an (butée au-delà) : ' +
+      'ce plafond est un repère de lecture, pas un seuil réel. Toutes les valeurs sont des estimations que vous réglez, pas des mesures.'));
+    corps.appendChild(det);
+
+    function update(animate) {
+      var r = calc(vals);
+      DEFS.forEach(function (d) {
+        var node = outs[d.k], v = r[d.k];
+        if (node._ibRaf) { cancelAnimationFrame(node._ibRaf); node._ibRaf = 0; }
+        // Animation réservée à la première révélation ; ensuite écriture directe.
+        if (animate) S.animateCount(node, 0, v, S.fmtEUR);
+        else node.textContent = S.fmtEUR(v);
+      });
+      var frac = Math.max(0, Math.min(1, r.total / PLAFOND_JAUGE));
+      // La transition CSS est désactivée sous prefers-reduced-motion (voir style.css).
+      needle.style.transform = 'rotate(' + (frac * 180).toFixed(1) + 'deg)';
+      valTxt.textContent = S.fmtEUR(r.total) + ' / an';
+      gauge.setAttribute('aria-label', 'Coût annuel estimé de l\'oubli : ' + S.fmtEUR(r.total) +
+        ' (' + Math.round(frac * 100) + ' % de l\'échelle de ' + S.fmtEUR(PLAFOND_JAUGE) + ')');
+    }
+
+    ready = true;
+    update(true);
+  }
+
+  S.registerSim('oubli', init);
+})();

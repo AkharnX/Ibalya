@@ -384,3 +384,13 @@ a{color:inherit;}
 .sim-formule summary{cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--primary);}
 .sim-formule summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:var(--radius-sm);}
 .sim-formule-texte{margin-top:8px;line-height:1.6;}
+
+/* Simulateur 2 : jauge */
+.sim-chart .sim-jauge-arc{stroke-width:16;stroke-linecap:butt;}
+.sim-chart .sim-jauge-ok{stroke:var(--ok);}
+.sim-chart .sim-jauge-warn{stroke:var(--warn);}
+.sim-chart .sim-jauge-risk{stroke:var(--risk);}
+.sim-chart .sim-aiguille{transform-box:view-box;transform-origin:160px 150px;transition:transform .6s cubic-bezier(.34,1.3,.5,1);}
+.sim-chart .sim-aiguille-trait{stroke:var(--foreground);stroke-width:3;stroke-linecap:round;}
+.sim-chart .sim-aiguille-pivot{fill:var(--foreground);}
+@media (prefers-reduced-motion:reduce){.sim-chart .sim-aiguille{transition:none;}}
