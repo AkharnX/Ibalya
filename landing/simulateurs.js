@@ -334,7 +334,9 @@
 
   // Hypothèses : estimations paramétrables, jamais des faits mesurés.
   var MOIS_PAR_AN = 12;        // conversion fréquence mensuelle -> annuelle
-  var PLAFOND_JAUGE = 50000;   // € par an : bout de l'échelle de la jauge (coût élevé mais plausible pour une TPE/PME) ; au-delà, l'aiguille reste en butée
+  var PLANCHER_JAUGE = 1000;     // € par an : début d'échelle (aiguille à gauche en dessous)
+  var PLAFOND_JAUGE = 1000000;   // € par an : fin d'échelle (aiguille en butée au-delà)
+  // Position de l'aiguille en échelle logarithmique (repère visuel uniquement ; les montants affichés restent linéaires).
 
   var CHAMPS = [
     { id: 'coutMoyenOubli', label: 'Coût moyen d\'un oubli', min: 50, max: 5000, val: 400, step: 50, unit: '€' },
@@ -412,8 +414,8 @@
     var valTxt = S.svg('text', { x: CX, y: CY + 30, 'text-anchor': 'middle', 'class': 'sim-val' }, '');
     var gauge = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [
       arc(0, 1 / 3, 'sim-jauge-ok'), arc(1 / 3, 2 / 3, 'sim-jauge-warn'), arc(2 / 3, 1, 'sim-jauge-risk'),
-      S.svg('text', { x: CX - R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '0 €'),
-      S.svg('text', { x: CX + R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, S.fmtEUR(PLAFOND_JAUGE) + '+'),
+      S.svg('text', { x: CX - R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '≤ ' + S.fmtEUR(PLANCHER_JAUGE)),
+      S.svg('text', { x: CX + R, y: CY + 20, 'text-anchor': 'middle', 'class': 'sim-lib' }, '1 M€+'),
       needle, valTxt
     ]);
     var chart = el('div', 'sim-chart');
@@ -427,8 +429,8 @@
       'Coût direct/an = coût moyen d\'un oubli × oublis par mois × ' + MOIS_PAR_AN + ' mois. ' +
       'Coût indirect/an = coût direct × taux de transformation perdu ÷ 100 (opportunités qui ne se concrétisent pas). ' +
       'Total = direct + indirect. ' +
-      'L\'aiguille se place sur le total rapporté à une échelle de ' + S.fmtEUR(PLAFOND_JAUGE) + ' par an (butée au-delà) : ' +
-      'ce plafond est un repère de lecture, pas un seuil réel. Toutes les valeurs sont des estimations que vous réglez, pas des mesures.'));
+      'La position de l\'aiguille suit une échelle logarithmique entre ' + S.fmtEUR(PLANCHER_JAUGE) + ' et ' + S.fmtEUR(PLAFOND_JAUGE) + ' par an (butée aux extrémités) : ' +
+      'elle sert à lire l\'ordre de grandeur, les montants affichés restent linéaires. Cette échelle est un repère de lecture, pas un seuil réel. Toutes les valeurs sont des estimations que vous réglez, pas des mesures.'));
     corps.appendChild(det);
 
     function update(animate) {
@@ -440,12 +442,12 @@
         if (animate) S.animateCount(node, 0, v, S.fmtEUR);
         else node.textContent = S.fmtEUR(v);
       });
-      var frac = Math.max(0, Math.min(1, r.total / PLAFOND_JAUGE));
+      var frac = Math.max(0, Math.min(1, Math.log(Math.max(r.total, PLANCHER_JAUGE) / PLANCHER_JAUGE) / Math.log(PLAFOND_JAUGE / PLANCHER_JAUGE)));
       // La transition CSS est désactivée sous prefers-reduced-motion (voir style.css).
       needle.style.transform = 'rotate(' + (frac * 180).toFixed(1) + 'deg)';
       valTxt.textContent = S.fmtEUR(r.total) + ' / an';
       gauge.setAttribute('aria-label', 'Coût annuel estimé de l\'oubli : ' + S.fmtEUR(r.total) +
-        ' (' + Math.round(frac * 100) + ' % de l\'échelle de ' + S.fmtEUR(PLAFOND_JAUGE) + ')');
+        ' (échelle logarithmique de ' + S.fmtEUR(PLANCHER_JAUGE) + ' à ' + S.fmtEUR(PLAFOND_JAUGE) + ')');
     }
 
     ready = true;
