@@ -458,3 +458,4 @@ a{color:inherit;}
 }
 .sim-actions .sim-btn,.sim-formule summary{touch-action:manipulation;}
 .sim-top-liste li[hidden]{display:none;}
+:root[data-theme="dark"] .sim-btn-valider{color:#0b1a1f;}
