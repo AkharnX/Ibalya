@@ -802,3 +802,185 @@
 
   S.registerSim('risque', init);
 })();
+
+/* ═══ Simulateur 5 : Validation (pile de cartes, glisser + boutons) ═══ */
+(function () {
+  'use strict';
+  var S = window.IbSim;
+  if (!S) return;
+
+  // Hypothèse : estimation du temps gagné par message validé en un clic, jamais une mesure.
+  var TEMPS_PAR_VALIDATION = 3; // minutes
+  var SEUIL_GLISSE = 100;       // px de glissement horizontal pour décider
+  var DUREE_SORTIE = 260;       // ms, animation de sortie (ignorée si reduced-motion)
+
+  // Messages fictifs, génériques, uniquement pour illustrer.
+  var MESSAGES = [
+    { de: 'Fournisseur (exemple)', objet: 'Livraison confirmée jeudi', corps: 'Ibalya prépare l\'accusé de réception à envoyer.' },
+    { de: 'Client (exemple)', objet: 'Relance du devis en attente', corps: 'Ibalya propose une relance courte et polie.' },
+    { de: 'Partenaire (exemple)', objet: 'Proposition de créneau de réunion', corps: 'Ibalya suggère de confirmer le créneau de mardi.' },
+    { de: 'Prestataire (exemple)', objet: 'Facture à régler avant la fin du mois', corps: 'Ibalya prépare un rappel interne pour le paiement.' },
+    { de: 'Équipe (exemple)', objet: 'Compte rendu à partager', corps: 'Ibalya rédige un envoi du compte rendu aux participants.' }
+  ];
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function init(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps) return;
+    var index = 0, valides = 0, passes = 0, busy = false;
+
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation : ' + TEMPS_PAR_VALIDATION + ' min gagnées par validation'));
+    corps.appendChild(el('p', 'sim-aide', 'Messages fictifs, donnés à titre d\'illustration. Glissez la carte vers la droite pour valider, vers la gauche pour passer, ou utilisez les boutons.'));
+
+    var pile = el('div', 'sim-pile');
+    corps.appendChild(pile);
+
+    var actions = el('div', 'sim-actions');
+    var btnPasser = el('button', 'sim-btn sim-btn-passer', 'Passer');
+    btnPasser.type = 'button';
+    var btnValider = el('button', 'sim-btn sim-btn-valider', 'Valider');
+    btnValider.type = 'button';
+    var btnRecommencer = el('button', 'sim-btn sim-btn-valider', 'Recommencer');
+    btnRecommencer.type = 'button';
+    btnRecommencer.hidden = true;
+    actions.appendChild(btnPasser); actions.appendChild(btnValider); actions.appendChild(btnRecommencer);
+    corps.appendChild(actions);
+
+    var statut = el('p', 'sim-sr');
+    statut.setAttribute('role', 'status');
+    statut.setAttribute('aria-live', 'polite');
+    corps.appendChild(statut);
+
+    var sorties = el('div', 'sim-sorties');
+    sorties.setAttribute('aria-live', 'polite');
+    sorties.setAttribute('aria-atomic', 'true');
+    var boxV = el('div', 'sim-out'), outV = el('strong', null, '0');
+    boxV.appendChild(outV); boxV.appendChild(el('span', null, 'Messages validés'));
+    var boxT = el('div', 'sim-out sim-out-ok'), outT = el('strong', null, '0 min');
+    boxT.appendChild(outT); boxT.appendChild(el('span', null, 'Temps gagné (estimation)'));
+    sorties.appendChild(boxV); sorties.appendChild(boxT);
+    corps.appendChild(sorties);
+
+    var det = document.createElement('details');
+    det.className = 'sim-formule';
+    det.appendChild(el('summary', null, 'Voir le calcul'));
+    det.appendChild(el('p', 'sim-formule-texte',
+      'Temps gagné = messages validés × ' + TEMPS_PAR_VALIDATION + ' minutes. Les ' + MESSAGES.length +
+      ' messages sont inventés pour l\'exemple ; la durée par validation est une hypothèse, pas une mesure.'));
+    corps.appendChild(det);
+
+    function majCompteurs() {
+      outV.textContent = S.fmtInt(valides);
+      outT.textContent = S.fmtInt(valides * TEMPS_PAR_VALIDATION) + ' min';
+    }
+
+    function carte(m, n) {
+      var c = el('div', 'sim-carte');
+      c.appendChild(el('span', 'sim-carte-de', m.de));
+      c.appendChild(el('strong', 'sim-carte-objet', m.objet));
+      c.appendChild(el('span', 'sim-carte-corps', m.corps));
+      c.appendChild(el('span', 'sim-carte-n', 'Message ' + n + ' sur ' + MESSAGES.length));
+      return c;
+    }
+
+    var courante = null;
+
+    function render() {
+      pile.textContent = '';
+      courante = null;
+      var restants = MESSAGES.length - index;
+      if (restants <= 0) {
+        var fini = el('div', 'sim-pile-fini');
+        fini.appendChild(el('strong', null, 'Terminé'));
+        fini.appendChild(el('span', null, valides + ' validé' + (valides > 1 ? 's' : '') + ', ' + passes + ' passé' + (passes > 1 ? 's' : '') + '.'));
+        pile.appendChild(fini);
+        btnValider.hidden = true; btnPasser.hidden = true; btnRecommencer.hidden = false;
+        return;
+      }
+      btnValider.hidden = false; btnPasser.hidden = false; btnRecommencer.hidden = true;
+      // Cartes de fond décoratives (masquées aux lecteurs d'écran).
+      for (var k = Math.min(restants, 3) - 1; k >= 1; k--) {
+        var g = el('div', 'sim-carte sim-carte-fond');
+        g.setAttribute('aria-hidden', 'true');
+        g.style.transform = 'translateY(' + (k * 8) + 'px) scale(' + (1 - k * 0.04) + ')';
+        pile.appendChild(g);
+      }
+      courante = carte(MESSAGES[index], index + 1);
+      courante.classList.add('sim-carte-haut');
+      pile.appendChild(courante);
+      brancherGlisse(courante);
+    }
+
+    function decider(valide) {
+      if (busy || !courante) return;
+      busy = true;
+      if (valide) valides++; else passes++;
+      majCompteurs();
+      statut.textContent = (valide ? 'Validé : ' : 'Passé : ') + MESSAGES[index].objet + '.';
+      var c = courante;
+      var avance = function () {
+        index++;
+        busy = false;
+        var termine = index >= MESSAGES.length;
+        render();
+        if (termine) { statut.textContent += ' Tous les messages sont traités.'; btnRecommencer.focus(); }
+      };
+      if (S.prefersReducedMotion) { avance(); return; }
+      c.classList.add('sim-carte-sortie');
+      c.style.transform = 'translateX(' + (valide ? 140 : -140) + '%) rotate(' + (valide ? 12 : -12) + 'deg)';
+      c.style.opacity = '0';
+      setTimeout(avance, DUREE_SORTIE);
+    }
+
+    function brancherGlisse(c) {
+      var depart = null, dx = 0;
+      c.addEventListener('pointerdown', function (e) {
+        if (busy || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        depart = e.clientX; dx = 0;
+        c.classList.add('sim-carte-glisse');
+        try { c.setPointerCapture(e.pointerId); } catch (err) { /* ignoré */ }
+      });
+      c.addEventListener('pointermove', function (e) {
+        if (depart === null) return;
+        dx = e.clientX - depart;
+        c.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 20).toFixed(1) + 'deg)';
+        c.classList.toggle('sim-carte-oui', dx >= SEUIL_GLISSE);
+        c.classList.toggle('sim-carte-non', dx <= -SEUIL_GLISSE);
+      });
+      c.addEventListener('pointerup', function () {
+        if (depart === null) return;
+        var d = dx; depart = null; dx = 0;
+        c.classList.remove('sim-carte-glisse', 'sim-carte-oui', 'sim-carte-non');
+        if (Math.abs(d) >= SEUIL_GLISSE) decider(d > 0);
+        else c.style.transform = '';
+      });
+      c.addEventListener('pointercancel', function () {
+        if (depart === null) return;
+        depart = null; dx = 0;
+        c.classList.remove('sim-carte-glisse', 'sim-carte-oui', 'sim-carte-non');
+        c.style.transform = '';
+      });
+    }
+
+    btnValider.addEventListener('click', function () { decider(true); });
+    btnPasser.addEventListener('click', function () { decider(false); });
+    btnRecommencer.addEventListener('click', function () {
+      index = 0; valides = 0; passes = 0; busy = false;
+      majCompteurs();
+      statut.textContent = 'Réinitialisé : ' + MESSAGES.length + ' messages à traiter.';
+      render();
+      btnValider.focus();
+    });
+
+    majCompteurs();
+    render();
+  }
+
+  S.registerSim('validation', init);
+})();

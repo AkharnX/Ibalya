@@ -404,3 +404,26 @@ a{color:inherit;}
 .sim-top-liste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
 .sim-top-liste li{display:flex;justify-content:space-between;gap:12px;font-size:14px;}
 .sim-top-n{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap;}
+
+/* Simulateur 5 : pile de cartes de validation */
+.sim-pile{position:relative;height:190px;margin:4px 0 6px;}
+.sim-carte{position:absolute;inset:0 0 auto 0;height:170px;display:flex;flex-direction:column;gap:6px;justify-content:center;padding:18px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);}
+.sim-carte-fond{pointer-events:none;}
+.sim-carte-haut{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .25s ease,border-color .15s;}
+.sim-carte-glisse{cursor:grabbing;transition:none;}
+.sim-carte-sortie{pointer-events:none;}
+.sim-carte-oui{border-color:var(--ok);}
+.sim-carte-non{border-color:var(--risk);}
+.sim-carte-de{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.sim-carte-objet{font-size:17px;line-height:1.3;color:var(--foreground);}
+.sim-carte-corps{font-size:14px;line-height:1.5;color:var(--muted);}
+.sim-carte-n{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.sim-pile-fini{height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px dashed var(--border);border-radius:var(--radius-lg);font-family:var(--mono);color:var(--muted);text-align:center;}
+.sim-pile-fini strong{font-size:20px;color:var(--ok);}
+.sim-actions{display:flex;gap:10px;justify-content:center;}
+.sim-btn{flex:1;max-width:200px;min-height:44px;padding:10px 18px;border-radius:var(--radius-pill);font-family:var(--mono);font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--foreground);}
+.sim-btn[hidden]{display:none;}
+.sim-btn-valider{background:var(--primary);border-color:var(--primary);color:#fff;}
+.sim-btn:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
+.sim-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+@media (prefers-reduced-motion:reduce){.sim-carte-haut{transition:none;}}
