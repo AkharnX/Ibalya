@@ -6,17 +6,18 @@
 <title>Guide Ibalya</title>
 <meta name="description" content="Guide utilisateur d'Ibalya : premiers pas, connexion de la boîte, tous les écrans, lexique et confidentialité.">
 <link rel="icon" href="/favicon.svg">
+<script src="/theme.js"></script>
 <style>
   @font-face{font-family:"Fraunces";font-weight:400;font-display:swap;src:url('/fonts/fraunces-400.woff2') format('woff2')}
   @font-face{font-family:"Fraunces";font-weight:600;font-display:swap;src:url('/fonts/fraunces-600.woff2') format('woff2')}
   @font-face{font-family:"Fraunces";font-weight:700;font-display:swap;src:url('/fonts/fraunces-700.woff2') format('woff2')}
-  @font-face{font-family:"Geist Mono";font-weight:400;font-display:swap;src:url('/fonts/geist-mono-400.woff2') format('woff2')}
+  @font-face{font-family:"JetBrains Mono";font-weight:100 800;font-display:swap;src:url('/fonts/jetbrains-mono-latin.woff2') format('woff2')}
   :root{
     --paper:#f7f4f1;
     --surface:#ffffff;
     --ink:#22272e;
     --ink-soft:#3f454d;
-    --muted:#77707a;
+    --muted:#605a66;
     --faint:#a49da8;
     --line:#e6ded7;
     --line-strong:#d8cfc6;
@@ -26,20 +27,15 @@
     --red:#a8442c;
     --green:#3a7d5c;
     --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --radius-sm:12px;--radius-md:16px;--radius-lg:24px;
+    --shadow-soft:0 2px 8px rgba(34,39,46,.06);
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --mono:"Geist Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  }
-  @media (prefers-color-scheme:dark){
-    :root:not([data-theme="light"]){
-      color-scheme:dark;
-      --paper:#16141a;--surface:#1d1b23;--ink:#e8e3ec;--ink-soft:#c7c1cf;--muted:#948da0;--faint:#6b6478;
-      --line:#2c2833;--line-strong:#3a3543;--teal:#39aecb;--teal-ink:#5cc3dc;--amber:#d09a53;--red:#dd8168;--green:#5fc296;
-    }
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   }
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --paper:#16141a;--surface:#1d1b23;--ink:#e8e3ec;--ink-soft:#c7c1cf;--muted:#948da0;--faint:#6b6478;
-    --line:#2c2833;--line-strong:#3a3543;--teal:#39aecb;--teal-ink:#5cc3dc;--amber:#d09a53;--red:#dd8168;--green:#5fc296;
+    --paper:#17151c;--surface:#221f2a;--ink:#f4f2f0;--ink-soft:#d3cfd8;--muted:#a8a2b0;--faint:#7d7688;
+    --line:#39333f;--line-strong:#4a4352;--teal:#3fa7c0;--teal-ink:#5cc3dc;--amber:#d09a53;--red:#dd8168;--green:#5fc296;
   }
 
   *{box-sizing:border-box}
@@ -63,7 +59,7 @@
   .logo b{font-family:var(--serif);font-size:20px;font-weight:600}
   .logo span{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line-strong);
     border-radius:4px;padding:2px 8px;margin-left:2px}
-  .theme{background:none;border:1px solid var(--line-strong);color:var(--muted);border-radius:6px;
+  .theme{background:none;border:1px solid var(--line-strong);color:var(--muted);border-radius:var(--radius-sm);
     height:34px;padding:0 13px;cursor:pointer;font-family:var(--mono);font-size:12px}
   .theme:hover{color:var(--ink);border-color:var(--faint)}
 
@@ -122,7 +118,7 @@
   .ex p{color:var(--muted);font-size:15px;font-style:italic}
 
   .read{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:28px;border:1px solid var(--line);
-    background:var(--line);border-radius:8px;overflow:hidden}
+    background:var(--line);border-radius:var(--radius-md);overflow:hidden}
   @media (max-width:560px){.read{grid-template-columns:1fr}}
   .read > div{background:var(--surface);padding:22px 24px}
   .read h4{font-family:var(--serif);font-size:17px}
@@ -166,7 +162,7 @@
   .qa .q{font-family:var(--serif);font-size:17.5px;margin-bottom:8px}
   .qa .a{color:var(--muted);font-size:15.5px;max-width:66ch}
 
-  .aside-note{margin-top:26px;padding:18px 20px;border:1px solid var(--line-strong);border-radius:8px;
+  .aside-note{margin-top:26px;padding:18px 20px;border:1px solid var(--line-strong);border-radius:var(--radius-md);
     background:color-mix(in srgb,var(--teal) 5%,var(--surface));font-size:15.5px;color:var(--ink-soft)}
   .aside-note b{color:var(--teal-ink);font-weight:600}
   .aside-note.plain{background:var(--surface)}
@@ -185,7 +181,7 @@
       </svg>
       <b>Ibalya</b><span>Guide</span>
     </a>
-    <button class="theme" id="themeBtn" aria-label="Basculer le thème">thème</button>
+    <button class="theme" id="lp-theme" type="button" aria-pressed="false" aria-label="Basculer le thème clair ou sombre">thème</button>
   </div>
 </header>
 

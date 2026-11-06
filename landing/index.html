@@ -27,209 +27,233 @@
 <a class="lp-skip" href="#main">Aller au contenu</a>
 
 <header class="lp-header">
-  <a class="lp-logo" href="/"><svg class="lp-mark" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/></svg> Ibalya</a>
-  <nav class="lp-nav">
-    <a href="#probleme">Le problème</a>
-    <a href="#fonctionnement">Fonctionnement</a>
-    <a href="#assistant">Assistant</a>
-    <a href="#securite">Sécurité</a>
-  </nav>
-  <div class="lp-header-actions">
-    <button class="lp-theme" id="lp-theme" type="button" aria-pressed="false" aria-label="Basculer le thème clair ou sombre" title="Thème clair / sombre">
-      <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-      <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
-    <a class="lp-lien-discret" href="/app">Connexion</a>
-    <a class="lp-btn lp-btn-primary" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
+  <div class="lp-header-int">
+    <a class="lp-logo" href="/"><svg class="lp-mark" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/></svg> Ibalya</a>
+    <nav class="lp-nav" aria-label="Sections">
+      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="#simulateurs">Simulateurs</a>
+      <a href="#securite">Sécurité</a>
+      <a href="#faq">FAQ</a>
+      <a href="#acces">Accès</a>
+    </nav>
+    <div class="lp-header-actions">
+      <button class="lp-theme" id="lp-theme" type="button" aria-pressed="false" aria-label="Basculer le thème clair ou sombre" title="Thème clair / sombre">
+        <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="lp-lien-discret" href="/app">Connexion</a>
+      <a class="lp-btn lp-btn-primary" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
+    </div>
   </div>
 </header>
 
 <main id="main">
   <!-- ── Accroche ── -->
   <section class="lp-hero">
-    <div class="lp-hero-texte">
-      <h1>L'assistant de direction qui <span class="lp-accent">sécurise</span> vos échéances.</h1>
-      <p class="lp-chapeau">
-        Ibalya lit vos emails et en extrait les engagements pris : qui a promis quoi,
-        à qui, pour quand. Il détecte les retards et prépare vos relances.
-        Vos décisions en cinq minutes par jour.
-      </p>
-      <div class="lp-actions">
-        <a class="lp-btn lp-btn-primary lp-btn-lg" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
-        <a class="lp-btn lp-btn-lg" href="#fonctionnement">Voir comment ça marche</a>
+    <div class="lp-hero-grille">
+      <div class="lp-hero-texte">
+        <h1>Vos emails promettent. Ibalya <span class="lp-badge" aria-hidden="true"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/></svg></span> s'en souvient.</h1>
+        <p class="lp-chapeau">
+          Ibalya lit vos emails et en extrait les engagements pris : qui a promis quoi,
+          à qui, pour quand. Il détecte les retards et prépare vos relances.
+          Vos décisions en cinq minutes par jour.
+        </p>
+        <div class="lp-actions">
+          <a class="lp-btn lp-btn-primary lp-btn-lg" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
+          <a class="lp-btn lp-btn-lg" href="#simulateurs">Calculer mon ROI</a>
+        </div>
+        <p class="lp-hero-note"><b>Bêta privée</b>, sur invitation. Déjà convié ? <a href="/app">Connexion</a>.</p>
       </div>
-      <p class="lp-hero-note"><b>Bêta privée</b>, sur invitation. Déjà convié ? <a href="/app">Connexion</a>.</p>
-      <ul class="lp-garanties">
-        <li><span class="lp-check">✓</span> Aucune saisie</li>
-        <li><span class="lp-check">✓</span> Lecture seule</li>
-        <li><span class="lp-check">✓</span> Rien ne part sans votre validation</li>
-      </ul>
-    </div>
 
-    <!-- Démonstration du processus d'extraction -->
-    <div class="lp-terminal-enveloppe">
-      <div class="lp-terminal">
-        <div class="lp-terminal-barre">
-          <i></i><i></i><i></i>
-          <span>Processus d'extraction</span>
+      <aside class="lp-reperes" aria-label="Ce que vous obtenez">
+        <div class="lp-repere">
+          <b>5 min</b>
+          <span>par jour pour décider</span>
         </div>
-        <div class="lp-terminal-corps">
-          <p class="lp-mute"><b>&gt;</b> Lecture de la boîte de réception…</p>
-          <p><b>&gt;</b> <mark>« Je vous envoie la maquette définitive vendredi avant midi. »</mark></p>
-          <div class="lp-extraction">
-            <p><span>Interlocuteur</span> Studio Lefort</p>
-            <p><span>Objet</span> Livraison de la maquette</p>
-            <p><span>Échéance</span> <b class="lp-accent">vendredi 24/10</b></p>
-            <p><span>Fiabilité</span> 92 %</p>
-          </div>
-          <p class="lp-alerte"><b>&gt;</b> Échéance dépassée, aucun signal depuis 4 jours.</p>
-          <p><b>&gt;</b> Brouillon de relance préparé. En attente de votre validation<span class="lp-curseur">_</span></p>
+        <div class="lp-repere">
+          <b>0</b>
+          <span>envoi sans votre validation</span>
         </div>
-      </div>
+        <div class="lp-repere">
+          <b>30 j</b>
+          <span>d'historique lus au démarrage</span>
+        </div>
+        <div class="lp-repere lp-repere-fort">
+          <b>UE</b>
+          <span>hébergement et IA européens</span>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <!-- ── Le problème ── -->
-  <section class="lp-bandeau" id="probleme">
-    <p class="lp-surtitre">Le problème</p>
-    <p class="lp-bandeau-texte">
-      Un fournisseur promet une livraison, personne ne la suit. Un devis dort une semaine.
-      Un client attend une réponse que vous pensiez avoir envoyée. Les engagements se prennent
-      au fil des emails, se dispersent entre les boîtes et les têtes, et
-      <b>vous les découvrez trop tard, quand le mal est déjà fait.</b>
-    </p>
-  </section>
-
-  <!-- ── Le vide de marché ── -->
-  <section class="lp-section">
-    <div class="lp-section-tete">
-      <h2>Entre le tableur et la transformation à six chiffres, il n'y a rien.</h2>
-      <p>Les solutions existantes ne s'adressent pas aux entreprises de 10 à 200 salariés.</p>
+  <!-- ── Simulateurs ROI ── -->
+  <section class="lp-section" id="simulateurs">
+    <div class="lp-tete">
+      <h2>Simulateurs ROI&nbsp;: combien vous coûte l'oubli&nbsp;?</h2>
+      <p>Six outils, calcul dans votre navigateur, hypothèses à ajuster.</p>
     </div>
-    <div class="lp-cartes">
-      <article class="lp-carte lp-carte-mate">
-        <h3>Les plateformes d'entreprise</h3>
-        <p>HubSpot, Salesforce, Agicap : trop chères et trop complexes. Elles supposent
-           une équipe pour les paramétrer et les maintenir.</p>
-      </article>
-      <article class="lp-carte lp-carte-mate">
-        <h3>Les outils sans code</h3>
-        <p>Make, n8n : puissants, mais ils exigent un profil technique que la PME n'a pas
-           en interne.</p>
-      </article>
-      <article class="lp-carte lp-carte-mate">
-        <h3>Les agences IA</h3>
-        <p>Projets sur mesure à partir de 30 000 €. Hors de portée, et sans garantie
-           de résultat rapide.</p>
-      </article>
+
+    <div class="sim-onglets" role="tablist" aria-label="Choisir un simulateur">
+      <button class="sim-onglet" type="button" data-onglet="roi">Retour sur investissement</button>
+      <button class="sim-onglet" type="button" data-onglet="oubli">Coût de l'oubli</button>
+      <button class="sim-onglet" type="button" data-onglet="temps">Temps récupéré</button>
+      <button class="sim-onglet" type="button" data-onglet="risque">Exposition au risque</button>
+      <button class="sim-onglet" type="button" data-onglet="validation">Validation humaine</button>
+      <button class="sim-onglet" type="button" data-onglet="fiabilite">Fiabilité</button>
+    </div>
+
+    <div class="sim-panneau">
+      <div class="sim" id="sim-1" data-sim="roi">
+        <div class="sim-tete">
+          <h3>Retour sur investissement</h3>
+          <p>Estimez ce que le temps gagné sur vos tâches répétitives représente en euros sur un an.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-2" data-sim="oubli">
+        <div class="sim-tete">
+          <h3>Coût de l'oubli</h3>
+          <p>Chiffrez ce que coûtent les relances et devis qui passent entre les mailles.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-3" data-sim="temps">
+        <div class="sim-tete">
+          <h3>Temps récupéré</h3>
+          <p>Ce que coûtent sur un an les minutes passées à chercher qui a promis quoi.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-4" data-sim="risque">
+        <div class="sim-tete">
+          <h3>Exposition au risque</h3>
+          <p>Les cinq détecteurs du produit, avec leurs vrais seuils, appliqués à votre volume.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-5" data-sim="validation">
+        <div class="sim-tete">
+          <h3>Validation humaine</h3>
+          <p>Les relances que l'agent a pré-rédigées sur le scénario de démonstration : relisez, envoyez ou écartez. Rien ne part sans vous.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+      <div class="sim" id="sim-6" data-sim="fiabilite">
+        <div class="sim-tete">
+          <h3>Fiabilité</h3>
+          <p>La vraie formule du score de fiabilité, et ce qu'elle donne, mesuré sur notre corpus d'évaluation.</p>
+        </div>
+        <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
+        <div class="sim-corps"></div>
+      </div>
+
+      <div class="sim-barre" role="note">
+        <p>Estimations paramétrables : ajustez les hypothèses, rien n'est garanti. Les résultats dépendent de votre activité.</p>
+        <a class="lp-btn lp-btn-primary" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
+      </div>
     </div>
   </section>
 
   <!-- ── Fonctionnement ── -->
   <section class="lp-section" id="fonctionnement">
-    <div class="lp-section-tete">
-      <h2>Vous dirigez, Ibalya tient le fil.</h2>
+    <div class="lp-groupe lp-etapes">
+      <article class="lp-etape" data-reveal>
+        <span class="lp-numero">01</span>
+        <h3>Vos emails promettent</h3>
+        <p>Devis, livraisons, relances. Les engagements se prennent au fil des échanges,
+           se dispersent entre les boîtes et les têtes, et vous les découvrez trop tard.</p>
+      </article>
+      <article class="lp-etape" data-reveal>
+        <span class="lp-numero">02</span>
+        <h3>Ibalya détecte</h3>
+        <p>Connecté en lecture seule, l'agent extrait les promesses, leurs échéances et leur niveau
+           de fiabilité. Puis cinq détecteurs tournent toutes les trente minutes : échéance à risque,
+           silence anormal, promesse menacée, engagement oublié, surcharge.</p>
+      </article>
+      <article class="lp-etape" data-reveal>
+        <span class="lp-numero">03</span>
+        <h3>Vous validez en un clic</h3>
+        <p>Pour chaque alerte, une relance est pré-rédigée à partir du contexte réel.
+           Vous relisez, ajustez, envoyez. Ou pas. Rien ne part sans vous.</p>
+      </article>
+    </div>
+
+    <div class="lp-tete lp-tete-espace">
+      <h2>Vous dirigez, Ibalya tient le&nbsp;fil.</h2>
       <p>Aucune tâche à saisir. Ibalya lit vos échanges existants et structure l'information à votre place.</p>
     </div>
-    <!-- Démonstration jouée : montrer l'agent travailler vaut mieux que le décrire.
-         Tout en CSS, aucune dépendance, quelques kilo-octets. -->
+    <!-- Démonstration jouée : montrer l'agent travailler vaut mieux que le décrire. -->
     <div class="lp-demo" role="img"
-         aria-label="Démonstration : le 4 août, un fournisseur écrit « je vous livre le vitrage jeudi 14 ». Ibalya en extrait un engagement. Le 12 août, sans réponse depuis huit jours, l'agent alerte sur un silence anormal qui menace la pose promise au client pour le 15, et prépare une relance.">
+         aria-label="Démonstration sur le scénario livré avec le produit : le 22 octobre, vous confirmez à la mairie de Valbonne la pose des 12 fenêtres de l'école le 10 novembre. Le 24 octobre, le fournisseur vitrages-pro.fr écrit « nous livrerons l'atelier au plus tard le 03/11 ». Ibalya extrait les deux engagements et relie la pose à la livraison. Le 6 novembre, la livraison est en retard de trois jours et le fournisseur est silencieux : la synthèse de l'application affiche la pose en retard probable, bloquée par la livraison, et l'alerte « Promesse menacée par un retard amont ».">
       <div class="lp-demo-fil">
         <span class="lp-demo-etiq">Votre messagerie</span>
-        <div class="lp-demo-msg lp-t1">
-          <b>vitrages-pro.fr</b><i>4 août</i>
-          <p>Bonjour, je vous confirme la commande. <mark>Livraison du vitrage jeudi 14.</mark></p>
+        <div class="lp-demo-msg lp-demo-vous lp-t1">
+          <b>Vous → mairie de Valbonne</b><i>22 octobre</i>
+          <p>Bonjour, je vous confirme <mark>la pose des 12 fenêtres de l'école le 10/11</mark>. L'équipe sera sur place dès 8 h.</p>
         </div>
-        <div class="lp-demo-msg lp-demo-vous lp-t2">
-          <b>Vous → client Ménard</b><i>4 août</i>
-          <p>Parfait, on <mark>pose le 15 comme prévu</mark>.</p>
+        <div class="lp-demo-msg lp-t2">
+          <b>vitrages-pro.fr</b><i>24 octobre</i>
+          <p>Bonjour, nous vous confirmons la commande. <mark>Nous livrerons l'atelier au plus tard le 03/11.</mark></p>
         </div>
       </div>
 
       <div class="lp-demo-agent">
-        <span class="lp-demo-etiq">Ce qu'Ibalya en fait</span>
-
-        <div class="lp-demo-carte lp-t3">
-          <span class="lp-demo-tag">Engagement extrait</span>
-          <p><b>Livraison du vitrage</b></p>
-          <dl>
-            <div><dt>De</dt><dd>vitrages-pro.fr</dd></div>
-            <div><dt>Échéance</dt><dd>14 août</dd></div>
-            <div><dt>Fiabilité</dt><dd>92 %</dd></div>
-          </dl>
-        </div>
-
-        <div class="lp-demo-carte lp-demo-lien lp-t4">
-          <span class="lp-demo-tag">Dépendance confirmée</span>
-          <p>La pose promise au client Ménard <b>dépend</b> de cette livraison.</p>
-        </div>
-
-        <div class="lp-demo-carte lp-demo-alerte lp-t5">
-          <span class="lp-demo-tag">12 août · Alerte</span>
-          <p><b>Silence anormal : 8 jours</b></p>
-          <p class="lp-demo-detail">Le fournisseur ne répond plus. La pose du 15 est menacée.</p>
-          <div class="lp-demo-action">Relance préparée · à valider</div>
-        </div>
+        <span class="lp-demo-etiq">Ce qu'Ibalya en fait, dans l'application, le 6 novembre</span>
+        <img src="/images/app/demo-synthese.webp" width="1400" height="442" loading="lazy"
+             alt="Synthèse d'Ibalya : « Pose de 12 fenêtres à l'école » en retard probable, échéance 10/11, bloquée par la livraison des 12 vitrages attendue le 03/11 ; la livraison en retard de 3 jours ; alerte « Promesse menacée par un retard amont ».">
+        <p class="lp-demo-detail">Un retard fournisseur qui menace une promesse client ne compte qu'une fois : une seule action de relance, pas une alerte par engagement touché.</p>
       </div>
     </div>
+  </section>
 
-    <div class="lp-cartes">
-      <article class="lp-carte">
-        <span class="lp-numero">01</span>
-        <h3>Extraction continue</h3>
-        <p>L'agent se connecte en lecture seule à votre messagerie et identifie les promesses
-           faites par vos clients, vos fournisseurs et vos équipes, comme celles que vous faites.</p>
-      </article>
-      <article class="lp-carte">
-        <span class="lp-numero">02</span>
-        <h3>Surveillance dans le temps</h3>
-        <p>Cinq détecteurs permanents : échéance à risque, silence anormal, engagement oublié,
-           surcharge d'une semaine, et la promesse menacée : quand un retard fournisseur met en
-           péril une promesse client.</p>
-      </article>
-      <article class="lp-carte">
-        <span class="lp-numero">03</span>
-        <h3>Action en un clic</h3>
-        <p>Pour chaque alerte, un message de relance est pré-rédigé à partir du contexte réel
-           de la conversation. Vous relisez, ajustez, envoyez. Ou pas.</p>
-      </article>
-      <article class="lp-carte">
-        <span class="lp-numero">04</span>
-        <h3>Assistant conversationnel</h3>
-        <p>Posez vos questions en langage naturel, « combien de devis en attente ? »,
-           « où en est ce dossier ? ». Des réponses tirées de vos seuls échanges, sourcées.</p>
-      </article>
+  <!-- ── Ce qu'Ibalya tient ── -->
+  <section class="lp-section" id="fonctions">
+    <div class="lp-tete">
+      <h2>Le parcours d'un email dans Ibalya</h2>
+      <p>Douze étapes, de la lecture au journal d'audit. Les seuils sont ceux du moteur, et les captures viennent de l'application, sur le scénario de démonstration.</p>
+    </div>
+    <div class="lp-groupe lp-piliers">
+      <div class="lp-pilier" data-reveal><i>01</i><b>Lecture seule de la boîte</b><span>Gmail, Outlook ou IMAP ; 30 jours d'historique au départ</span><img src="/images/app/etape-01-connexion.webp" width="900" height="300" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>02</i><b>Filtrage avant analyse</b><span>newsletters et notifications écartées, jamais transmises</span><img src="/images/app/etape-02-confidentialite.webp" width="900" height="281" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>03</i><b>Extraction des engagements</b><span>qui promet quoi, à qui, dans quel fil</span><img src="/images/app/etape-03-extraction.webp" width="900" height="298" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>04</i><b>Échéance déduite ou écrite</b><span>une date déduite est confirmée avant toute alerte</span><img src="/images/app/etape-04-echeances.webp" width="900" height="299" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>05</i><b>Fiabilité à trois niveaux</b><span>élevée, à vérifier, incertaine ; publié à partir de 0,50</span><img src="/images/app/etape-05-fiabilite.webp" width="900" height="298" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>06</i><b>Cycle de détection</b><span>cinq détecteurs, toutes les 30 minutes</span><img src="/images/app/etape-06-cycle.webp" width="900" height="300" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>07</i><b>Échéance à risque</b><span>dans les 7 jours, sans signal de progression</span><img src="/images/app/etape-07-echeance-risque.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>08</i><b>Silence anormal</b><span>au-delà de deux fois le rythme du fil, 4 jours par défaut</span><img src="/images/app/etape-08-silence.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>09</i><b>Promesse menacée</b><span>un retard amont, une promesse aval dans les 7 jours</span><img src="/images/app/etape-09-promesse-menacee.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>10</i><b>Oubli et surcharge</b><span>5 jours sans suite ; 5 échéances la même semaine</span><img src="/images/app/etape-10-surcharge-orphelin.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>11</i><b>Relance préparée, validée en un clic</b><span>rédigée à partir du fil ; 0 envoi automatique</span><img src="/images/app/etape-11-valider.webp" width="900" height="336" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>12</i><b>Corrections apprises, journal d'audit</b><span>chaque correction devient une règle, chaque action est horodatée</span><img src="/images/app/etape-12-regles.webp" width="900" height="299" loading="lazy" alt=""></div>
     </div>
   </section>
 
   <!-- ── Assistant conversationnel ── -->
   <section class="lp-section" id="assistant">
-    <div class="lp-section-tete">
-      <h2>Une question sur votre activité ? Demandez-lui.</h2>
-      <p>L'assistant répond à partir de vos engagements et de vos échanges, jamais
-         d'exemples inventés. Chaque réponse renvoie au fil d'origine, vérifiable d'un clic.</p>
-    </div>
-    <div class="lp-demo-fil lp-chat-fil">
-      <span class="lp-demo-etiq">Assistant Ibalya</span>
-      <div class="lp-demo-msg lp-demo-vous"><p>Quels devis sont en attente ?</p></div>
-      <div class="lp-demo-msg">
-        <p>Vous avez <mark>3 devis en attente</mark>, dont un en retard : la rénovation
-           pour Martin BTP, échéance dépassée depuis 2 jours.</p>
+    <div class="lp-duo">
+      <div class="lp-duo-texte" data-reveal>
+        <h2>Une question sur votre activité&nbsp;? Demandez-lui.</h2>
+        <p>L'assistant répond à partir de vos engagements et de vos échanges, jamais
+           d'exemples inventés. Chaque réponse renvoie au fil d'origine, vérifiable d'un clic.</p>
       </div>
-      <div class="lp-demo-msg lp-demo-vous"><p>Qui dois-je relancer cette semaine ?</p></div>
-      <div class="lp-demo-msg">
-        <p>Deux priorités : <b>Martin BTP</b> (devis en retard) et <b>Vitrages Pro</b>,
-           sans réponse depuis 8 jours.</p>
-      </div>
+      <figure class="lp-carte lp-capture" data-reveal>
+        <img src="/images/app/assistant-reponse.webp" width="1400" height="826" loading="lazy"
+             alt="Assistant Ibalya. Question : qui dois-je relancer cette semaine ? Réponse : Paul Rossi (devis pergola, sans retour depuis 12 jours), Marc Dupont (livraison des vitrages, 7 jours), Vitrages Pro (6 jours), famille Ménard (réglage de la porte, 4 jours), avec les alertes et engagements sources.">
+        <figcaption>Réponse réelle de l'assistant sur le scénario de démonstration, le 6 novembre 2026, avec ses sources.</figcaption>
+      </figure>
     </div>
   </section>
 
   <!-- ── Sécurité ── -->
-  <section class="lp-securite" id="securite">
-    <div class="lp-securite-grille">
-      <div>
-        <p class="lp-surtitre lp-accent">Confidentialité</p>
+  <section class="lp-section" id="securite">
+    <div class="lp-groupe lp-securite">
+      <div class="lp-securite-texte">
+        <p class="lp-surtitre lp-accent"><svg class="lp-bouclier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.4 8 8 9 4.6-1 8-4.6 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg> Sécurité • hébergé en UE</p>
         <h2>Vos emails contiennent la vie de votre entreprise.</h2>
         <p class="lp-chapeau">
           L'architecture est conçue pour que l'agent n'accède qu'au strict nécessaire,
@@ -246,73 +270,101 @@
               et attribué nominativement.</li>
         </ul>
       </div>
-      <div class="lp-config">
-        <p><span class="lp-c-mot">accès</span> : <span class="lp-c-val">"lecture_seule"</span>,</p>
-        <p><span class="lp-c-mot">envoi</span> : <span class="lp-c-val">"validation_humaine_obligatoire"</span>,</p>
-        <p><span class="lp-c-mot">hébergement</span> : <span class="lp-c-val">"union_européenne"</span>,</p>
-        <p><span class="lp-c-mot">entraînement_sur_vos_données</span> : <span class="lp-c-faux">false</span>,</p>
-        <p><span class="lp-c-mot">journal_audit</span> : <span class="lp-c-val">"intégral"</span></p>
+      <div class="lp-securite-config">
+        <img src="/images/app/securite-confidentialite.webp" width="1200" height="1127" loading="lazy"
+             alt="Réglages, confidentialité : un message reconnu dans une catégorie cochée est écarté avant analyse, jamais envoyé au modèle ; Santé et Ressources humaines cochées par défaut, Juridique non.">
+        <img src="/images/app/securite-connexion.webp" width="1200" height="488" loading="lazy"
+             alt="Réglages, connexion : Gmail, Outlook ou autre boîte IMAP ; le raccordement passe par Google, Ibalya n'a jamais votre mot de passe, seulement une autorisation révocable.">
       </div>
     </div>
   </section>
 
   <!-- ── Questions fréquentes ── -->
   <section class="lp-section" id="faq">
-    <div class="lp-section-tete">
-      <h2>Les questions qu'on nous pose.</h2>
+    <div class="lp-duo lp-duo-haut">
+      <div class="lp-duo-texte" data-reveal>
+        <h2>Les questions qu'on nous pose.</h2>
+        <p>Et si la vôtre n'y est pas, écrivez-nous : <a href="mailto:contact@ibalya.com">contact@ibalya.com</a>.</p>
+      </div>
+      <div class="lp-groupe lp-faq" data-reveal>
+        <details class="lp-faq-item" open>
+          <summary>Avec quelle messagerie ça marche ?</summary>
+          <p>Gmail et Outlook en un clic, ou n'importe quelle boîte en IMAP (OVH, Gandi, Orange, Free…).
+             Pour Gmail et Outlook, Ibalya n'a jamais votre mot de passe, seulement une autorisation que
+             vous retirez quand vous voulez.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Et si l'agent se trompe ?</summary>
+          <p>Vous le corrigez d'un geste, et chaque correction devient une règle écrite : l'agent se cale
+             sur votre réalité en deux à trois semaines. Et quoi qu'il arrive, rien ne part sans votre validation.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Combien de temps pour démarrer ?</summary>
+          <p>Quelques minutes. Vous raccordez votre boîte, Ibalya lit vos trente derniers jours et vous
+             présente un premier bilan de vos engagements, sans que vous ayez rien à saisir.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Qui voit mes données ?</summary>
+          <p>Vous seul. Chaque compte est cloisonné, l'hébergement est en Union européenne, et le
+             prestataire d'IA n'entraîne pas ses modèles sur vos données.</p>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Combien ça coûte ?</summary>
+          <p>Ibalya est en bêta privée : l'accès se fait sur invitation. Écrivez-nous pour demander un
+             accès, et nous en discutons de vive voix.</p>
+        </details>
+      </div>
     </div>
-    <div class="lp-faq">
-      <div class="lp-faq-item">
-        <h3>Avec quelle messagerie ça marche ?</h3>
-        <p>Gmail et Outlook en un clic, ou n'importe quelle boîte en IMAP (OVH, Gandi, Orange, Free…).
-           Pour Gmail et Outlook, Ibalya n'a jamais votre mot de passe, seulement une autorisation que
-           vous retirez quand vous voulez.</p>
+  </section>
+
+  <!-- ── Accès ── -->
+  <section class="lp-section" id="acces">
+    <div class="lp-groupe lp-acces">
+      <div class="lp-acces-texte" data-reveal>
+        <h3>Bêta privée, sur invitation</h3>
+        <p>Écrivez-nous en deux lignes : votre activité et le nombre de boîtes à suivre.
+           Nous en discutons de vive voix, puis nous vous ouvrons un accès.</p>
+        <a class="lp-btn lp-btn-primary lp-btn-lg lp-btn-bloc" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
       </div>
-      <div class="lp-faq-item">
-        <h3>Et si l'agent se trompe ?</h3>
-        <p>Vous le corrigez d'un geste, et chaque correction devient une règle écrite : l'agent se cale
-           sur votre réalité en deux à trois semaines. Et quoi qu'il arrive, rien ne part sans votre validation.</p>
-      </div>
-      <div class="lp-faq-item">
-        <h3>Combien de temps pour démarrer ?</h3>
-        <p>Quelques minutes. Vous raccordez votre boîte, Ibalya lit vos trente derniers jours et vous
-           présente un premier bilan de vos engagements, sans que vous ayez rien à saisir.</p>
-      </div>
-      <div class="lp-faq-item">
-        <h3>Qui voit mes données ?</h3>
-        <p>Vous seul. Chaque compte est cloisonné, l'hébergement est en Union européenne, et le
-           prestataire d'IA n'entraîne pas ses modèles sur vos données.</p>
-      </div>
-      <div class="lp-faq-item">
-        <h3>Combien ça coûte ?</h3>
-        <p>Ibalya est en bêta privée : l'accès se fait sur invitation. Écrivez-nous pour demander un
-           accès, et nous en discutons de vive voix.</p>
+      <div class="lp-acces-carte" data-reveal>
+        <dl class="lp-acces-liste">
+          <div><dt>Démarrage</dt><dd>quelques minutes, 30 jours d'historique lus</dd></div>
+          <div><dt>Accès</dt><dd>lecture seule, rien ne part sans votre validation</dd></div>
+          <div><dt>Hébergement</dt><dd>Union européenne, prestataire d'IA européen</dd></div>
+          <div><dt>Support</dt><dd>par les fondateurs, de vive voix</dd></div>
+          <div><dt>Carte bancaire</dt><dd>aucune</dd></div>
+        </dl>
       </div>
     </div>
   </section>
 
   <!-- ── Appel à l'action ── -->
   <section class="lp-cta">
-    <h2>Prêt à reprendre le contrôle ?</h2>
-    <p>Ibalya est en bêta privée. L'accès se fait sur invitation.</p>
-    <a class="lp-btn lp-btn-primary lp-btn-lg" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">
-      Demander un accès
-    </a>
+    <div class="lp-cta-int">
+      <p class="lp-cta-logo"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M0 0h64v24H0z"/><path d="M76 0h24v64H76z"/><path d="M0 36h24v40h76v24H0z"/></svg> Ibalya</p>
+      <h2>Prêt à reprendre<br>le contrôle&nbsp;?<br>0 oubli.</h2>
+      <div class="lp-actions">
+        <a class="lp-btn lp-btn-clair lp-btn-lg" href="mailto:contact@ibalya.com?subject=Demande%20d%27acc%C3%A8s%20%C3%A0%20Ibalya">Demander un accès</a>
+        <a class="lp-btn lp-btn-primary lp-btn-lg" href="#simulateurs">Rejouer les simulateurs</a>
+      </div>
+    </div>
   </section>
 </main>
 
 <footer class="lp-footer">
-  <span>© <span id="lp-annee">2026</span> Ibalya</span>
-  <span class="lp-sep">·</span>
-  <a href="mailto:contact@ibalya.com">contact@ibalya.com</a>
-  <span class="lp-sep">·</span>
-  <a href="/confidentialite.html">Confidentialité</a>
-  <span class="lp-sep">·</span>
-  <a href="/cgu.html">CGU</a>
-  <span class="lp-sep">·</span>
-  <a href="/app">Connexion</a>
+  <div class="lp-footer-int">
+    <p>© <span id="lp-annee">2026</span> Ibalya • French built • Hébergé en UE • <a href="mailto:contact@ibalya.com">contact@ibalya.com</a></p>
+    <nav aria-label="Liens légaux">
+      <a href="/confidentialite.html">Confidentialité</a>
+      <a href="/cgu.html">CGU</a>
+      <a href="/app">Connexion</a>
+    </nav>
+  </div>
 </footer>
 
 <script src="/annee.js"></script>
+<script src="/animations.js"></script>
+<script src="/onglets.js"></script>
+<script src="/simulateurs.js"></script>
 </body>
 </html>
