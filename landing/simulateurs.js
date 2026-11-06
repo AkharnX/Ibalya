@@ -105,6 +105,26 @@
     if (note) note.hidden = true;
     registry[id](root);
     annonceCalme(root, id);
+    scinder(root);
+  }
+
+  // Mise en page du panneau : entrées à gauche, résultats à droite. Les simulateurs construisent
+  // leur contenu à plat dans .sim-corps ; on le répartit ensuite dans deux colonnes. Un .sim-aide
+  // suit la colonne de l'élément qui le précède (il commente un curseur ou un graphique).
+  var RESULTAT = /(^|\s)(sim-sorties|sim-chart|sim-formule|sim-top|sim-sr)(\s|$)/;
+  function scinder(root) {
+    var corps = root.querySelector('.sim-corps');
+    if (!corps || corps.querySelector('.sim-entrees')) return;
+    var entrees = document.createElement('div'); entrees.className = 'sim-entrees';
+    var resultats = document.createElement('div'); resultats.className = 'sim-resultats';
+    var cible = entrees;
+    Array.prototype.slice.call(corps.children).forEach(function (c) {
+      var cl = typeof c.className === 'string' ? c.className : '';
+      if (!/(^|\s)sim-aide(\s|$)/.test(cl)) cible = RESULTAT.test(cl) ? resultats : entrees;
+      cible.appendChild(c);
+    });
+    corps.appendChild(entrees);
+    corps.appendChild(resultats);
   }
 
   // Annonces lecteur d'écran calmes et identiques pour tous les simulateurs : les sorties ne sont pas
