@@ -155,7 +155,7 @@ h3{font-size:22px;}
 .lp-etape p{font-size:14.5px;line-height:1.6;color:var(--muted);}
 
 /* Piliers 4 × 3 */
-.lp-piliers{grid-template-columns:repeat(4,1fr);}
+.lp-piliers{grid-template-columns:repeat(3,1fr);}
 @media (max-width:900px){ .lp-piliers{grid-template-columns:repeat(2,1fr);} }
 @media (max-width:420px){ .lp-piliers{grid-template-columns:1fr;} }
 .lp-pilier{padding:clamp(20px,2.2vw,28px) clamp(18px,2vw,24px);transition:background .2s;}
@@ -163,7 +163,7 @@ h3{font-size:22px;}
 .lp-pilier i{display:block;font-style:normal;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--primary);margin-bottom:22px;}
 .lp-pilier b{display:block;font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.2;}
 .lp-pilier span{display:block;margin-top:6px;font-size:13.5px;line-height:1.5;color:var(--muted);}
-.lp-pilier img{display:block;width:100%;height:110px;object-fit:cover;object-position:left top;margin-top:18px;border:1px solid var(--border);border-radius:8px;background:#fff;}
+.lp-pilier img{display:block;width:100%;height:150px;object-fit:cover;object-position:left top;margin-top:18px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
 /* Duo : texte à gauche, carte à droite */
 .lp-duo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,5vw,72px);align-items:center;}
