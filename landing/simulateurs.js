@@ -238,7 +238,7 @@
     if (!corps) return;
     var vals = {}, ready = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Estimation paramétrable, non garantie'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation à partir de vos réglages'));
 
     // Curseurs
     CHAMPS.forEach(function (c) {
@@ -417,7 +417,7 @@
     if (!corps) return;
     var vals = {}, ready = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Estimation paramétrable, non garantie'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation à partir de vos réglages'));
 
     CHAMPS.forEach(function (c) {
       var champ = el('div', 'sim-champ');
@@ -510,7 +510,7 @@
   S.registerSim('oubli', init);
 })();
 
-/* ═══ Simulateur 3 : Temps perdu (heatmap calendaire) ═══ */
+/* ═══ Simulateur 3 : Temps perdu (cumul mois par mois) ═══ */
 (function () {
   'use strict';
   var S = window.IbSim;
@@ -520,24 +520,7 @@
   var JOURS_OUVRES = 230;      // jours travaillés par an
   var MIN_PAR_H = 60;          // minutes par heure
   var H_PAR_JOUR = 8;          // heures par jour ouvré (équivalence en jours)
-  var COLS = 23, ROWS = 10;    // grille 23 x 10 = 230 cases = exactement les jours ouvrés (une case = un jour ouvré)
-  var SEUIL_PLEIN = 120;       // minutes perdues par jour pour la teinte pleine (échelle fixe, pour que la grille réagisse)
-  var AMPLITUDE = 0.45;        // variation illustrative autour de la moyenne
-
-  // Répartition illustrative et DÉTERMINISTE : fonction fixe de l'indice de case (aucun hasard).
-  // Normalisée pour que la moyenne sur les 230 jours vaille exactement 1 : la grille redistribue
-  // le total calculé, elle n'invente aucun volume.
-  var FACTEURS = (function () {
-    var f = [], i, s = 0, m;
-    for (i = 0; i < JOURS_OUVRES; i++) {
-      var onde = Math.sin(i * 0.37) * 0.6 + Math.sin(i * 1.3 + 1) * 0.4;  // ondulation lente + rapide
-      var semaine = [0.25, 0, -0.1, 0.05, -0.3][i % 5];                    // lundi chargé, vendredi plus calme
-      f.push(Math.max(0.05, 1 + AMPLITUDE * onde + semaine));
-      s += f[i];
-    }
-    m = s / JOURS_OUVRES;
-    return f.map(function (x) { return x / m; });
-  })();
+  var MOIS = 12;
 
   var CHAMPS = [
     { id: 'minRecherche', label: 'Durée d\'une recherche', min: 1, max: 10, val: 2, step: 1, unit: 'min' },
@@ -566,7 +549,7 @@
     if (!corps) return;
     var vals = {}, ready = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Estimation paramétrable, non garantie'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Estimation à partir de vos réglages'));
 
     CHAMPS.forEach(function (c) {
       var champ = el('div', 'sim-champ');
@@ -600,31 +583,23 @@
     });
     corps.appendChild(sorties);
 
-    // Heatmap : une case = un jour ouvré, rangées en colonnes de 10 (décorative, le résumé est dans aria-label).
-    var CELL = 14, GAP = 3, PAD = 2, LEG = 22;
-    var W = PAD * 2 + COLS * (CELL + GAP) - GAP, H = PAD * 2 + ROWS * (CELL + GAP) - GAP + LEG;
-    var cells = [];
-    var grid = S.svg('g', { 'aria-hidden': 'true' });
-    for (var i = 0; i < JOURS_OUVRES; i++) {
-      var r = S.svg('rect', {
-        x: PAD + Math.floor(i / ROWS) * (CELL + GAP), y: PAD + (i % ROWS) * (CELL + GAP),
-        width: CELL, height: CELL, rx: 3, 'class': 'sim-heat-case', 'fill-opacity': 0.1
-      });
-      cells.push(r); grid.appendChild(r);
+    // Cumul des heures perdues, mois par mois : dérivé du calcul, aucune répartition supposée.
+    var W = 320, H = 160, PADL = 6, PADR = 6, PADT = 24, PADB = 22, GAP = 6;
+    var barW = (W - PADL - PADR - GAP * (MOIS - 1)) / MOIS;
+    var bars = [], g = S.svg('g', { 'aria-hidden': 'true' });
+    for (var i = 0; i < MOIS; i++) {
+      var r = S.svg('rect', { x: (PADL + i * (barW + GAP)).toFixed(1), y: H - PADB, width: barW.toFixed(1), height: 0, rx: 3, 'class': 'sim-barre-mois' });
+      bars.push(r); g.appendChild(r);
     }
-    var legY = H - 8;
-    var legende = S.svg('g', { 'aria-hidden': 'true' }, [
-      S.svg('text', { x: PAD, y: legY, 'class': 'sim-lib' }, '0 min'),
-      S.svg('text', { x: W / 2, y: legY, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'répartition illustrative'),
-      S.svg('text', { x: W - PAD, y: legY, 'text-anchor': 'end', 'class': 'sim-lib' }, '≥ ' + SEUIL_PLEIN + ' min/jour')
-    ]);
-    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [grid, legende]);
+    var axe = S.svg('line', { x1: PADL, y1: H - PADB + 0.5, x2: W - PADR, y2: H - PADB + 0.5, 'class': 'sim-axe' });
+    var lib1 = S.svg('text', { x: PADL, y: H - 6, 'class': 'sim-lib' }, 'Mois 1');
+    var lib12 = S.svg('text', { x: W - PADR, y: H - 6, 'text-anchor': 'end', 'class': 'sim-lib' }, 'Mois 12');
+    var valTop = S.svg('text', { x: W - PADR, y: 12, 'text-anchor': 'end', 'class': 'sim-val' }, '');
+    var titre = S.svg('text', { x: PADL, y: 12, 'class': 'sim-lib' }, 'Cumul des heures perdues');
+    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [titre, valTop, g, axe, lib1, lib12]);
     var chart = el('div', 'sim-chart');
     chart.appendChild(chartSvg);
     corps.appendChild(chart);
-    corps.appendChild(el('p', 'sim-aide',
-      'Chaque case est un jour ouvré (' + JOURS_OUVRES + ' par an). Plus la teinte est foncée, plus le temps perdu ce jour-là est élevé. ' +
-      'La répartition entre les jours est illustrative : seule la moyenne est calculée.'));
 
     var det = document.createElement('details');
     det.className = 'sim-formule';
@@ -634,29 +609,32 @@
       'Heures par an = minutes par jour × ' + JOURS_OUVRES + ' jours ouvrés ÷ ' + MIN_PAR_H + '. ' +
       'Jours équivalents = heures par an ÷ ' + H_PAR_JOUR + ' h. ' +
       'Coût par an = heures par an × coût horaire. ' +
-      'La grille répartit ce total selon un motif fixe (ondulation et rythme de semaine), normalisé pour que la moyenne égale exactement les minutes par jour calculées. ' +
-      'Ce motif est illustratif, pas une mesure. Toutes les valeurs sont des estimations que vous réglez.'));
+      'Le graphique cumule ce total par douzièmes, mois après mois. Toutes les valeurs sont des estimations que vous réglez.'));
     corps.appendChild(det);
 
+    var first = true;
     function update(animate) {
       var res = calc(vals);
       DEFS.forEach(function (d) {
         var node = outs[d.k], v = res[d.k];
         if (node._ibRaf) { cancelAnimationFrame(node._ibRaf); node._ibRaf = 0; }
-        // Animation réservée à la première révélation ; ensuite écriture directe (pas de scintillement).
         if (animate) S.animateCount(node, 0, v, d.fmt);
         else node.textContent = d.fmt(v);
       });
-      for (var k = 0; k < cells.length; k++) {
-        var t = Math.min(1, fin(res.minParJour * FACTEURS[k]) / SEUIL_PLEIN);
-        cells[k].setAttribute('fill-opacity', (0.1 + 0.9 * t).toFixed(3));
-        if (animate && !S.prefersReducedMotion) {
-          cells[k].style.animationDelay = (Math.floor(k / ROWS) * 35) + 'ms';
-          cells[k].classList.add('sim-heat-reveal');
+      var hmax = H - PADB - PADT;
+      for (var k = 0; k < MOIS; k++) {
+        var h = res.hParAn > 0 ? hmax * (k + 1) / MOIS : 0;
+        bars[k].setAttribute('y', (H - PADB - h).toFixed(1));
+        bars[k].setAttribute('height', h.toFixed(1));
+        if (animate && first && !S.prefersReducedMotion) {
+          bars[k].style.animationDelay = (k * 40) + 'ms';
+          bars[k].classList.add('sim-heat-reveal');
         }
       }
+      first = false;
+      valTop.textContent = S.fmtH(res.hParAn) + ' à 12 mois';
       chartSvg.setAttribute('aria-label', 'Temps perdu en recherches : ' + S.fmtH(res.hParAn) + ' par an, soit ' +
-        S.fmtEUR(res.coutParAn) + ' (estimation). Grille de ' + JOURS_OUVRES + ' jours ouvrés, répartition illustrative.');
+        S.fmtEUR(res.coutParAn) + ' (estimation), cumulés mois par mois.');
     }
 
     ready = true;
@@ -666,34 +644,32 @@
   S.registerSim('temps', init);
 })();
 
-/* ═══ Simulateur 4 : Exposition au risque (heatmap 7 x 24) ═══ */
+/* ═══ Simulateur 4 : Exposition au risque (les cinq détecteurs du produit) ═══ */
 (function () {
   'use strict';
   var S = window.IbSim;
   if (!S) return;
 
-  // Modèle illustratif : estimations paramétrables, jamais des faits mesurés.
+  // Score : estimation paramétrable. Règles des détecteurs : celles du moteur (backend/internal/engine/detectors.go),
+  // valeurs par défaut en l'absence de calibration apprise.
   var P_RETARD = 0.6, P_SILENCE = 0.4;   // poids des deux taux dans le score
   var NORM = 30;                          // pondéré (en points de %) donnant 100 à volume maximal
   var VOL_MIN = 0.4, VOL_MAX = 200;       // effet du volume : 0,4 à 1 (échelle logarithmique)
   var SEUIL_MOYEN = 33, SEUIL_ELEVE = 66; // libellés : < 33 faible, < 66 moyen, sinon élevé
-  var JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  var JOURS_GRILLE = 14;
 
-  // Profil déterministe jour x heure (aucun hasard) : plus chaud en journée et en semaine.
-  // Normalisé pour que la moyenne sur les 168 cases vaille 1.
-  var PROFIL = (function () {
-    var jf = [1.0, 1.1, 1.1, 1.05, 0.95, 0.25, 0.12], p = [], s = 0, d, h, m;
-    for (d = 0; d < 7; d++) {
-      for (h = 0; h < 24; h++) {
-        var jour = Math.exp(-Math.pow((h - 13) / 4.5, 2) / 2);              // pic en milieu de journée
-        var pause = (h === 12 || h === 13) ? 0.85 : 1;                      // léger creux à midi
-        var v = jf[d] * (0.04 + jour * pause);
-        p.push(v); s += v;
-      }
-    }
-    m = s / p.length;
-    return p.map(function (x) { return x / m; });
-  })();
+  var DETECTEURS = [
+    { id: 'echeance', nom: 'Échéance à risque', regle: 'échéance confirmée dans les 7 jours, sans signal de progression récent ; critique à 2 jours',
+      jours: 7, critique: 2, part: function (v) { return v.tauxRetard / 100; } },
+    { id: 'silence', nom: 'Silence anormal', regle: 'fil sans réponse au-delà de deux fois son rythme habituel ; 4 jours par défaut, jamais moins de 24 h',
+      jours: 4, part: function (v) { return v.tauxSilence / 100; } },
+    { id: 'contradiction', nom: 'Promesse menacée', regle: 'promesse aval due dans les 7 jours, dont la promesse amont est en retard ou silencieuse',
+      jours: 7, part: function (v) { return Math.min(v.tauxRetard, v.tauxSilence) / 100; } },
+    { id: 'orphelin', nom: 'Engagement oublié', regle: 'engagement ouvert sans aucune suite 5 jours après sa création',
+      jours: 5, part: null },
+    { id: 'surcharge', nom: 'Surcharge', regle: '5 échéances ou plus la même semaine pour la même personne',
+      jours: 5, semaine: true, part: null }
+  ];
 
   var CHAMPS = [
     { id: 'engagements', label: 'Engagements suivis', min: 1, max: 200, val: 40, step: 1, unit: '' },
@@ -716,12 +692,7 @@
     var score = clamp(fin(100 * (pond / NORM) * vol), 0, 100);
     var aRisque = clamp(fin(v.engagements * (v.tauxRetard + v.tauxSilence) / 100), 0, v.engagements);
     var lib = score < SEUIL_MOYEN ? 'faible' : (score < SEUIL_ELEVE ? 'moyen' : 'élevé');
-    var cats = [
-      { nom: 'Échéance à risque', n: v.engagements * v.tauxRetard / 100, ordre: 0 },
-      { nom: 'Silence anormal', n: v.engagements * v.tauxSilence / 100, ordre: 1 },
-      { nom: 'Promesse menacée', n: v.engagements * Math.min(v.tauxRetard, v.tauxSilence) / 100, ordre: 2 }
-    ].sort(function (a, b) { return (b.n - a.n) || (a.ordre - b.ordre); });
-    return { score: score, lib: lib, aRisque: aRisque, top: cats };
+    return { score: score, lib: lib, aRisque: aRisque };
   }
 
   function init(root) {
@@ -729,7 +700,7 @@
     if (!corps) return;
     var vals = {}, ready = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Estimation illustrative, non garantie'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Règles réelles du produit, volumes estimés d\'après vos réglages'));
 
     CHAMPS.forEach(function (c) {
       var champ = el('div', 'sim-champ');
@@ -760,52 +731,56 @@
     sorties.appendChild(boxScore); sorties.appendChild(boxNiveau); sorties.appendChild(boxRisque);
     corps.appendChild(sorties);
 
-    var topBox = el('div', 'sim-top');
-    topBox.appendChild(el('p', 'sim-top-titre', 'Top 3 des risques (catégories dérivées de vos réglages)'));
-    var ul = el('ul', 'sim-top-liste');
-    var lis = [];
-    for (var q = 0; q < 3; q++) {
-      var li = el('li');
-      var nom = el('span', 'sim-top-nom'), nb = el('span', 'sim-top-n');
-      li.appendChild(nom); li.appendChild(nb); ul.appendChild(li);
-      lis.push({ nom: nom, nb: nb });
-    }
-    topBox.appendChild(ul);
-    corps.appendChild(topBox);
-
-    // Heatmap 7 x 24 (décorative, le résumé est dans aria-label).
-    var CELL = 11, GAP = 2, PADL = 28, PADT = 14, LEG = 22;
-    var W = PADL + 24 * (CELL + GAP) - GAP + 2, H = PADT + 7 * (CELL + GAP) - GAP + LEG;
-    var cells = [];
-    var grid = S.svg('g', { 'aria-hidden': 'true' });
-    var d, h;
-    for (d = 0; d < 7; d++) {
-      grid.appendChild(S.svg('text', { x: 0, y: PADT + d * (CELL + GAP) + CELL - 2, 'class': 'sim-lib' }, JOURS[d]));
-      for (h = 0; h < 24; h++) {
-        var r = S.svg('rect', {
-          x: PADL + h * (CELL + GAP), y: PADT + d * (CELL + GAP),
-          width: CELL, height: CELL, rx: 2, 'class': 'sim-heat-case', 'fill-opacity': 0.1
-        });
-        cells.push(r); grid.appendChild(r);
+    // Grille des règles : une ligne par détecteur, une case par jour ; les cases pleines sont la fenêtre
+    // dans laquelle le détecteur se déclenche (en jours avant l'échéance, ou en jours de silence).
+    var CELL = 11, GAP = 3, PADL = 124, PADT = 16, ROWH = 22, LEG = 18;
+    var W = PADL + JOURS_GRILLE * (CELL + GAP) - GAP + 2, H = PADT + DETECTEURS.length * ROWH + LEG;
+    var g = S.svg('g', { 'aria-hidden': 'true' });
+    DETECTEURS.forEach(function (d, i) {
+      var y = PADT + i * ROWH;
+      g.appendChild(S.svg('text', { x: 0, y: y + CELL - 1, 'class': 'sim-lib' }, d.nom));
+      var n = d.semaine ? 7 : JOURS_GRILLE;
+      for (var j = 0; j < n; j++) {
+        var plein = d.semaine ? j < d.jours : (d.critique ? j < d.jours : j >= d.jours);
+        var critique = d.critique && j < d.critique;
+        g.appendChild(S.svg('rect', {
+          x: PADL + j * (CELL + GAP), y: y, width: CELL, height: CELL, rx: 2,
+          'class': 'sim-regle-case' + (plein ? (critique ? ' sim-regle-critique' : ' sim-regle-pleine') : '')
+        }));
       }
-    }
-    [0, 6, 12, 18, 23].forEach(function (hh) {
-      var ax = PADL + hh * (CELL + GAP) + CELL / 2;
-      grid.appendChild(S.svg('text', hh === 23 ? { x: ax + CELL / 2, y: 9, 'text-anchor': 'end', 'class': 'sim-lib' } : { x: ax, y: 9, 'text-anchor': 'middle', 'class': 'sim-lib' }, hh + ' h'));
+      if (d.semaine) g.appendChild(S.svg('text', { x: PADL + 7 * (CELL + GAP) + 2, y: y + CELL - 1, 'class': 'sim-lib' }, '5 sur 7 jours'));
     });
-    var legY = H - 8;
+    var legY = H - 4;
     var legende = S.svg('g', { 'aria-hidden': 'true' }, [
-      S.svg('text', { x: PADL, y: legY, 'class': 'sim-lib' }, 'risque faible'),
-      S.svg('text', { x: W / 2 + 14, y: legY, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'illustratif'),
-      S.svg('text', { x: W - 4, y: legY, 'text-anchor': 'end', 'class': 'sim-lib' }, 'risque élevé')
+      S.svg('text', { x: PADL, y: 10, 'class': 'sim-lib' }, 'jour 1'),
+      S.svg('text', { x: W - 2, y: 10, 'text-anchor': 'end', 'class': 'sim-lib' }, 'jour ' + JOURS_GRILLE),
+      S.svg('text', { x: 0, y: legY, 'class': 'sim-lib' }, 'case pleine : le détecteur se déclenche')
     ]);
-    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [grid, legende]);
+    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img',
+      'aria-label': 'Fenêtres de déclenchement des cinq détecteurs : échéance à risque dans les 7 jours avant l\'échéance (critique à 2 jours), silence anormal à partir de 4 jours, promesse menacée dans les 7 jours, engagement oublié à partir de 5 jours, surcharge à partir de 5 échéances la même semaine.' }, [g, legende]);
     var chart = el('div', 'sim-chart');
     chart.appendChild(chartSvg);
     corps.appendChild(chart);
+
+    var topBox = el('div', 'sim-top');
+    topBox.appendChild(el('p', 'sim-top-titre', 'Les cinq détecteurs, et ce qu\'ils toucheraient dans votre volume'));
+    var ul = el('ul', 'sim-top-liste');
+    var lis = [];
+    DETECTEURS.forEach(function (d) {
+      var li = el('li', 'sim-regle');
+      var tete = el('span', 'sim-regle-tete');
+      var nom = el('b', null, d.nom), nb = el('span', 'sim-top-n');
+      tete.appendChild(nom); tete.appendChild(nb);
+      li.appendChild(tete);
+      li.appendChild(el('span', 'sim-regle-texte', d.regle));
+      ul.appendChild(li);
+      lis.push({ d: d, nb: nb });
+    });
+    topBox.appendChild(ul);
+    corps.appendChild(topBox);
     corps.appendChild(el('p', 'sim-aide',
-      'Chaque case est une heure d\'un jour de la semaine. Le niveau global de la grille suit le score ; ' +
-      'la répartition entre jours et heures est illustrative (plus chaud en journée et en semaine), pas une mesure de vos données.'));
+      'Les règles et leurs seuils sont ceux du moteur de détection, avant calibration sur vos échanges (le silence, par exemple, s\'ajuste au rythme réel de chaque fil). ' +
+      'Les effectifs par détecteur sont estimés à partir de vos réglages, pas mesurés.'));
 
     var det = document.createElement('details');
     det.className = 'sim-formule';
@@ -815,8 +790,8 @@
       ' × effet du volume, borné entre 0 et 100. L\'effet du volume croît de ' + VOL_MIN + ' à 1 selon le logarithme du nombre d\'engagements (1 à ' + VOL_MAX + '). ' +
       'Niveau : faible sous ' + SEUIL_MOYEN + ', moyen sous ' + SEUIL_ELEVE + ', élevé au-delà. ' +
       'Engagements à risque = engagements × (part en retard + part sans réponse) ÷ 100, plafonné au total. ' +
-      'Top 3 : trois catégories génériques classées par effectif estimé (retard, silence, et le recoupement des deux pour « promesse menacée »). ' +
-      'Aucun client, montant ou date n\'est supposé. Modèle illustratif, valeurs estimées.'));
+      'Par détecteur : échéance à risque ≈ engagements × part en retard ; silence anormal ≈ engagements × part sans réponse ; ' +
+      'promesse menacée ≈ engagements × la plus petite des deux parts. Engagement oublié et surcharge dépendent de vos fils, pas de ces réglages.'));
     corps.appendChild(det);
 
     function update(animate) {
@@ -830,29 +805,11 @@
         else node.textContent = a[2](a[1]);
       });
       sNiveau.textContent = res.lib.charAt(0).toUpperCase() + res.lib.slice(1);
-      var aucun = vals.tauxRetard === 0 && vals.tauxSilence === 0;
-      res.top.forEach(function (c, i) {
-        if (aucun) {
-          lis[i].nom.textContent = i === 0 ? 'Aucun risque identifié avec ces réglages' : '';
-          lis[i].nb.textContent = '';
-          lis[i].nom.parentNode.hidden = i > 0;
-          return;
-        }
-        lis[i].nom.parentNode.hidden = false;
-        lis[i].nom.textContent = (i + 1) + '. ' + c.nom + ' ';
-        lis[i].nb.textContent = '≈ ' + S.fmtInt(c.n) + ' engagement' + (Math.round(c.n) > 1 ? 's' : '');
+      lis.forEach(function (l) {
+        if (!l.d.part) { l.nb.textContent = 'selon vos fils'; return; }
+        var n = vals.engagements * l.d.part(vals);
+        l.nb.textContent = Math.round(n) === 0 ? 'aucun avec ces réglages' : '≈ ' + S.fmtInt(n) + ' engagement' + (Math.round(n) > 1 ? 's' : '');
       });
-      for (var k = 0; k < cells.length; k++) {
-        var t = clamp(res.score / 100 * PROFIL[k], 0, 1);
-        cells[k].style.fill = t < 0.33 ? 'var(--ok)' : (t < 0.66 ? 'var(--warn)' : 'var(--risk)');
-        cells[k].setAttribute('fill-opacity', (0.12 + 0.88 * t).toFixed(3));
-        if (animate && !S.prefersReducedMotion) {
-          cells[k].style.animationDelay = (Math.floor(k / 24) * 60) + 'ms';
-          cells[k].classList.add('sim-heat-reveal');
-        }
-      }
-      chartSvg.setAttribute('aria-label', 'Exposition au risque : score ' + S.fmtInt(res.score) + ' sur 100 (' + res.lib +
-        '), environ ' + S.fmtInt(res.aRisque) + ' engagements à risque (estimation). Grille de 7 jours par 24 heures, répartition illustrative.');
     }
 
     ready = true;
@@ -862,7 +819,7 @@
   S.registerSim('risque', init);
 })();
 
-/* ═══ Simulateur 5 : Validation (pile de cartes, glisser + boutons) ═══ */
+/* ═══ Simulateur 5 : Validation (scénario de démonstration, glisser + boutons) ═══ */
 (function () {
   'use strict';
   var S = window.IbSim;
@@ -873,13 +830,24 @@
   var SEUIL_GLISSE = 100;       // px de glissement horizontal pour décider
   var DUREE_SORTIE = 260;       // ms, animation de sortie (ignorée si reduced-motion)
 
-  // Messages fictifs, génériques, uniquement pour illustrer.
+  // Les cinq brouillons que l'agent a réellement rédigés (6 novembre 2026, scénario de démonstration
+  // « Menuiserie Dupont », fixtures/messages.json : seize messages fictifs d'une menuiserie). Rien n'est envoyé ici.
   var MESSAGES = [
-    { de: 'Fournisseur (exemple)', objet: 'Livraison confirmée jeudi', corps: 'Ibalya prépare l\'accusé de réception à envoyer.' },
-    { de: 'Client (exemple)', objet: 'Relance du devis en attente', corps: 'Ibalya propose une relance courte et polie.' },
-    { de: 'Partenaire (exemple)', objet: 'Proposition de créneau de réunion', corps: 'Ibalya suggère de confirmer le créneau de mardi.' },
-    { de: 'Prestataire (exemple)', objet: 'Facture à régler avant la fin du mois', corps: 'Ibalya prépare un rappel interne pour le paiement.' },
-    { de: 'Équipe (exemple)', objet: 'Compte rendu à partager', corps: 'Ibalya rédige un envoi du compte rendu aux participants.' }
+    { de: 'À : commandes@vitrages-pro.fr', objet: 'Relance : livraison des 12 vitrages doubles – échéance dépassée',
+      corps: '« Bonjour, La livraison des 12 vitrages doubles pour notre atelier était prévue au plus tard le 03/11. À ce jour, nous n’avons toujours pas reçu les éléments ni d’information sur le retard. Pouvez-vous nous indiquer où en est la com… »',
+      prop: 'Motif : Livraison de 12 vitrages doubles à l\'atelier' },
+    { de: 'À : paul.rossi@gmail.com', objet: 'Devis pergola bioclimatique – Envoi comme convenu',
+      corps: '« Bonjour M. Rossi, Comme convenu lors de notre échange du 25 octobre, je vous transmets par ce mail le devis détaillé pour la pergola bioclimatique. Vous y trouverez l’ensemble des spécifications techniques, les délais et les condi… »',
+      prop: 'Motif : Envoi du devis pour la pergola bioclimatique' },
+    { de: 'À : famille.menard@orange.fr', objet: 'Rappel : réglage de votre porte d\'entrée sous garantie',
+      corps: '« Bonjour, Je me permets de revenir vers vous concernant le réglage de votre porte d\'entrée, prévu sous garantie. Comme convenu le 30 octobre, je devais vous appeler avant de passer cette semaine. Pourriez-vous me confirmer vos disp… »',
+      prop: 'Motif : Réglage de la porte d\'entrée sous garantie' },
+    { de: 'À : sophie.laurent@hotmail.fr', objet: 'Confirmation de rendez-vous pour les mesures des fenêtres - 12/11',
+      corps: '« Bonjour, Je me permets de revenir vers vous concernant notre rendez-vous prévu le 12 novembre à 10h pour la prise de mesures de vos 8 fenêtres. Pourriez-vous me confirmer que ce créneau vous convient toujours ? Dans l’attente de v… »',
+      prop: 'Motif : Rendez-vous pour prise de mesures fenêtres' },
+    { de: 'À : services-techniques@mairie-valbonne.fr', objet: 'Relance - Livraison des vitrages pour l\'école de Valbonne',
+      corps: '« Bonjour, Je me permets de revenir vers vous concernant la pose des 12 fenêtres à l\'école de Valbonne, prévue le 10/11. La livraison des vitrages doubles, attendue le 03/11 auprès de notre atelier, n\'a toujours pas eu lieu. Ce reta… »',
+      prop: 'Motif : Pose de 12 fenêtres à l\'école' }
   ];
 
   function el(tag, cls, text) {
@@ -894,16 +862,16 @@
     if (!corps) return;
     var index = 0, valides = 0, passes = 0, busy = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Estimation : ' + TEMPS_PAR_VALIDATION + ' min gagnées par validation'));
-    corps.appendChild(el('p', 'sim-aide', 'Messages fictifs, donnés à titre d\'illustration. Glissez la carte vers la droite pour valider, vers la gauche pour passer, ou utilisez les boutons.'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Brouillons rédigés par le produit sur le scénario de démonstration ; aucun envoi réel'));
+    corps.appendChild(el('p', 'sim-aide', 'Les cinq relances que l\'agent a pré-rédigées sur le scénario « Menuiserie Dupont », telles qu\'elles apparaissent dans « À valider ». Glissez vers la droite pour envoyer, vers la gauche pour écarter, ou utilisez les boutons.'));
 
     var pile = el('div', 'sim-pile');
     corps.appendChild(pile);
 
     var actions = el('div', 'sim-actions');
-    var btnPasser = el('button', 'sim-btn sim-btn-passer', 'Passer');
+    var btnPasser = el('button', 'sim-btn sim-btn-passer', 'Écarter');
     btnPasser.type = 'button';
-    var btnValider = el('button', 'sim-btn sim-btn-valider', 'Valider');
+    var btnValider = el('button', 'sim-btn sim-btn-valider', 'Envoyer');
     btnValider.type = 'button';
     var btnRecommencer = el('button', 'sim-btn sim-btn-valider', 'Recommencer');
     btnRecommencer.type = 'button';
@@ -917,7 +885,7 @@
 
     var sorties = el('div', 'sim-sorties');
     var boxV = el('div', 'sim-out'), outV = el('strong', null, '0');
-    boxV.appendChild(outV); boxV.appendChild(el('span', null, 'Messages validés'));
+    boxV.appendChild(outV); boxV.appendChild(el('span', null, 'Messages envoyés (simulation)'));
     var boxT = el('div', 'sim-out sim-out-ok'), outT = el('strong', null, '0 min');
     boxT.appendChild(outT); boxT.appendChild(el('span', null, 'Temps gagné (estimation)'));
     sorties.appendChild(boxV); sorties.appendChild(boxT);
@@ -927,8 +895,8 @@
     det.className = 'sim-formule';
     det.appendChild(el('summary', null, 'Voir le calcul'));
     det.appendChild(el('p', 'sim-formule-texte',
-      'Temps gagné = messages validés × ' + TEMPS_PAR_VALIDATION + ' minutes. Les ' + MESSAGES.length +
-      ' messages sont inventés pour l\'exemple ; la durée par validation est une hypothèse, pas une mesure.'));
+      'Temps gagné = messages envoyés × ' + TEMPS_PAR_VALIDATION + ' minutes. Les ' + MESSAGES.length +
+      ' brouillons ont été rédigés par Ibalya le 6 novembre 2026 sur le scénario de démonstration fourni avec le produit (une menuiserie fictive) ; rien n\'est envoyé ici, et la durée par validation est une hypothèse, pas une mesure.'));
     corps.appendChild(det);
 
     function majCompteurs() {
@@ -941,6 +909,7 @@
       c.appendChild(el('span', 'sim-carte-de', m.de));
       c.appendChild(el('strong', 'sim-carte-objet', m.objet));
       c.appendChild(el('span', 'sim-carte-corps', m.corps));
+      c.appendChild(el('span', 'sim-carte-prop', m.prop));
       c.appendChild(el('span', 'sim-carte-n', 'Message ' + n + ' sur ' + MESSAGES.length));
       return c;
     }
@@ -954,13 +923,12 @@
       if (restants <= 0) {
         var fini = el('div', 'sim-pile-fini');
         fini.appendChild(el('strong', null, 'Terminé'));
-        fini.appendChild(el('span', null, valides + ' validé' + (valides > 1 ? 's' : '') + ', ' + passes + ' passé' + (passes > 1 ? 's' : '') + '.'));
+        fini.appendChild(el('span', null, valides + ' envoyé' + (valides > 1 ? 's' : '') + ', ' + passes + ' écarté' + (passes > 1 ? 's' : '') + '.'));
         pile.appendChild(fini);
         btnValider.hidden = true; btnPasser.hidden = true; btnRecommencer.hidden = false;
         return;
       }
       btnValider.hidden = false; btnPasser.hidden = false; btnRecommencer.hidden = true;
-      // Cartes de fond décoratives (masquées aux lecteurs d'écran).
       for (var k = Math.min(restants, 3) - 1; k >= 1; k--) {
         var g = el('div', 'sim-carte sim-carte-fond');
         g.setAttribute('aria-hidden', 'true');
@@ -978,7 +946,7 @@
       busy = true;
       if (valide) valides++; else passes++;
       majCompteurs();
-      statut.textContent = (valide ? 'Validé : ' : 'Passé : ') + MESSAGES[index].objet + '.';
+      statut.textContent = (valide ? 'Envoyé : ' : 'Écarté : ') + MESSAGES[index].objet + '.';
       var c = courante;
       var avance = function () {
         index++;
@@ -1041,23 +1009,39 @@
   S.registerSim('validation', init);
 })();
 
-/* ═══ Simulateur 6 : Fiabilité (interrupteurs + entonnoir) ═══ */
+/* ═══ Simulateur 6 : Fiabilité (la formule du produit, et ses mesures) ═══ */
 (function () {
   'use strict';
   var S = window.IbSim;
   if (!S) return;
 
-  // Modèle ILLUSTRATIF de pondération : ce n'est pas une mesure de précision.
-  var BASE = 55;      // précision de départ sans aucun signal, en %
-  var PLAFOND = 95;   // la précision reste strictement sous 100 %
-  var LUS = 1000;     // messages lus (échelle fictive de l'entonnoir)
-  var TAUX_DETECTION = 0.4; // part des messages lus qui contiennent un engagement détecté (illustratif)
+  // Formule réelle du score (backend/internal/engine/fiabilite.go, docs/FIABILITE.md) : une base, des signaux
+  // vérifiables sans le modèle, l'avis du modèle plafonné, une pénalité d'historique.
+  var BASE = 0.35;
   var SIGNAUX = [
-    { id: 'date', label: 'Date citée dans le message', poids: 9 },
-    { id: 'engagement', label: 'Verbe d\'engagement explicite', poids: 9 },
-    { id: 'interlocuteur', label: 'Interlocuteur identifié', poids: 8 },
-    { id: 'contexte', label: 'Contexte du fil de discussion', poids: 8 },
-    { id: 'formulation', label: 'Formulation sans ambiguïté', poids: 6 }
+    { id: 'echeance', label: 'Échéance explicite : une date écrite, pas déduite', poids: 0.20 },
+    { id: 'formulation', label: 'Formulation engageante : « je vous livre jeudi », pas « il faudrait avancer »', poids: 0.15 },
+    { id: 'fil', label: 'Fil conversationnel : au moins un aller-retour, pas une diffusion', poids: 0.10 },
+    { id: 'interlocuteur', label: 'Interlocuteur connu : au moins trois échanges antérieurs', poids: 0.10 }
+  ];
+  var AVIS_MAX = 0.10;        // l'avis du modèle ne peut plus emporter la décision
+  var PENALITE_MAX = 0.20;    // part des engagements de cet interlocuteur déjà corrigés
+  var SEUIL_PUBLICATION = 0.50;
+  var NIVEAUX = [{ min: 0.75, nom: 'Élevée', cls: 'sim-out-ok' }, { min: 0.50, nom: 'À vérifier', cls: 'sim-out-warn' }, { min: 0, nom: 'Incertaine', cls: 'sim-out-risk' }];
+
+  // Mesures, sans embellir. Corpus d'évaluation : 12 messages étiquetés (fixtures/corpus_eval.json),
+  // commande « evaluer » lancée le 6 novembre 2026. Base de recette : 28 engagements recalculés (docs/FIABILITE.md).
+  var MESURES = [
+    { nom: 'Pré-filtre', val: '2 écartés à raison, 0 à tort' },
+    { nom: 'Précision', val: '100 % (5 engagements sur 5)' },
+    { nom: 'Rappel', val: '83 % (5 sur 6 : un mail transféré manqué)' },
+    { nom: 'Échéances exactes', val: '75 % (3 sur 4)' }
+  ];
+  var RECETTE = { total: 28, avant: { elevee: 23, autre: 5 }, apres: { elevee: 15, autre: 13 } };
+
+  var CURSEURS = [
+    { id: 'avis', label: 'Avis du modèle sur sa propre certitude', min: 0, max: 100, val: 80, step: 5, unit: '%' },
+    { id: 'corrigees', label: 'Engagements de cet interlocuteur déjà corrigés', min: 0, max: 100, val: 0, step: 5, unit: '%' }
   ];
 
   function el(tag, cls, text) {
@@ -1066,32 +1050,36 @@
     if (text != null) e.textContent = text;
     return e;
   }
+  function fin(x) { return isFinite(x) ? x : 0; }
+  function fmtScore(x) { return x.toFixed(2).replace('.', ','); }
 
-  function calc(actifs) {
-    var p = BASE;
-    SIGNAUX.forEach(function (s) { if (actifs[s.id]) p += s.poids; });
-    p = Math.min(PLAFOND, Math.max(0, p));
-    var detectes = Math.round(LUS * TAUX_DETECTION);
-    var fiables = Math.round(detectes * p / 100);
-    return { precision: p, lus: LUS, detectes: detectes, fiables: fiables };
+  function calc(actifs, v) {
+    var s = BASE;
+    SIGNAUX.forEach(function (sig) { if (actifs[sig.id]) s += sig.poids; });
+    s += AVIS_MAX * fin(v.avis) / 100;
+    s -= PENALITE_MAX * fin(v.corrigees) / 100;
+    s = Math.min(1, Math.max(0, s));
+    var niveau = NIVEAUX[2];
+    for (var i = 0; i < NIVEAUX.length; i++) if (s >= NIVEAUX[i].min) { niveau = NIVEAUX[i]; break; }
+    return { score: s, niveau: niveau, publie: s >= SEUIL_PUBLICATION };
   }
 
   function init(root) {
     var corps = root.querySelector('.sim-corps');
     if (!corps) return;
-    var actifs = {}, ready = false;
+    var actifs = {}, vals = {}, ready = false;
 
-    corps.appendChild(el('p', 'sim-etiquette', 'Modèle illustratif de pondération, pas une mesure'));
+    corps.appendChild(el('p', 'sim-etiquette', 'Formule réelle du produit ; mesures du 6 novembre 2026'));
 
     var fs = document.createElement('fieldset');
     fs.className = 'sim-signaux';
-    fs.appendChild(el('legend', null, 'Signaux pris en compte'));
+    fs.appendChild(el('legend', null, 'Signaux vérifiables, sans le modèle'));
     SIGNAUX.forEach(function (s) {
       actifs[s.id] = true;
       var ligne = el('div', 'sim-champ sim-toggle');
       var inp = document.createElement('input');
       inp.type = 'checkbox'; inp.id = 'sim6-' + s.id; inp.checked = true;
-      var lab = el('label', null, s.label + ' (+' + s.poids + ' points)');
+      var lab = el('label', null, s.label + ' (+' + fmtScore(s.poids) + ')');
       lab.setAttribute('for', inp.id);
       ligne.appendChild(inp); ligne.appendChild(lab);
       fs.appendChild(ligne);
@@ -1099,80 +1087,119 @@
     });
     corps.appendChild(fs);
 
-    var sorties = el('div', 'sim-sorties');
-    var boxP = el('div', 'sim-out');
-    var sP = el('strong', null, '—');
-    boxP.appendChild(sP); boxP.appendChild(el('span', null, 'Précision (illustrative)'));
-    sorties.appendChild(boxP);
-    var etapes = [
-      { cle: 'lus', nom: 'Messages lus' },
-      { cle: 'detectes', nom: 'Engagements détectés' },
-      { cle: 'fiables', nom: 'Engagements fiables' }
-    ];
-    etapes.forEach(function (e) {
-      var b = el('div', 'sim-out');
-      e.val = el('strong', null, '—');
-      b.appendChild(e.val); b.appendChild(el('span', null, e.nom));
-      sorties.appendChild(b);
+    CURSEURS.forEach(function (c) {
+      var champ = el('div', 'sim-champ');
+      var lab = el('label', null, c.label);
+      lab.setAttribute('for', 'sim6-' + c.id);
+      var ligne = el('div', 'sim-range-ligne');
+      var inp = document.createElement('input');
+      inp.type = 'range'; inp.className = 'sim-range'; inp.id = 'sim6-' + c.id;
+      inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = c.val;
+      inp.setAttribute('data-unit', c.unit);
+      ligne.appendChild(inp);
+      champ.appendChild(lab); champ.appendChild(ligne);
+      corps.appendChild(champ);
+      vals[c.id] = c.val;
+      S.bindRange(inp, function (v) { vals[c.id] = fin(v); if (ready) update(false); });
     });
+
+    var sorties = el('div', 'sim-sorties');
+    var boxS = el('div', 'sim-out'), sS = el('strong', null, '—');
+    boxS.appendChild(sS); boxS.appendChild(el('span', null, 'Score (0 à 1)'));
+    var boxN = el('div', 'sim-out'), sN = el('strong', null, '—');
+    boxN.appendChild(sN); boxN.appendChild(el('span', null, 'Niveau affiché'));
+    var boxP = el('div', 'sim-out'), sP = el('strong', null, '—');
+    boxP.appendChild(sP); boxP.appendChild(el('span', null, 'Publié (seuil ' + fmtScore(SEUIL_PUBLICATION) + ')'));
+    sorties.appendChild(boxS); sorties.appendChild(boxN); sorties.appendChild(boxP);
     corps.appendChild(sorties);
 
-    // Entonnoir : 3 segments, largeurs proportionnelles aux volumes (décoratif, résumé en aria-label).
-    // Libellés placés au-dessus de chaque segment, sur le fond de la carte (contraste AA garanti, 2 thèmes).
-    var W = 320, SEG = 18, LIGNE = 16, GAP = 10, PADT = 2, MINW = 14;
-    var H = PADT + 3 * (LIGNE + SEG) + 2 * GAP + 2;
-    var rects = [], vals = [];
-    var g = S.svg('g', { 'aria-hidden': 'true' });
-    var classes = ['sim-fun-lus', 'sim-fun-det', 'sim-fun-fia'];
-    for (var i = 0; i < 3; i++) {
-      var y = PADT + i * (LIGNE + SEG + GAP);
-      var t = S.svg('text', { x: 0, y: y + 12, 'class': 'sim-fun-txt' }, '');
-      var r = S.svg('rect', { x: 0, y: y + LIGNE, width: W, height: SEG, rx: 4, 'class': 'sim-fun ' + classes[i] });
-      rects.push(r); vals.push(t); g.appendChild(t); g.appendChild(r);
-    }
-    var chartSvg = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [g]);
+    // Échelle du score : trois bandes (incertaine, à vérifier, élevée) et le repère du score courant.
+    var W = 320, H = 78, PADL = 4, PADR = 4, BAR_Y = 26, BAR_H = 14;
+    var bw = W - PADL - PADR;
+    function x(v) { return PADL + bw * v; }
+    var bandes = S.svg('g', { 'aria-hidden': 'true' }, [
+      S.svg('rect', { x: x(0), y: BAR_Y, width: (x(0.5) - x(0)).toFixed(1), height: BAR_H, rx: 3, 'class': 'sim-bande sim-bande-risk' }),
+      S.svg('rect', { x: x(0.5), y: BAR_Y, width: (x(0.75) - x(0.5)).toFixed(1), height: BAR_H, 'class': 'sim-bande sim-bande-warn' }),
+      S.svg('rect', { x: x(0.75), y: BAR_Y, width: (x(1) - x(0.75)).toFixed(1), height: BAR_H, rx: 3, 'class': 'sim-bande sim-bande-ok' }),
+      S.svg('text', { x: x(0), y: BAR_Y + BAR_H + 14, 'class': 'sim-lib' }, '0'),
+      S.svg('text', { x: x(0.5), y: BAR_Y + BAR_H + 14, 'text-anchor': 'middle', 'class': 'sim-lib' }, '0,50'),
+      S.svg('text', { x: x(0.75), y: BAR_Y + BAR_H + 14, 'text-anchor': 'middle', 'class': 'sim-lib' }, '0,75'),
+      S.svg('text', { x: x(1), y: BAR_Y + BAR_H + 14, 'text-anchor': 'end', 'class': 'sim-lib' }, '1'),
+      S.svg('text', { x: x(0.25), y: BAR_Y + BAR_H + 28, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'incertaine'),
+      S.svg('text', { x: x(0.625), y: BAR_Y + BAR_H + 28, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'à vérifier'),
+      S.svg('text', { x: x(0.875), y: BAR_Y + BAR_H + 28, 'text-anchor': 'middle', 'class': 'sim-lib' }, 'élevée')
+    ]);
+    var marqueur = S.svg('g', { 'class': 'sim-marqueur' }, [
+      S.svg('line', { x1: 0, y1: BAR_Y - 6, x2: 0, y2: BAR_Y + BAR_H + 4, 'class': 'sim-marqueur-trait' }),
+      S.svg('text', { x: 0, y: BAR_Y - 10, 'text-anchor': 'middle', 'class': 'sim-val' }, '')
+    ]);
+    var marqTxt = marqueur.lastChild;
+    var echelle = S.svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '' }, [bandes, marqueur]);
     var chart = el('div', 'sim-chart');
-    chart.appendChild(chartSvg);
+    chart.appendChild(echelle);
     corps.appendChild(chart);
+
+    // Ce que la formule a changé sur la base de recette : deux barres empilées, avant et après.
+    var W2 = 320, H2 = 112, L2 = 4, R2 = 4, BH = 12;
+    function barres(y, d, etiquette) {
+      var w = W2 - L2 - R2, we = w * d.elevee / RECETTE.total, wa = w - we;
+      return S.svg('g', {}, [
+        S.svg('text', { x: L2, y: y + 10, 'class': 'sim-lib' }, etiquette + ' : ' + d.elevee + ' élevée · ' + d.autre + ' à vérifier ou incertaine'),
+        S.svg('rect', { x: L2, y: y + 16, width: we.toFixed(1), height: BH, rx: 3, 'class': 'sim-bande-ok sim-bande' }),
+        S.svg('rect', { x: (L2 + we).toFixed(1), y: y + 16, width: wa.toFixed(1), height: BH, rx: 3, 'class': 'sim-bande-warn sim-bande' })
+      ]);
+    }
+    var recette = S.svg('svg', { viewBox: '0 0 ' + W2 + ' ' + H2, role: 'img',
+      'aria-label': 'Base de recette, ' + RECETTE.total + ' engagements : avant la formule ' + RECETTE.avant.elevee + ' en fiabilité élevée et ' + RECETTE.avant.autre + ' à vérifier ou incertaine ; après, ' + RECETTE.apres.elevee + ' et ' + RECETTE.apres.autre + '.' }, [
+      S.svg('text', { x: 0, y: 12, 'class': 'sim-lib' }, 'Base de recette, ' + RECETTE.total + ' engagements recalculés'),
+      barres(24, RECETTE.avant, 'avant'),
+      barres(24 + 44, RECETTE.apres, 'après')
+    ]);
+    var chart2 = el('div', 'sim-chart');
+    chart2.appendChild(recette);
+    corps.appendChild(chart2);
+
+    var mesures = el('div', 'sim-top');
+    mesures.appendChild(el('p', 'sim-top-titre', 'Mesuré sur le corpus d\'évaluation (12 messages étiquetés, 6 novembre 2026)'));
+    var ul = el('ul', 'sim-top-liste');
+    MESURES.forEach(function (m) {
+      var li = el('li');
+      li.appendChild(el('span', 'sim-top-nom', m.nom));
+      li.appendChild(el('span', 'sim-top-n', m.val));
+      ul.appendChild(li);
+    });
+    mesures.appendChild(ul);
+    corps.appendChild(mesures);
     corps.appendChild(el('p', 'sim-aide',
-      'Le volume de départ (' + S.fmtInt(LUS) + ' messages) est fictif. Chaque signal activé ajoute des points à la précision illustrée, ' +
-      'et la dernière étape de l\'entonnoir en découle. Ce n\'est pas la précision mesurée sur vos données.'));
+      'Le corpus est petit et entièrement fictif (douze messages écrits pour l\'épreuve, aucun message client). Les vingt-huit engagements de recette ne suffisent pas non plus à conclure : ' +
+      'ces chiffres disent où en est l\'extraction, pas ce qu\'elle vaudra sur votre boîte.'));
 
     var det = document.createElement('details');
     det.className = 'sim-formule';
     det.appendChild(el('summary', null, 'Voir le calcul'));
-    var pondTxt = SIGNAUX.map(function (s) { return s.label.toLowerCase() + ' +' + s.poids; }).join(', ');
     det.appendChild(el('p', 'sim-formule-texte',
-      'Précision = ' + BASE + ' % de base + points des signaux actifs (' + pondTxt + '), plafonnée à ' + PLAFOND + ' %. ' +
-      'Tous signaux actifs : ' + Math.min(PLAFOND, BASE + SIGNAUX.reduce(function (a, s) { return a + s.poids; }, 0)) + ' % ; aucun : ' + BASE + ' %. ' +
-      'Entonnoir : ' + S.fmtInt(LUS) + ' messages lus, ' + Math.round(TAUX_DETECTION * 100) + ' % d\'engagements détectés, ' +
-      'puis engagements fiables = détectés × précision. ' +
-      'Pondération paramétrique et illustrative : aucune précision réelle n\'est mesurée ici.'));
+      'Score = ' + fmtScore(BASE) + ' de base + ' + SIGNAUX.map(function (s) { return fmtScore(s.poids) + ' si ' + s.label.split(' :')[0].toLowerCase(); }).join(' + ') +
+      ' + jusqu\'à ' + fmtScore(AVIS_MAX) + ' selon l\'avis du modèle, moins jusqu\'à ' + fmtScore(PENALITE_MAX) + ' selon la part des engagements de cet interlocuteur déjà corrigés ' +
+      '(pénalité appliquée dans le produit à partir de quatre engagements avec la même personne). Borné entre 0 et 1. ' +
+      'Niveaux : élevée à partir de 0,75, à vérifier à partir de 0,50, incertaine en dessous ; seuil de publication 0,50. ' +
+      'Un engagement sans échéance, sans formulation engageante, venant d\'un inconnu, plafonne à 0,45 même si le modèle annonce 1,00.'));
     corps.appendChild(det);
 
-    var first = true;
     function update(animate) {
-      var res = calc(actifs);
-      if (sP._ibRaf) { cancelAnimationFrame(sP._ibRaf); sP._ibRaf = 0; }
-      var fmtP = function (n) { return S.fmtInt(n) + ' %'; };
-      if (animate) S.animateCount(sP, 0, res.precision, fmtP);
-      else sP.textContent = fmtP(res.precision);
-      etapes.forEach(function (e, i) {
-        var v = res[e.cle];
-        e.val.textContent = S.fmtInt(v);
-        var w = Math.max(MINW, W * v / res.lus);
-        rects[i].setAttribute('x', ((W - w) / 2).toFixed(1));
-        rects[i].setAttribute('width', w.toFixed(1));
-        vals[i].textContent = e.nom + ' : ' + S.fmtInt(v);
-        if (animate && first && !S.prefersReducedMotion) {
-          rects[i].style.animationDelay = (i * 120) + 'ms';
-          rects[i].classList.add('sim-fun-reveal');
-        }
-      });
-      first = false;
-      chartSvg.setAttribute('aria-label', 'Entonnoir illustratif : ' + S.fmtInt(res.lus) + ' messages lus, ' +
-        S.fmtInt(res.detectes) + ' engagements détectés, ' + S.fmtInt(res.fiables) + ' engagements fiables, soit une précision illustrée de ' +
-        S.fmtInt(res.precision) + ' %.');
+      var res = calc(actifs, vals);
+      if (sS._ibRaf) { cancelAnimationFrame(sS._ibRaf); sS._ibRaf = 0; }
+      if (animate) S.animateCount(sS, 0, res.score, fmtScore);
+      else sS.textContent = fmtScore(res.score);
+      sN.textContent = res.niveau.nom;
+      sP.textContent = res.publie ? 'Oui' : 'Non';
+      boxS.className = 'sim-out ' + res.niveau.cls;
+      boxN.className = 'sim-out ' + res.niveau.cls;
+      boxP.className = 'sim-out ' + (res.publie ? 'sim-out-ok' : 'sim-out-risk');
+      var px = x(res.score);
+      marqueur.setAttribute('transform', 'translate(' + px.toFixed(1) + ' 0)');
+      marqTxt.setAttribute('x', (Math.min(W - 16, Math.max(16, px)) - px).toFixed(1));
+      marqTxt.textContent = fmtScore(res.score);
+      echelle.setAttribute('aria-label', 'Score de fiabilité ' + fmtScore(res.score) + ' sur 1, niveau ' + res.niveau.nom.toLowerCase() + ', ' + (res.publie ? 'publié' : 'non publié') + '.');
     }
 
     ready = true;

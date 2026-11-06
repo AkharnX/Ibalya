@@ -122,7 +122,7 @@
       <div class="sim" id="sim-3" data-sim="temps">
         <div class="sim-tete">
           <h3>Temps récupéré</h3>
-          <p>Voyez où vos heures de tri, de saisie et de relance se libèrent dans la semaine.</p>
+          <p>Ce que coûtent sur un an les minutes passées à chercher qui a promis quoi.</p>
         </div>
         <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
         <div class="sim-corps"></div>
@@ -130,7 +130,7 @@
       <div class="sim" id="sim-4" data-sim="risque">
         <div class="sim-tete">
           <h3>Exposition au risque</h3>
-          <p>Repérez les échéances et dossiers les plus exposés selon votre volume.</p>
+          <p>Les cinq détecteurs du produit, avec leurs vrais seuils, appliqués à votre volume.</p>
         </div>
         <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
         <div class="sim-corps"></div>
@@ -138,7 +138,7 @@
       <div class="sim" id="sim-5" data-sim="validation">
         <div class="sim-tete">
           <h3>Validation humaine</h3>
-          <p>Mesurez la part des actions que vous validez vous-même avant envoi.</p>
+          <p>Les relances que l'agent a pré-rédigées sur le scénario de démonstration : relisez, envoyez ou écartez. Rien ne part sans vous.</p>
         </div>
         <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
         <div class="sim-corps"></div>
@@ -146,7 +146,7 @@
       <div class="sim" id="sim-6" data-sim="fiabilite">
         <div class="sim-tete">
           <h3>Fiabilité</h3>
-          <p>Comparez votre taux d'erreur actuel à celui d'un traitement assisté et contrôlé.</p>
+          <p>La vraie formule du score de fiabilité, et ce qu'elle donne, mesuré sur notre corpus d'évaluation.</p>
         </div>
         <p class="sim-note">Activez JavaScript pour le calcul en direct.</p>
         <div class="sim-corps"></div>
@@ -171,8 +171,9 @@
       <article class="lp-etape" data-reveal>
         <span class="lp-numero">02</span>
         <h3>Ibalya détecte</h3>
-        <p>Connecté en lecture seule, l'agent extrait les promesses, leurs échéances et leur
-           fiabilité, puis surveille retards, silences anormaux et promesses menacées.</p>
+        <p>Connecté en lecture seule, l'agent extrait les promesses, leurs échéances et leur niveau
+           de fiabilité. Puis cinq détecteurs tournent toutes les trente minutes : échéance à risque,
+           silence anormal, promesse menacée, engagement oublié, surcharge.</p>
       </article>
       <article class="lp-etape" data-reveal>
         <span class="lp-numero">03</span>
@@ -188,43 +189,24 @@
     </div>
     <!-- Démonstration jouée : montrer l'agent travailler vaut mieux que le décrire. -->
     <div class="lp-demo" role="img"
-         aria-label="Démonstration : le 4 août, un fournisseur écrit « je vous livre le vitrage jeudi 14 ». Ibalya en extrait un engagement. Le 12 août, sans réponse depuis huit jours, l'agent alerte sur un silence anormal qui menace la pose promise au client pour le 15, et prépare une relance.">
+         aria-label="Démonstration sur le scénario livré avec le produit : le 22 octobre, vous confirmez à la mairie de Valbonne la pose des 12 fenêtres de l'école le 10 novembre. Le 24 octobre, le fournisseur vitrages-pro.fr écrit « nous livrerons l'atelier au plus tard le 03/11 ». Ibalya extrait les deux engagements et relie la pose à la livraison. Le 6 novembre, la livraison est en retard de trois jours et le fournisseur est silencieux : la synthèse de l'application affiche la pose en retard probable, bloquée par la livraison, et l'alerte « Promesse menacée par un retard amont ».">
       <div class="lp-demo-fil">
         <span class="lp-demo-etiq">Votre messagerie</span>
-        <div class="lp-demo-msg lp-t1">
-          <b>vitrages-pro.fr</b><i>4 août</i>
-          <p>Bonjour, je vous confirme la commande. <mark>Livraison du vitrage jeudi 14.</mark></p>
+        <div class="lp-demo-msg lp-demo-vous lp-t1">
+          <b>Vous → mairie de Valbonne</b><i>22 octobre</i>
+          <p>Bonjour, je vous confirme <mark>la pose des 12 fenêtres de l'école le 10/11</mark>. L'équipe sera sur place dès 8 h.</p>
         </div>
-        <div class="lp-demo-msg lp-demo-vous lp-t2">
-          <b>Vous → client Ménard</b><i>4 août</i>
-          <p>Parfait, on <mark>pose le 15 comme prévu</mark>.</p>
+        <div class="lp-demo-msg lp-t2">
+          <b>vitrages-pro.fr</b><i>24 octobre</i>
+          <p>Bonjour, nous vous confirmons la commande. <mark>Nous livrerons l'atelier au plus tard le 03/11.</mark></p>
         </div>
       </div>
 
       <div class="lp-demo-agent">
-        <span class="lp-demo-etiq">Ce qu'Ibalya en fait</span>
-
-        <div class="lp-demo-carte lp-t3">
-          <span class="lp-demo-tag">Engagement extrait</span>
-          <p><b>Livraison du vitrage</b></p>
-          <dl>
-            <div><dt>De</dt><dd>vitrages-pro.fr</dd></div>
-            <div><dt>Échéance</dt><dd>14 août</dd></div>
-            <div><dt>Fiabilité</dt><dd>92 %</dd></div>
-          </dl>
-        </div>
-
-        <div class="lp-demo-carte lp-demo-lien lp-t4">
-          <span class="lp-demo-tag">Dépendance confirmée</span>
-          <p>La pose promise au client Ménard <b>dépend</b> de cette livraison.</p>
-        </div>
-
-        <div class="lp-demo-carte lp-demo-alerte lp-t5">
-          <span class="lp-demo-tag">12 août · Alerte</span>
-          <p><b>Silence anormal : 8 jours</b></p>
-          <p class="lp-demo-detail">Le fournisseur ne répond plus. La pose du 15 est menacée.</p>
-          <div class="lp-demo-action">Relance préparée · à valider</div>
-        </div>
+        <span class="lp-demo-etiq">Ce qu'Ibalya en fait, dans l'application, le 6 novembre</span>
+        <img src="/images/app/demo-synthese.webp" width="1400" height="442" loading="lazy"
+             alt="Synthèse d'Ibalya : « Pose de 12 fenêtres à l'école » en retard probable, échéance 10/11, bloquée par la livraison des 12 vitrages attendue le 03/11 ; la livraison en retard de 3 jours ; alerte « Promesse menacée par un retard amont ».">
+        <p class="lp-demo-detail">Un retard fournisseur qui menace une promesse client ne compte qu'une fois : une seule action de relance, pas une alerte par engagement touché.</p>
       </div>
     </div>
   </section>
@@ -232,22 +214,22 @@
   <!-- ── Ce qu'Ibalya tient ── -->
   <section class="lp-section" id="fonctions">
     <div class="lp-tete">
-      <h2>Ce qu'Ibalya tient pour vous</h2>
-      <p>Douze fonctions, une seule promesse : aucun engagement pris par email ne passe à la trappe.</p>
+      <h2>Le parcours d'un email dans Ibalya</h2>
+      <p>Douze étapes, de la lecture au journal d'audit. Les seuils sont ceux du moteur, et les captures viennent de l'application, sur le scénario de démonstration.</p>
     </div>
     <div class="lp-groupe lp-piliers">
-      <div class="lp-pilier" data-reveal><i></i><b>Engagements détectés</b><span>Promesses extraites</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Échéances déduites</b><span>Dates repérées</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Score de fiabilité</b><span>Chaque déduction notée</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Relances préparées</b><span>Rédigées en contexte</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Silence anormal</b><span>Alerte sans réponse</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Promesse menacée</b><span>Dépendances suivies</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Surcharge de semaine</b><span>Échéances groupées</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Validation en un clic</b><span>0 envoi automatique</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Assistant conversationnel</b><span>Réponses sourcées</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Corrections apprises</b><span>Règles écrites</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Lecture seule</b><span>Rien n'est modifié</span></div>
-      <div class="lp-pilier" data-reveal><i></i><b>Journal d'audit</b><span>Chaque action horodatée</span></div>
+      <div class="lp-pilier" data-reveal><i>01</i><b>Lecture seule de la boîte</b><span>Gmail, Outlook ou IMAP ; 30 jours d'historique au départ</span><img src="/images/app/etape-01-connexion.webp" width="900" height="300" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>02</i><b>Filtrage avant analyse</b><span>newsletters et notifications écartées, jamais transmises</span><img src="/images/app/etape-02-confidentialite.webp" width="900" height="281" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>03</i><b>Extraction des engagements</b><span>qui promet quoi, à qui, dans quel fil</span><img src="/images/app/etape-03-extraction.webp" width="900" height="298" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>04</i><b>Échéance déduite ou écrite</b><span>une date déduite est confirmée avant toute alerte</span><img src="/images/app/etape-04-echeances.webp" width="900" height="299" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>05</i><b>Fiabilité à trois niveaux</b><span>élevée, à vérifier, incertaine ; publié à partir de 0,50</span><img src="/images/app/etape-05-fiabilite.webp" width="900" height="298" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>06</i><b>Cycle de détection</b><span>cinq détecteurs, toutes les 30 minutes</span><img src="/images/app/etape-06-cycle.webp" width="900" height="300" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>07</i><b>Échéance à risque</b><span>dans les 7 jours, sans signal de progression</span><img src="/images/app/etape-07-echeance-risque.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>08</i><b>Silence anormal</b><span>au-delà de deux fois le rythme du fil, 4 jours par défaut</span><img src="/images/app/etape-08-silence.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>09</i><b>Promesse menacée</b><span>un retard amont, une promesse aval dans les 7 jours</span><img src="/images/app/etape-09-promesse-menacee.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>10</i><b>Oubli et surcharge</b><span>5 jours sans suite ; 5 échéances la même semaine</span><img src="/images/app/etape-10-surcharge-orphelin.webp" width="900" height="297" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>11</i><b>Relance préparée, validée en un clic</b><span>rédigée à partir du fil ; 0 envoi automatique</span><img src="/images/app/etape-11-valider.webp" width="900" height="336" loading="lazy" alt=""></div>
+      <div class="lp-pilier" data-reveal><i>12</i><b>Corrections apprises, journal d'audit</b><span>chaque correction devient une règle, chaque action est horodatée</span><img src="/images/app/etape-12-regles.webp" width="900" height="299" loading="lazy" alt=""></div>
     </div>
   </section>
 
@@ -259,19 +241,11 @@
         <p>L'assistant répond à partir de vos engagements et de vos échanges, jamais
            d'exemples inventés. Chaque réponse renvoie au fil d'origine, vérifiable d'un clic.</p>
       </div>
-      <div class="lp-carte lp-demo-fil" data-reveal>
-        <span class="lp-demo-etiq">Assistant Ibalya</span>
-        <div class="lp-demo-msg lp-demo-vous"><p>Quels devis sont en attente ?</p></div>
-        <div class="lp-demo-msg">
-          <p>Vous avez <mark>3 devis en attente</mark>, dont un en retard : la rénovation
-             pour Martin BTP, échéance dépassée depuis 2 jours.</p>
-        </div>
-        <div class="lp-demo-msg lp-demo-vous"><p>Qui dois-je relancer cette semaine ?</p></div>
-        <div class="lp-demo-msg">
-          <p>Deux priorités : <b>Martin BTP</b> (devis en retard) et <b>Vitrages Pro</b>,
-             sans réponse depuis 8 jours.</p>
-        </div>
-      </div>
+      <figure class="lp-carte lp-capture" data-reveal>
+        <img src="/images/app/assistant-reponse.webp" width="1400" height="826" loading="lazy"
+             alt="Assistant Ibalya. Question : qui dois-je relancer cette semaine ? Réponse : Paul Rossi (devis pergola, sans retour depuis 12 jours), Marc Dupont (livraison des vitrages, 7 jours), Vitrages Pro (6 jours), famille Ménard (réglage de la porte, 4 jours), avec les alertes et engagements sources.">
+        <figcaption>Réponse réelle de l'assistant sur le scénario de démonstration, le 6 novembre 2026, avec ses sources.</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -297,14 +271,10 @@
         </ul>
       </div>
       <div class="lp-securite-config">
-        <div class="lp-config">
-          <p><span class="lp-c-mot">accès</span> : <span class="lp-c-val">"lecture_seule"</span>,</p>
-          <p><span class="lp-c-mot">envoi</span> : <span class="lp-c-val">"validation_humaine_obligatoire"</span>,</p>
-          <p><span class="lp-c-mot">filtrage</span> : <span class="lp-c-val">"avant_analyse"</span>,</p>
-          <p><span class="lp-c-mot">hébergement</span> : <span class="lp-c-val">"union_européenne"</span>,</p>
-          <p><span class="lp-c-mot">entraînement_sur_vos_données</span> : <span class="lp-c-faux">false</span>,</p>
-          <p><span class="lp-c-mot">journal_audit</span> : <span class="lp-c-val">"intégral"</span></p>
-        </div>
+        <img src="/images/app/securite-confidentialite.webp" width="1200" height="1127" loading="lazy"
+             alt="Réglages, confidentialité : un message reconnu dans une catégorie cochée est écarté avant analyse, jamais envoyé au modèle ; Santé et Ressources humaines cochées par défaut, Juridique non.">
+        <img src="/images/app/securite-connexion.webp" width="1200" height="488" loading="lazy"
+             alt="Réglages, connexion : Gmail, Outlook ou autre boîte IMAP ; le raccordement passe par Google, Ibalya n'a jamais votre mot de passe, seulement une autorisation révocable.">
       </div>
     </div>
   </section>
