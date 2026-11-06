@@ -129,7 +129,7 @@ h3{font-size:22px;}
 .lp-repere-fort span{color:#d7e8ec;}
 
 /* ═══ Sections ═══ */
-.lp-section{max-width:var(--largeur);margin:0 auto;padding:clamp(56px,7vw,96px) var(--gouttiere);border-top:1px solid var(--border);}
+.lp-section{max-width:var(--largeur);margin:0 auto;padding:clamp(56px,7vw,96px) var(--gouttiere);}
 .lp-tete{
   display:flex;align-items:flex-end;justify-content:space-between;gap:24px 48px;flex-wrap:wrap;
   margin-bottom:clamp(28px,3.4vw,40px);
@@ -155,7 +155,7 @@ h3{font-size:22px;}
 .lp-etape p{font-size:14.5px;line-height:1.6;color:var(--muted);}
 
 /* Piliers 4 × 3 */
-.lp-piliers{grid-template-columns:repeat(3,1fr);}
+.lp-piliers{grid-template-columns:repeat(4,1fr);}
 @media (max-width:900px){ .lp-piliers{grid-template-columns:repeat(2,1fr);} }
 @media (max-width:420px){ .lp-piliers{grid-template-columns:1fr;} }
 .lp-pilier{padding:clamp(20px,2.2vw,28px) clamp(18px,2vw,24px);transition:background .2s;}
@@ -320,8 +320,17 @@ h3{font-size:22px;}
 @keyframes lp-reveal{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 .reveal:not(.is-visible){opacity:0;}
 .reveal.is-visible{animation:lp-reveal .6s var(--ease) both;}
+/* Curseur fluide (curseur.js) : point teal + anneau en retard, grossis sur les cibles. */
+.lp-curseur-point,.lp-curseur-anneau{position:fixed;left:0;top:0;border-radius:50%;pointer-events:none;opacity:0;will-change:transform;}
+.lp-curseur-point{width:8px;height:8px;background:var(--primary);z-index:9999;mix-blend-mode:difference;transition:opacity .2s,transform .12s ease-out;}
+.lp-curseur-anneau{width:32px;height:32px;border:1px solid var(--primary);opacity:0;z-index:9998;transition:opacity .2s,transform .15s ease-out;}
+.lp-curseur-point.is-visible{opacity:1;}
+.lp-curseur-anneau.is-visible{opacity:.35;}
+.lp-curseur-anneau.is-visible.is-actif{opacity:.7;}
+
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto;}
+  .lp-curseur-point,.lp-curseur-anneau{display:none;}
   .lp-t1,.lp-t2,.lp-t3,.lp-t4,.lp-t5{animation:none;opacity:1;}
   .reveal,.reveal:not(.is-visible),.reveal.is-visible{animation:none;opacity:1;transform:none;}
   .lp-pilier i,.lp-faq-item summary::after,.lp-btn{transition:none;}
