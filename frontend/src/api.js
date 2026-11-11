@@ -20,6 +20,11 @@ export const login = (email, motDePasse) =>
 
 export const logout = () => api('/logout', { method: 'POST' });
 
+// Changement de son propre mot de passe. Le serveur révoque toutes les
+// sessions du compte et en rouvre une pour l'auteur du geste.
+export const changerMotDePasse = (actuel, nouveau) =>
+  api('/password', { method: 'POST', body: JSON.stringify({ actuel, nouveau }) });
+
 // Boîtes (espaces) du compte connecté.
 export const espaces = () => api('/espaces');
 export const creerEspace = (libelle) =>

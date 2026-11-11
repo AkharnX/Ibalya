@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, toast } from '../api'
+import { api, toast, changerMotDePasse } from '../api'
 import { fmtDT } from '../components/ui'
 import Canal from '../components/Canal'
 import { useTri, EnteteTri } from '../components/tri'
@@ -235,6 +235,71 @@ function MesBoites() {
   )
 }
 
+// Mot de passe du compte. Le serveur vérifie l'actuel, impose 10 caractères
+// au nouveau et ferme toutes les autres sessions : un mot de passe provisoire
+// transmis par message cesse ainsi de donner accès dès qu'il est remplacé.
+const LONGUEUR_MIN = 10
+
+function MotDePasse() {
+  const [actuel, setActuel] = useState('')
+  const [nouveau, setNouveau] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [enCours, setEnCours] = useState(false)
+
+  const tropCourt = nouveau.length > 0 && nouveau.length < LONGUEUR_MIN
+  const differents = confirmation.length > 0 && confirmation !== nouveau
+  const identique = nouveau.length > 0 && nouveau === actuel
+  const pret = actuel && nouveau.length >= LONGUEUR_MIN && confirmation === nouveau && !identique
+
+  const envoyer = async (e) => {
+    e.preventDefault()
+    if (!pret || enCours) return
+    setEnCours(true)
+    try {
+      await changerMotDePasse(actuel, nouveau)
+      setActuel(''); setNouveau(''); setConfirmation('')
+      toast('Mot de passe modifié. Vos autres sessions sont fermées.')
+    } catch (err) {
+      toast(err.message, true)
+    } finally {
+      setEnCours(false)
+    }
+  }
+
+  return (
+    <form className="panel" onSubmit={envoyer}>
+      <h3>Mot de passe</h3>
+      <p className="help">
+        Au moins {LONGUEUR_MIN} caractères. Le changer ferme vos sessions sur les
+        autres appareils, celle-ci reste ouverte.
+      </p>
+      <div className="setting">
+        <label htmlFor="mdp-actuel">Mot de passe actuel</label>
+        <input id="mdp-actuel" type="password" autoComplete="current-password"
+          value={actuel} onChange={(e) => setActuel(e.target.value)} />
+      </div>
+      <div className="setting">
+        <label htmlFor="mdp-nouveau">Nouveau mot de passe</label>
+        <input id="mdp-nouveau" type="password" autoComplete="new-password" minLength={LONGUEUR_MIN}
+          value={nouveau} onChange={(e) => setNouveau(e.target.value)}
+          aria-invalid={tropCourt || identique || undefined} />
+        {tropCourt && <p className="help">Encore {LONGUEUR_MIN - nouveau.length} caractère(s).</p>}
+        {identique && <p className="help">C'est le même que l'actuel.</p>}
+      </div>
+      <div className="setting">
+        <label htmlFor="mdp-confirmation">Confirmation</label>
+        <input id="mdp-confirmation" type="password" autoComplete="new-password"
+          value={confirmation} onChange={(e) => setConfirmation(e.target.value)}
+          aria-invalid={differents || undefined} />
+        {differents && <p className="help">Les deux saisies diffèrent.</p>}
+      </div>
+      <button className="primary" type="submit" disabled={!pret || enCours}>
+        {enCours ? 'Modification…' : 'Changer le mot de passe'}
+      </button>
+    </form>
+  )
+}
+
 export default function Reglages() {
   const [settings, setSettings] = useState({
     seuil_publication: '0.6', digest_type: 'quotidien', digest_email: '0', digest_expediteur: '',
@@ -346,6 +411,7 @@ export default function Reglages() {
           </div>
           <button className="primary" onClick={save}>Enregistrer</button>
         </div>
+        <MotDePasse />
         <div className="panel">
           <h3>Comportement</h3>
           <div className="setting">
