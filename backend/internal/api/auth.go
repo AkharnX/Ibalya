@@ -219,8 +219,11 @@ func (s *Server) changerMotDePasse(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 400, "requête invalide")
 		return
 	}
+	// 403 et non 401 : la session est valide, c'est la preuve demandée qui ne
+	// l'est pas. Le client traite tout 401 comme une session expirée et
+	// afficherait « Session expirée » au lieu du vrai motif.
 	if _, err := s.Store.Authenticate(r.Context(), c.Email, body.Actuel); err != nil {
-		httpError(w, 401, "mot de passe actuel incorrect")
+		httpError(w, 403, "mot de passe actuel incorrect")
 		return
 	}
 	if err := s.Store.SetPassword(r.Context(), c.ID, body.Nouveau); err != nil {
