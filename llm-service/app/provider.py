@@ -108,7 +108,7 @@ class MistralProvider(LLMProvider):
                     continue
                 resp.raise_for_status()
                 content = resp.json()["choices"][0]["message"]["content"]
-                return json.loads(content)
+                return json.loads(texte_de(content))
         raise derniere or RuntimeError("fournisseur injoignable")
 
     OCR_URL = "https://api.mistral.ai/v1/ocr"
@@ -264,3 +264,23 @@ def get_provider() -> LLMProvider:
     if name == "mock":
         return MockProvider()
     return MistralProvider()
+
+def texte_de(content) -> str:
+    """Ramène le contenu d'une réponse à une chaîne.
+
+    Le fournisseur renvoie tantôt une chaîne, tantôt une liste de parties
+    (`{"type": "text", "text": "..."}`) : `json.loads` sur la liste plantait
+    l'extraction avec « the JSON object must be str, bytes or bytearray, not
+    list ». On concatène les parties texte, et on ignore le reste.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        morceaux = []
+        for part in content:
+            if isinstance(part, str):
+                morceaux.append(part)
+            elif isinstance(part, dict) and part.get("type", "text") == "text":
+                morceaux.append(str(part.get("text", "")))
+        return "".join(morceaux)
+    return "" if content is None else str(content)
