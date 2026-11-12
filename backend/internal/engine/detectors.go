@@ -38,6 +38,7 @@ func (e *Engine) RunDetectors(ctx context.Context) (DetectStats, error) {
 		"contradiction":     e.detectContradiction,
 		"orphelin":          e.detectOrphelin,
 		"surcharge":         e.detectSurcharge,
+		"a_clore":           e.detectAClore,
 	} {
 		count, err := fn(ctx, capsule, today)
 		if err != nil {

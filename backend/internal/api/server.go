@@ -118,6 +118,7 @@ func (s *Server) Handler() http.Handler {
 	// détections
 	mux.HandleFunc("GET /api/detections", s.auth(s.listDetections))
 	mux.HandleFunc("POST /api/detections/{id}/dismiss", s.auth(s.dismissDetection))
+	mux.HandleFunc("POST /api/detections/{id}/clore", s.auth(s.cloreDetection))
 
 	// liens de dépendance
 	mux.HandleFunc("GET /api/links", s.auth(s.listLinks))
@@ -814,6 +815,48 @@ func (s *Server) dismissDetection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.Store.Audit(r.Context(), acteur(r), "detection_ecartee", map[string]int64{"id": id})
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// POST /api/detections/{id}/clore — réponse à « C'est fait ? ». Oui : l'engagement
+// passe livré (verdict « juste », l'engagement existait bien). Non : un
+// événement « confirme » note qu'il est toujours en cours, ce qui repousse la
+// prochaine question d'autant. Dans les deux cas la détection est écartée.
+func (s *Server) cloreDetection(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	var body struct {
+		Fait bool `json:"fait"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, 400, "requête invalide")
+		return
+	}
+	d, err := s.Store.GetDetection(r.Context(), id)
+	if err != nil || d == nil {
+		httpError(w, 404, "détection introuvable")
+		return
+	}
+	if d.EngagementID != nil {
+		if body.Fait {
+			if err := s.Store.UpdateEngagement(r.Context(), *d.EngagementID,
+				map[string]any{"statut": "livre", "verdict_extraction": "juste"}); err != nil {
+				httpError(w, 500, err.Error())
+				return
+			}
+			_ = s.Store.AddEvent(r.Context(), *d.EngagementID, "livre", nil, map[string]string{"source": "c_est_fait"})
+		} else {
+			_ = s.Store.AddEvent(r.Context(), *d.EngagementID, "confirme", nil, map[string]string{"source": "toujours_en_cours"})
+		}
+	}
+	if err := s.Store.SetDetectionStatus(r.Context(), id, "ecartee"); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	evenement := "cloture_refusee"
+	if body.Fait {
+		evenement = "cloture_confirmee"
+	}
+	s.Store.Audit(r.Context(), acteur(r), evenement, map[string]any{"detection_id": id, "engagement_id": d.EngagementID})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 

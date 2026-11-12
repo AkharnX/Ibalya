@@ -491,6 +491,15 @@ func (s *Store) LastEventOfTypes(ctx context.Context, engagementID int64, types 
 	return t, err
 }
 
+// LastEventAt rend l'horodatage du dernier événement d'un engagement, quel
+// que soit son type, ou nil s'il n'en a aucun.
+func (s *Store) LastEventAt(ctx context.Context, engagementID int64) (*time.Time, error) {
+	var t *time.Time
+	err := s.q(ctx).QueryRow(ctx, `SELECT max(horodatage) FROM engagement_events
+		WHERE engagement_id=$1`, engagementID).Scan(&t)
+	return t, err
+}
+
 func (s *Store) CountEventsAfterCreation(ctx context.Context, engagementID int64) (int, error) {
 	var n int
 	err := s.q(ctx).QueryRow(ctx, `SELECT count(*) FROM engagement_events
