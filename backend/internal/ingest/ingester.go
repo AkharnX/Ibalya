@@ -82,6 +82,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			Body:            cm.Body,
 			Outbound:        cm.Outbound || soi[strings.ToLower(strings.TrimSpace(cm.Sender))],
 			ListUnsubscribe: cm.ListUnsubscribe,
+			AutoSubmitted:   cm.AutoSubmitted,
 		}
 		// Les catégories sensibles se décident AVANT l'écriture : le contenu
 		// d'un arrêt maladie ou d'une candidature n'est pas conservé du tout,

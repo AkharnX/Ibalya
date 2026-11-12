@@ -206,10 +206,10 @@ func (s *Store) InsertMessage(ctx context.Context, m Message) (int64, bool, erro
 	}
 	var id int64
 	err := s.q(ctx).QueryRow(ctx, `INSERT INTO messages
-		(thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, status)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
+		(thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, auto_submitted, status)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
 		ON CONFLICT (user_id, channel, external_id) DO NOTHING RETURNING id`,
-		m.ThreadID, m.ExternalID, m.Channel, m.Sender, m.Recipients, m.SentAt, m.Subject, m.Body, m.Outbound, m.ListUnsubscribe).
+		m.ThreadID, m.ExternalID, m.Channel, m.Sender, m.Recipients, m.SentAt, m.Subject, m.Body, m.Outbound, m.ListUnsubscribe, m.AutoSubmitted).
 		Scan(&id)
 	if err == pgx.ErrNoRows {
 		return 0, false, nil
@@ -258,7 +258,7 @@ func (s *Store) MarkMessage(ctx context.Context, id int64, status string, reason
 }
 
 func (s *Store) ListPendingMessages(ctx context.Context, limit int) ([]Message, error) {
-	rows, err := s.q(ctx).Query(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, status
+	rows, err := s.q(ctx).Query(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, auto_submitted, status
 		FROM messages WHERE status='pending' ORDER BY sent_at ASC LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ func (s *Store) ListPendingMessages(ctx context.Context, limit int) ([]Message, 
 	var out []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.Status); err != nil {
+		if err := rows.Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.AutoSubmitted, &m.Status); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -277,9 +277,9 @@ func (s *Store) ListPendingMessages(ctx context.Context, limit int) ([]Message, 
 
 func (s *Store) GetMessage(ctx context.Context, id int64) (*Message, error) {
 	var m Message
-	err := s.q(ctx).QueryRow(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, status
+	err := s.q(ctx).QueryRow(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, auto_submitted, status
 		FROM messages WHERE id=$1`, id).
-		Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.Status)
+		Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.AutoSubmitted, &m.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (s *Store) GetMessage(ctx context.Context, id int64) (*Message, error) {
 
 // ThreadMessages liste les messages d'un fil, du plus ancien au plus récent.
 func (s *Store) ThreadMessages(ctx context.Context, threadID int64) ([]Message, error) {
-	rows, err := s.q(ctx).Query(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, status
+	rows, err := s.q(ctx).Query(ctx, `SELECT id, thread_id, external_id, channel, sender, recipients, sent_at, subject, body, outbound, list_unsubscribe, auto_submitted, status
 		FROM messages WHERE thread_id=$1 ORDER BY sent_at ASC`, threadID)
 	if err != nil {
 		return nil, err
@@ -297,7 +297,7 @@ func (s *Store) ThreadMessages(ctx context.Context, threadID int64) ([]Message, 
 	var out []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.Status); err != nil {
+		if err := rows.Scan(&m.ID, &m.ThreadID, &m.ExternalID, &m.Channel, &m.Sender, &m.Recipients, &m.SentAt, &m.Subject, &m.Body, &m.Outbound, &m.ListUnsubscribe, &m.AutoSubmitted, &m.Status); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -840,6 +840,21 @@ func (s *Store) FindProposedDraftByEngagement(ctx context.Context, engagementID 
 func (s *Store) HasActiveDraftForDetection(ctx context.Context, detectionID int64) (bool, error) {
 	var n int
 	err := s.q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE detection_id=$1 AND statut IN ('propose','valide','envoye')`, detectionID).Scan(&n)
+	return n > 0, err
+}
+
+// HasProposedDraftForThread dit s'il existe déjà un brouillon en attente pour
+// ce fil et ce destinataire, qu'il vienne d'une détection ou d'un engagement
+// du fil. Un fil peut porter plusieurs engagements et plusieurs alertes : sans
+// cette garde, chacun produit sa relance et le dirigeant en trouve six pour un
+// même sujet (constat BS ACCESS, 11 nov. 2026).
+func (s *Store) HasProposedDraftForThread(ctx context.Context, threadID int64, toEmail string) (bool, error) {
+	var n int
+	err := s.q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts d
+		LEFT JOIN detections det ON det.id = d.detection_id
+		LEFT JOIN engagements e ON e.id = d.engagement_id
+		WHERE d.statut = 'propose' AND lower(d.to_email) = lower($2)
+		  AND (det.thread_id = $1 OR e.thread_id = $1)`, threadID, toEmail).Scan(&n)
 	return n > 0, err
 }
 

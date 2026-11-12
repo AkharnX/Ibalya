@@ -177,6 +177,11 @@ type messageGraph struct {
 	Sender       adresseGraph   `json:"sender"`
 	ToRecipients []adresseGraph `json:"toRecipients"`
 	CcRecipients []adresseGraph `json:"ccRecipients"`
+	// En-têtes bruts : désinscription et marques d'envoi automatique.
+	InternetMessageHeaders []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"internetMessageHeaders"`
 }
 
 type adresseGraph struct {
@@ -187,7 +192,7 @@ type adresseGraph struct {
 }
 
 func (o *Outlook) FetchSince(ctx context.Context, since time.Time, max int) ([]Message, error) {
-	return o.fetch(ctx, since, max, "id,conversationId,subject,receivedDateTime,bodyPreview,body,from,sender,toRecipients,ccRecipients")
+	return o.fetch(ctx, since, max, "id,conversationId,subject,receivedDateTime,bodyPreview,body,from,sender,toRecipients,ccRecipients,internetMessageHeaders")
 }
 
 // FetchMetaSince ne sélectionne pas le corps : Graph ne renvoie que les
@@ -254,6 +259,16 @@ func (o *Outlook) convertir(g messageGraph, compte string) Message {
 		}
 	}
 	m.Outbound = strings.EqualFold(m.Sender, compte)
+	entete := func(nom string) string {
+		for _, h := range g.InternetMessageHeaders {
+			if strings.EqualFold(h.Name, nom) {
+				return h.Value
+			}
+		}
+		return ""
+	}
+	m.ListUnsubscribe = entete("List-Unsubscribe") != ""
+	m.AutoSubmitted = EstEnvoiAutomatique(entete)
 	if strings.EqualFold(g.Body.ContentType, "html") {
 		m.Body = stripHTML(g.Body.Content)
 	} else {
