@@ -36,6 +36,7 @@ type Message struct {
 	Body            string    `json:"body"`
 	Outbound        bool      `json:"outbound"`
 	ListUnsubscribe bool      `json:"list_unsubscribe"`
+	AutoSubmitted   bool      `json:"auto_submitted"`
 	Status          string    `json:"status"`
 	ExcludeReason   *string   `json:"exclude_reason"`
 }
