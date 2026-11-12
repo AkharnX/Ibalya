@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"ibalya/backend/internal/store"
@@ -227,6 +228,7 @@ type PrioriteItem struct {
 	EngagementID int64           `json:"engagement_id"`
 	Categorie    string          `json:"categorie"`
 	Sens         string          `json:"sens"`
+	Enjeu        int             `json:"enjeu"`
 	Titre        string          `json:"titre"`
 	Contexte     string          `json:"contexte"`
 	Action       *ActionSuggeree `json:"action,omitempty"`
@@ -245,8 +247,11 @@ type Synthese struct {
 		MessagesAValider  int `json:"messages_a_valider"`
 		MessagesLus       int `json:"messages_lus"`
 	} `json:"kpi"`
-	Priorites  []PrioriteItem           `json:"priorites"`
-	Categories map[string]CategorieBloc `json:"categories"`
+	// Priorites : les trois décisions du jour, classées par enjeu. Le reste
+	// dans AutresPriorites, replié à l'écran.
+	Priorites       []PrioriteItem           `json:"priorites"`
+	AutresPriorites []PrioriteItem           `json:"autres_priorites"`
+	Categories      map[string]CategorieBloc `json:"categories"`
 	// Alertes en cours (les 5 détecteurs), les critiques d'abord. Remontées sur
 	// l'accueil pour que le dirigeant voie ce que l'agent a repéré sans passer
 	// par la page Alertes.
@@ -290,18 +295,33 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 		s.Categories[cat] = bloc
 	}
 
-	// priorités : les engagements à risque d'abord, puis les retards
+	// priorités : classées par enjeu (retard réel, blocage, client, priorité
+	// haute, échéance proche), trois en tête, le reste replié
+	typesContacts := map[string]string{}
+	if personnes, err := e.Store.ListPersons(ctx); err == nil {
+		for _, p := range personnes {
+			typesContacts[strings.ToLower(p.Email)] = p.Type
+		}
+	}
+	now := time.Now()
 	for _, cat := range []string{CatRisque, CatRetard} {
 		for _, x := range parCat[cat] {
 			s.Priorites = append(s.Priorites, PrioriteItem{
 				EngagementID: x.ID,
 				Categorie:    x.Categorie,
 				Sens:         x.Sens,
+				Enjeu:        Enjeu(x, typesContacts[strings.ToLower(x.Contact)], now),
 				Titre:        x.Objet,
 				Contexte:     contexteLigne(x),
 				Action:       x.Action,
 			})
 		}
+	}
+
+	triees := trierParEnjeu(s.Priorites)
+	s.Priorites, s.AutresPriorites = triees, []PrioriteItem{}
+	if len(triees) > 3 {
+		s.Priorites, s.AutresPriorites = triees[:3], triees[3:]
 	}
 
 	// alertes en cours : on remonte les détections actives, les critiques

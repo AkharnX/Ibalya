@@ -78,7 +78,7 @@ func (e *Engine) capsuleLLM(ctx context.Context) json.RawMessage {
 // frontière entre « incertaine » et « à vérifier », ce qui aligne enfin ce
 // qu'on publie sur ce qu'on affiche.
 func (e *Engine) SeuilPublication(ctx context.Context) float64 {
-	s := e.Store.GetSetting(ctx, "seuil_publication", "0.5")
+	s := e.Store.GetSetting(ctx, "seuil_publication", "0.6")
 	if v, err := parseFloat(s); err == nil {
 		return v
 	}

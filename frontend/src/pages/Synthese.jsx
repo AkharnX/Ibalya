@@ -15,6 +15,14 @@ const CAT_META = {
   risque: { dot: 'red', titre: 'Retard probable' },
 }
 
+// Titre de la section selon le nombre de décisions : une, deux, trois.
+function titreDecisions(syn) {
+  const n = syn?.priorites?.length || 0
+  if (n === 0) return 'Ce qui demande une décision maintenant'
+  if (n === 1) return 'Votre décision du jour'
+  return `Vos ${n} décisions du jour`
+}
+
 export default function Synthese() {
   const [syn, setSyn] = useState(null)
   const navigate = useNavigate()
@@ -71,6 +79,37 @@ export default function Synthese() {
 
   const k = syn?.kpi
   const cats = syn?.categories || {}
+
+  // Une ligne de décision, réutilisée pour les trois du jour et pour le reste.
+  const renderPriorite = (p) => (
+          <div className={'priority-item ' + p.categorie} key={(p.boite_id || 0) + '-' + p.engagement_id}>
+            <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'Retard probable' : 'En retard'}</span>
+            <div className="p-body">
+              <p className="p-title">
+                {combinee
+                  ? <button className="lien-source" title={'Ouvrir dans ' + p.boite}
+                      onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.titre}</button>
+                  : <button className="lien-source" title="Voir la conversation d'origine"
+                      onClick={() => setSourceId(p.engagement_id)}>{p.titre}</button>}
+              </p>
+              <p className="p-sub">{p.contexte}</p>
+            </div>
+            <div className="p-actions">
+              {combinee ? (
+                <button className="boite-tag" title={'Ouvrir dans ' + p.boite}
+                  onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.boite}</button>
+              ) : (
+                <>
+                  <button className="ghost btn-fait" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /> C'est fait</button>
+                  {p.action && (
+                    <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
+                      onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+  )
 
   return (
     <section>
@@ -134,40 +173,18 @@ export default function Synthese() {
         </div>
       </div>}
 
-      <div className="section-title"><h2>Ce qui demande une décision maintenant</h2></div>
+      <div className="section-title"><h2>{titreDecisions(syn)}</h2></div>
       <div className="priority-list">
         {!syn && <SqueletteLignes nombre={3} />}
         {syn && !syn.priorites?.length && <div className="empty">Rien à arbitrer, aucun retard ni engagement bloqué.</div>}
-        {(syn?.priorites || []).map((p) => (
-          <div className={'priority-item ' + p.categorie} key={(p.boite_id || 0) + '-' + p.engagement_id}>
-            <span className={'p-badge ' + p.categorie}>{p.categorie === 'risque' ? 'Retard probable' : 'En retard'}</span>
-            <div className="p-body">
-              <p className="p-title">
-                {combinee
-                  ? <button className="lien-source" title={'Ouvrir dans ' + p.boite}
-                      onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.titre}</button>
-                  : <button className="lien-source" title="Voir la conversation d'origine"
-                      onClick={() => setSourceId(p.engagement_id)}>{p.titre}</button>}
-              </p>
-              <p className="p-sub">{p.contexte}</p>
-            </div>
-            <div className="p-actions">
-              {combinee ? (
-                <button className="boite-tag" title={'Ouvrir dans ' + p.boite}
-                  onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.boite}</button>
-              ) : (
-                <>
-                  <button className="ghost btn-fait" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /> C'est fait</button>
-                  {p.action && (
-                    <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
-                      onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
+        {(syn?.priorites || []).map(renderPriorite)}
       </div>
+      {syn?.autres_priorites?.length > 0 && (
+        <details className="autres-priorites">
+          <summary>Voir {syn.autres_priorites.length > 1 ? `les ${syn.autres_priorites.length} autres` : "l'autre"}</summary>
+          <div className="priority-list">{syn.autres_priorites.map(renderPriorite)}</div>
+        </details>
+      )}
 
       {syn?.alertes?.length > 0 && (
         <>
