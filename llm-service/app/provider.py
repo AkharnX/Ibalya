@@ -50,7 +50,11 @@ class MistralProvider(LLMProvider):
         # .strip() indispensable : un commentaire en fin de ligne dans .env laisse
         # un espace dans la valeur vue par make, ce qui rend l'en-tête HTTP invalide.
         self.api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
-        self.model = os.environ.get("MISTRAL_MODEL", "mistral-large-latest").strip()
+        # Modèle épinglé, pas l'alias « latest » : le 12 novembre 2026, l'alias
+        # mistral-large-latest s'est mis à servir un modèle à raisonnement qui
+        # renvoie une liste de parties (dont une « thinking ») et met 45 s sur
+        # une requête triviale, au-delà du délai d'extraction.
+        self.model = os.environ.get("MISTRAL_MODEL", "mistral-large-2512").strip()
         if not self.api_key:
             raise RuntimeError("MISTRAL_API_KEY manquant")
 
