@@ -9,6 +9,9 @@ import { useTri, EnteteTri } from '../components/tri'
 // Personnes et organisations (CDC 5.3). Le type et l'indicateur de sensibilité
 // nourrissent la capsule : un interlocuteur marqué comme sensible obtient une
 // attention accrue au scoring des alertes.
+// Messageries grand public : jamais de typage par domaine.
+const GRAND_PUBLIC = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'outlook.fr', 'hotmail.com', 'hotmail.fr', 'live.com', 'live.fr', 'msn.com', 'yahoo.com', 'yahoo.fr', 'orange.fr', 'wanadoo.fr', 'free.fr', 'sfr.fr', 'neuf.fr', 'laposte.net', 'bbox.fr', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com', 'proton.me', 'pm.me', 'gmx.com', 'gmx.fr', 'aol.com', 'numericable.fr'])
+const domaineDe = (email) => (email || '').toLowerCase().split('@')[1] || ''
 const TYPES = [
   ['interne', 'Interne'],
   ['client', 'Client'],
@@ -68,6 +71,29 @@ export default function Interlocuteurs() {
     setRows((rs) => rs.map((x) => (x.id === p.id ? { ...x, ...corps } : x)))
     try { await api(`/persons/${p.id}`, { method: 'PATCH', body: JSON.stringify(corps) }) }
     catch (e) { toast(e.message, true); load() }
+    // Après un changement de type, proposer d'appliquer au domaine entier
+    // (pas pour une messagerie grand public : gmail.com n'est pas une entreprise).
+    if (champs.type) setProposition({ id: p.id, email: p.email, type: champs.type, domaine: domaineDe(p.email) })
+  }
+  const [proposition, setProposition] = useState(null)
+  const appliquerDomaine = async () => {
+    const { id, type, domaine } = proposition
+    try {
+      const r = await api(`/persons/${id}`, { method: 'PATCH', body: JSON.stringify({ type, sensitive: !!(rows || []).find((x) => x.id === id)?.sensitive, appliquer_domaine: true }) })
+      toast(`${r.modifies} interlocuteur${r.modifies > 1 ? 's' : ''} @${domaine} ${r.modifies > 1 ? 'typés' : 'typé'}`)
+      load()
+    } catch (e) { toast(e.message, true) }
+    setProposition(null)
+  }
+  const [typageEnCours, setTypageEnCours] = useState(false)
+  const typerAuto = async () => {
+    setTypageEnCours(true)
+    try {
+      const r = await api('/persons/typer-auto', { method: 'POST' })
+      toast(r.modifies ? `${r.modifies} interlocuteur${r.modifies > 1 ? 's' : ''} typé${r.modifies > 1 ? 's' : ''} automatiquement` : 'Rien à typer : complétez les clients récurrents et fournisseurs critiques dans Règles métier')
+      load()
+    } catch (e) { toast(e.message, true) }
+    setTypageEnCours(false)
   }
 
   return (
@@ -77,7 +103,20 @@ export default function Interlocuteurs() {
           <h1>Interlocuteurs</h1>
           <p>Les personnes déduites de vos échanges. Indiquez qui est client, qui est fournisseur, et qui mérite une vigilance particulière.</p>
         </div>
+        <div className="page-actions">
+          <button className="btn" disabled={typageEnCours} onClick={typerAuto}
+            title="Interne par le domaine de votre entreprise, client et fournisseur d'après vos règles métier">
+            {typageEnCours ? 'Typage…' : 'Typer automatiquement'}
+          </button>
+        </div>
       </div>
+      {proposition && !GRAND_PUBLIC.has(proposition.domaine) && (
+        <p className="help proposition-domaine">
+          Appliquer « {TYPES.find(([k]) => k === proposition.type)?.[1] || proposition.type} » à tous les interlocuteurs @{proposition.domaine} ?{' '}
+          <button className="ghost" onClick={appliquerDomaine}>Oui, tout le domaine</button>{' '}
+          <button className="ghost" onClick={() => setProposition(null)}>Non</button>
+        </p>
+      )}
 
       <div className="chip-row">
         <button type="button" className={'chip' + (filtre === '' ? ' active' : '')} onClick={() => setFiltre('')}>

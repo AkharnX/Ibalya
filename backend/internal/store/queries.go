@@ -140,6 +140,20 @@ func (s *Store) ListPersons(ctx context.Context) ([]Person, error) {
 	return out, rows.Err()
 }
 
+// SetPersonTypeIfAutre pose un type déduit sans écraser un choix du dirigeant.
+func (s *Store) SetPersonTypeIfAutre(ctx context.Context, id int64, ptype string) error {
+	_, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2 WHERE id=$1 AND (type='' OR type='autre')`, id, ptype)
+	return err
+}
+
+// UpdatePersonsOfDomain applique un type à tous les interlocuteurs d'un
+// domaine et rend le nombre de lignes touchées. L'appelant vérifie que le
+// domaine n'est pas une messagerie grand public.
+func (s *Store) UpdatePersonsOfDomain(ctx context.Context, domaine, ptype string) (int, error) {
+	tag, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2 WHERE split_part(lower(email), '@', 2) = $1`, strings.ToLower(domaine), ptype)
+	return int(tag.RowsAffected()), err
+}
+
 func (s *Store) UpdatePerson(ctx context.Context, id int64, ptype string, sensitive bool) error {
 	_, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2, sensitive=$3 WHERE id=$1`, id, ptype, sensitive)
 	return err

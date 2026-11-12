@@ -212,11 +212,13 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	if a := retenir(ex.EmetteurEmail); a != "" {
 		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.EmetteurID = &id
+			e.typerSiNouveau(ctx, id, a)
 		}
 	}
 	if a := retenir(ex.DestinataireEmail); a != "" {
 		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.DestinataireID = &id
+			e.typerSiNouveau(ctx, id, a)
 		}
 	}
 	if ex.Echeance != "" {
