@@ -100,6 +100,18 @@ func (e *Engine) markOverdue(ctx context.Context) (int, error) {
 	return len(ids), nil
 }
 
+// cleAlerte construit la clé de dédoublonnage d'une alerte : le type et les
+// identifiants concernés, jamais la date. Une alerte reste ainsi unique et
+// vivante d'un cycle à l'autre (CreateDetection la rafraîchit tant qu'elle
+// est ouverte) au lieu de renaître chaque jour pour le même sujet.
+func cleAlerte(typ string, ids ...int64) string {
+	cle := typ
+	for _, id := range ids {
+		cle += fmt.Sprintf(":%d", id)
+	}
+	return cle
+}
+
 // Détecteur 1 — Échéance à risque : échéance < X jours ET aucun signal de
 // progression dans la fenêtre récente. Les échéances inférées non confirmées
 // n'alimentent jamais ce détecteur (CDC 7.3).
@@ -146,7 +158,7 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 			Titre:  fmt.Sprintf("Échéance dans %d jour(s) sans signal de progression", days),
 			Detail: fmt.Sprintf("« %s » : échéance le %s, aucun signal récent.", eng.Objet, eng.Echeance.Format("02/01/2006")),
 		}
-		key := fmt.Sprintf("echeance_a_risque:%d:%s", eng.ID, today)
+		key := cleAlerte("echeance_a_risque", eng.ID)
 		if id, _ := e.Store.CreateDetection(ctx, d, key); id != 0 {
 			count++
 		}
@@ -298,7 +310,7 @@ func (e *Engine) detectContradiction(ctx context.Context, p capsuleParams, today
 				aval.Objet, aval.Echeance.Format("02/01/2006"), amont.Objet, statutLabel(amont.Statut)),
 			Payload: mustJSON(map[string]any{"amont_id": amont.ID, "aval_id": aval.ID}),
 		}
-		key := fmt.Sprintf("contradiction:%d:%d:%s", amont.ID, aval.ID, today)
+		key := cleAlerte("contradiction", amont.ID, aval.ID)
 		if id, _ := e.Store.CreateDetection(ctx, d, key); id != 0 {
 			count++
 		}
