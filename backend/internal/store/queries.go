@@ -582,7 +582,7 @@ func (s *Store) ExemplesDependance(ctx context.Context, maxParClasse int) ([]Dep
 }
 
 func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink, error) {
-	q := `SELECT l.id, l.amont_id, l.aval_id, l.statut, l.raison, l.created_at, ea.objet, ev.objet
+	q := `SELECT l.id, l.amont_id, l.aval_id, l.statut, l.raison, coalesce(l.score, 0), l.created_at, ea.objet, ev.objet
 		FROM dependency_links l
 		JOIN engagements ea ON ea.id = l.amont_id
 		JOIN engagements ev ON ev.id = l.aval_id `
@@ -603,12 +603,18 @@ func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink,
 	var out []DependencyLink
 	for rows.Next() {
 		var l DependencyLink
-		if err := rows.Scan(&l.ID, &l.AmontID, &l.AvalID, &l.Statut, &l.Raison, &l.CreatedAt, &l.AmontObjet, &l.AvalObjet); err != nil {
+		if err := rows.Scan(&l.ID, &l.AmontID, &l.AvalID, &l.Statut, &l.Raison, &l.Score, &l.CreatedAt, &l.AmontObjet, &l.AvalObjet); err != nil {
 			return nil, err
 		}
 		out = append(out, l)
 	}
 	return out, rows.Err()
+}
+
+// RejectCandidateLinks rejette d'un coup tous les liens encore à confirmer.
+func (s *Store) RejectCandidateLinks(ctx context.Context) (int, error) {
+	tag, err := s.q(ctx).Exec(ctx, `UPDATE dependency_links SET statut='rejete' WHERE statut='candidat'`)
+	return int(tag.RowsAffected()), err
 }
 
 func (s *Store) SetLinkStatus(ctx context.Context, id int64, statut string) error {

@@ -40,8 +40,19 @@ export default function Liens() {
     amont: (l) => (l.amont_objet || '').toLowerCase(),
     aval: (l) => (l.aval_objet || '').toLowerCase(),
     raison: (l) => (l.raison || '').toLowerCase(),
+    score: (l) => l.score ?? 0,
     created_at: (l) => new Date(l.created_at).getTime(),
   })
+
+  const rejeterTous = async () => {
+    const n = (rows || []).filter((l) => l.statut === 'candidat').length
+    if (!n || !window.confirm(`Rejeter les ${n} liens à confirmer ? L'agent ne les proposera plus.`)) return
+    try {
+      const r = await api('/links/rejeter-candidats', { method: 'POST' })
+      toast(`${r.rejetes} lien${r.rejetes > 1 ? 's' : ''} rejeté${r.rejetes > 1 ? 's' : ''}`)
+      load()
+    } catch (e) { toast(e.message, true) }
+  }
 
   const decider = async (id, action) => {
     if (busy) return
@@ -61,6 +72,11 @@ export default function Liens() {
           <h1>Dépendances</h1>
           <p>Quand une promesse que vous avez faite dépend de quelqu'un d'autre, l'agent propose le lien. À vous de trancher, il ne le décide jamais seul.</p>
         </div>
+        {filtre === 'candidat' && (rows || []).some((l) => l.statut === 'candidat') && (
+          <div className="page-actions">
+            <button className="btn" onClick={rejeterTous}>Rejeter tous les candidats</button>
+          </div>
+        )}
       </div>
 
       <div className="note">
@@ -89,6 +105,7 @@ export default function Liens() {
                 <EnteteTri col="amont" tri={tri} trierPar={trierPar}>Dépend de (amont)</EnteteTri>
                 <EnteteTri col="aval" tri={tri} trierPar={trierPar}>Engagement concerné (aval)</EnteteTri>
                 <EnteteTri col="raison" tri={tri} trierPar={trierPar}>Pourquoi ce lien</EnteteTri>
+                <EnteteTri col="score" tri={tri} trierPar={trierPar}>Confiance</EnteteTri>
                 <EnteteTri col="created_at" tri={tri} trierPar={trierPar}>Proposé le</EnteteTri>
                 <th><span className="sr-only">Actions</span></th>
               </tr>
@@ -103,6 +120,7 @@ export default function Liens() {
                     <button className="lien-source" onClick={() => setSourceId(l.aval_id)}>{l.aval_objet}</button>
                   </td>
                   <td className="sub">{l.raison || '–'}</td>
+                  <td className="sub">{l.score >= 0.85 ? 'Élevée' : 'À vérifier'}</td>
                   <td className="sub">{fmtDate(l.created_at)}</td>
                   <td>
                     {l.statut === 'candidat' ? (

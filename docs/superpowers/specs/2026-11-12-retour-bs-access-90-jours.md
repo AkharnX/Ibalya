@@ -23,7 +23,7 @@ Suite de `2026-11-12-retour-bs-access-30-jours.md`. Points 5, 4 (reste), 9, 12, 
 
 ### 4. Dépendances : moins, mais crédibles
 
-- Candidats : même fil, ou mêmes interlocuteurs avec des types compatibles (amont parmi livraison, devis, facturation, autre ; aval parmi livraison, rendez-vous, facturation, autre). Plus de lien entre un rendez-vous et un devis sans rapport.
+- Candidats : même fil, ou mêmes interlocuteurs, et des types qui peuvent se bloquer : l'amont est une livraison, un devis, une facture ou « autre » ; l'aval une livraison, une facture ou « autre », et un rendez-vous seulement derrière une livraison (la pose après la réception). Plus de lien entre un rendez-vous et un devis sans rapport.
 - Le modèle garde le dernier mot, mais le seuil de rétention passe de 0,5 à 0,7, et au plus 5 candidats nouveaux par cycle, les mieux notés d'abord.
 - Écran Liens : le niveau de confiance s'affiche (élevée à partir de 0,85, sinon « à vérifier »), et un bouton « Rejeter tous les candidats ».
 

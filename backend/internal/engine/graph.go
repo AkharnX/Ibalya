@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 
 	"ibalya/backend/internal/llm"
 )
@@ -23,7 +24,7 @@ import (
 // confirmations et ses rejets orientent les suivants, sans aucun entraînement.
 func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 	rows, err := e.Store.Q(ctx).Query(ctx, `
-		SELECT a.id, b.id, a.objet, b.objet,
+		SELECT a.id, b.id, a.objet, b.objet, a.type, b.type,
 		       to_char(a.echeance,'DD/MM/YYYY'), to_char(b.echeance,'DD/MM/YYYY'),
 		       CASE WHEN a.thread_id = b.thread_id THEN 'même fil'
 		            ELSE 'mêmes interlocuteurs' END
@@ -48,18 +49,17 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	defer rows.Close()
-	type cand struct {
-		amont, aval           int64
-		amontObjet, avalObjet string
-		amontEch, avalEch     string
-		raison                string
-	}
 	var cands []cand
 	for rows.Next() {
 		var c cand
-		if err := rows.Scan(&c.amont, &c.aval, &c.amontObjet, &c.avalObjet,
+		if err := rows.Scan(&c.amont, &c.aval, &c.amontObjet, &c.avalObjet, &c.amontType, &c.avalType,
 			&c.amontEch, &c.avalEch, &c.raison); err != nil {
 			return 0, err
+		}
+		// Un rendez-vous ne bloque pas un devis : seules les paires de types
+		// qui peuvent se bloquer vont au jugement.
+		if !dependanceCompatible(c.amontType, c.avalType) {
+			continue
 		}
 		cands = append(cands, c)
 	}
@@ -76,11 +76,13 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 		}
 	}
 
-	// Sous ce score, le candidat n'est pas retenu : le modèle le juge trop
-	// improbable pour valoir la peine que le dirigeant s'y arrête.
-	const seuilRetenu = 0.5
+	// Au plus maxJugementsParCycle appels au modèle : le reste attend le cycle
+	// suivant. Les candidats structurels sont recalculés à chaque cycle.
+	if len(cands) > maxJugementsParCycle {
+		cands = cands[:maxJugementsParCycle]
+	}
 
-	created := 0
+	var juges []candidatJuge
 	for _, c := range cands {
 		raison := fmt.Sprintf("Heuristique : %s, échéances rapprochées", c.raison)
 		score := 0.0
@@ -119,8 +121,14 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 				raison = rep.Raison
 			}
 		}
+		juges = append(juges, candidatJuge{cand: c, score: score, raison: raison})
+	}
 
-		if err := e.Store.CreateLink(ctx, c.amont, c.aval, raison, score); err == nil {
+	// Les mieux notés d'abord, cinq au plus : mieux vaut aucune proposition
+	// qu'une proposition absurde (constat BS ACCESS : 12 proposées, 0 crédible).
+	created := 0
+	for _, j := range retenirCandidats(juges, seuilRetenu, maxCandidatsParCycle) {
+		if err := e.Store.CreateLink(ctx, j.amont, j.aval, j.raison, j.score); err == nil {
 			created++
 		}
 	}
@@ -129,4 +137,60 @@ func (e *Engine) RunGraphHeuristics(ctx context.Context) (int, error) {
 			map[string]int{"nouveaux": created, "examines": len(cands)})
 	}
 	return created, nil
+}
+
+// Sous ce score, le candidat n'est pas retenu : le modèle le juge trop
+// improbable pour valoir la peine que le dirigeant s'y arrête.
+const seuilRetenu = 0.7
+
+// Plafonds par cycle : appels au modèle, puis propositions créées.
+const (
+	maxJugementsParCycle = 15
+	maxCandidatsParCycle = 5
+)
+
+type cand struct {
+	amont, aval           int64
+	amontObjet, avalObjet string
+	amontType, avalType   string
+	amontEch, avalEch     string
+	raison                string
+}
+
+type candidatJuge struct {
+	cand
+	score  float64
+	raison string
+}
+
+// Types qui peuvent se bloquer : l'amont est quelque chose qu'on attend
+// (livraison, devis, facture), l'aval quelque chose qu'on a promis derrière.
+// Un rendez-vous ne dépend que d'une livraison (la pose après la réception),
+// jamais d'un devis ; un devis ou une prise de contact ne bloquent personne
+// en aval. « autre » reste possible des deux côtés, faute de savoir.
+var avalsParAmont = map[string]map[string]bool{
+	"livraison":   {"livraison": true, "rendez_vous": true, "facturation": true, "autre": true, "": true},
+	"devis":       {"livraison": true, "facturation": true, "autre": true, "": true},
+	"facturation": {"livraison": true, "facturation": true, "autre": true, "": true},
+	"autre":       {"livraison": true, "rendez_vous": true, "facturation": true, "autre": true, "": true},
+	"":            {"livraison": true, "rendez_vous": true, "facturation": true, "autre": true, "": true},
+}
+
+func dependanceCompatible(amontType, avalType string) bool {
+	return avalsParAmont[amontType][avalType]
+}
+
+// retenirCandidats trie par score décroissant, coupe au seuil puis au plafond.
+func retenirCandidats(juges []candidatJuge, seuil float64, max int) []candidatJuge {
+	out := make([]candidatJuge, 0, len(juges))
+	for _, j := range juges {
+		if j.score >= seuil {
+			out = append(out, j)
+		}
+	}
+	sort.SliceStable(out, func(i, k int) bool { return out[i].score > out[k].score })
+	if len(out) > max {
+		out = out[:max]
+	}
+	return out
 }

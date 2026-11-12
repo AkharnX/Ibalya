@@ -124,6 +124,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/links", s.auth(s.listLinks))
 	mux.HandleFunc("POST /api/links/{id}/confirm", s.auth(s.linkStatus("confirme")))
 	mux.HandleFunc("POST /api/links/{id}/reject", s.auth(s.linkStatus("rejete")))
+	mux.HandleFunc("POST /api/links/rejeter-candidats", s.auth(s.rejeterCandidats))
 
 	// digest & brouillons
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
@@ -896,6 +897,17 @@ func (s *Server) linkStatus(statut string) http.HandlerFunc {
 		s.Store.Audit(r.Context(), acteur(r), "lien_"+statut, map[string]int64{"id": id})
 		writeJSON(w, map[string]string{"status": "ok"})
 	}
+}
+
+// POST /api/links/rejeter-candidats — rejet en masse des liens à confirmer.
+func (s *Server) rejeterCandidats(w http.ResponseWriter, r *http.Request) {
+	n, err := s.Store.RejectCandidateLinks(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	s.Store.Audit(r.Context(), acteur(r), "liens_candidats_rejetes", map[string]int{"rejetes": n})
+	writeJSON(w, map[string]int{"rejetes": n})
 }
 
 // --- digest & brouillons ---

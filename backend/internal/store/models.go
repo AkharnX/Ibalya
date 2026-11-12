@@ -89,6 +89,7 @@ type DependencyLink struct {
 	AvalID    int64     `json:"aval_id"`
 	Statut    string    `json:"statut"`
 	Raison    string    `json:"raison"`
+	Score     float64   `json:"score"`
 	CreatedAt time.Time `json:"created_at"`
 	// jointures pour l'affichage
 	AmontObjet string `json:"amont_objet,omitempty"`
