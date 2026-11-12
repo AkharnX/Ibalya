@@ -258,6 +258,24 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 			eng.Priorite = "haute"
 		}
 	}
+	// Même promesse déjà ouverte dans ce fil, sous une autre formulation ? On
+	// ne crée rien : le message devient une mention de l'existant, qui hérite
+	// d'une échéance explicite si la sienne était inférée.
+	if ouverts, err := e.Store.OpenEngagementsByThread(ctx, m.ThreadID); err == nil {
+		for _, o := range ouverts {
+			if !typesCompatibles(o.Type, eng.Type) || !ObjetsProches(o.Objet, eng.Objet) {
+				continue
+			}
+			_ = e.Store.AddEvent(ctx, o.ID, "mention", &m.ID, map[string]any{"objet": eng.Objet})
+			if o.EcheanceInferee && eng.Echeance != nil && !eng.EcheanceInferee {
+				_ = e.Store.UpdateEngagement(ctx, o.ID, map[string]any{
+					"echeance": *eng.Echeance, "echeance_inferee": false, "echeance_confirmee": true})
+			}
+			e.Store.Audit(ctx, "agent", "engagement_fusionne", map[string]any{
+				"existant": o.ID, "objet_existant": o.Objet, "objet_nouveau": eng.Objet, "message": m.ID})
+			return false
+		}
+	}
 	id, err := e.Store.CreateEngagement(ctx, eng)
 	if err != nil {
 		log.Printf("extraction: création engagement: %v", err)
