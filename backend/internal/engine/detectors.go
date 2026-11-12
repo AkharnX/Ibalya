@@ -123,9 +123,13 @@ func (e *Engine) detectEcheanceARisque(ctx context.Context, p capsuleParams, tod
 	}
 	count := 0
 	now := time.Now()
+	soi := e.soi(ctx)
 	for _, eng := range engs {
 		if eng.Echeance == nil || !eng.EcheanceConfirmee {
 			continue
+		}
+		if !concerneLeDirigeant(eng.EmetteurEmail, eng.DestinataireEmail, soi) {
+			continue // deux tiers entre eux : pas une échéance du dirigeant
 		}
 		days := int(eng.Echeance.Sub(now).Hours() / 24)
 		if days < 0 || days > p.HorizonJours {
@@ -328,8 +332,12 @@ func (e *Engine) detectOrphelin(ctx context.Context, p capsuleParams, today stri
 	}
 	count := 0
 	limite := time.Now().AddDate(0, 0, -p.OrphelinJours)
+	soi := e.soi(ctx)
 	for _, eng := range engs {
 		if eng.CreeLe.After(limite) {
+			continue
+		}
+		if !concerneLeDirigeant(eng.EmetteurEmail, eng.DestinataireEmail, soi) {
 			continue
 		}
 		// une échéance future déjà suivie par le détecteur 1 n'est pas un oubli

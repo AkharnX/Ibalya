@@ -3,7 +3,6 @@ package engine
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"ibalya/backend/internal/store"
@@ -41,6 +40,7 @@ type ActionSuggeree struct {
 type EngagementSuivi struct {
 	store.Engagement
 	Categorie string          `json:"categorie"`
+	Sens      string          `json:"sens"`    // je_dois, on_me_doit, pour_info
 	Sortant   bool            `json:"sortant"` // promesse faite PAR le dirigeant
 	Blocage   *Blocage        `json:"blocage,omitempty"`
 	Action    *ActionSuggeree `json:"action,omitempty"`
@@ -86,6 +86,7 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 	}
 	blocages := e.blocages(ctx)
 	account, _ := e.Canal(ctx).AccountEmail(ctx)
+	soi := e.Store.AdressesSoi(ctx, account)
 
 	out := make([]EngagementSuivi, 0, len(engs))
 	for _, eng := range engs {
@@ -93,7 +94,8 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 			continue // règle anti-churn : rien sous le seuil en vue proactive
 		}
 		s := EngagementSuivi{Engagement: eng}
-		s.Sortant = account != "" && strings.EqualFold(eng.EmetteurEmail, account)
+		s.Sens = Sens(eng.EmetteurEmail, eng.DestinataireEmail, soi)
+		s.Sortant = s.Sens == SensJeDois
 		s.Contact = eng.DestinataireEmail
 		if !s.Sortant {
 			s.Contact = eng.EmetteurEmail
@@ -224,6 +226,7 @@ func suggestActionA(s EngagementSuivi, maintenant time.Time) *ActionSuggeree {
 type PrioriteItem struct {
 	EngagementID int64           `json:"engagement_id"`
 	Categorie    string          `json:"categorie"`
+	Sens         string          `json:"sens"`
 	Titre        string          `json:"titre"`
 	Contexte     string          `json:"contexte"`
 	Action       *ActionSuggeree `json:"action,omitempty"`
@@ -262,8 +265,14 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&s.KPI.MessagesLus)
 	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&s.KPI.MessagesAValider)
 
+	// Ce qui ne concerne pas le dirigeant (deux tiers entre eux, lui en copie)
+	// reste visible dans le suivi mais ne compte ni comme retard ni comme
+	// décision à prendre.
 	parCat := map[string][]EngagementSuivi{}
 	for _, x := range suivi {
+		if x.Sens == SensPourInfo {
+			continue
+		}
 		parCat[x.Categorie] = append(parCat[x.Categorie], x)
 	}
 	s.KPI.Retards = len(parCat[CatRetard])
@@ -287,6 +296,7 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 			s.Priorites = append(s.Priorites, PrioriteItem{
 				EngagementID: x.ID,
 				Categorie:    x.Categorie,
+				Sens:         x.Sens,
 				Titre:        x.Objet,
 				Contexte:     contexteLigne(x),
 				Action:       x.Action,

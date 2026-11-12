@@ -99,8 +99,12 @@ func (e *Engine) detectAClore(ctx context.Context, p capsuleParams, today string
 	}
 	now := time.Now()
 	count := 0
+	soi := e.soi(ctx)
 	for _, eng := range engs {
 		if eng.Echeance == nil {
+			continue
+		}
+		if !concerneLeDirigeant(eng.EmetteurEmail, eng.DestinataireEmail, soi) {
 			continue
 		}
 		detail, raison, messageID := "", "", int64(0)
