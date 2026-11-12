@@ -330,6 +330,13 @@ func (e *Engine) maybeDraft(ctx context.Context, d store.Detection) *store.Draft
 	if toEmail == "" || strings.EqualFold(toEmail, accountEmail) {
 		return nil
 	}
+	// Un seul brouillon en attente par fil et par destinataire : si une
+	// relance attend déjà sur ce fil, une seconde ne ferait que répéter.
+	if d.ThreadID != nil {
+		if deja, _ := e.Store.HasProposedDraftForThread(ctx, *d.ThreadID, toEmail); deja {
+			return nil
+		}
+	}
 	facts := e.capsuleLLM(ctx)
 	extraits := e.threadExtraits(ctx, d.ThreadID)
 	resp, err := e.LLM.Draft(ctx, llm.DraftRequest{

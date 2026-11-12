@@ -13,7 +13,8 @@ d'audit sera livré le 15 » produisent la même structure.
 Pour chaque message fourni, extrais zéro, un ou plusieurs engagements :
 - emetteur_email : l'adresse de la personne qui PREND l'engagement
 - destinataire_email : auprès de qui
-- objet : ce qui est promis, reformulé de façon courte et normalisée
+- objet : ce qui est promis, reformulé de façon courte et normalisée, sans
+  répéter une date déjà portée par echeance (et jamais au format YYYY-MM-DD)
 - type : la nature de l'engagement, parmi exactement :
   "devis" (chiffrage promis), "livraison" (produit/prestation à livrer ou poser),
   "relance" (promesse de recontacter/suivre), "prise_de_contact" (premier échange

@@ -217,7 +217,7 @@ function BandeauReconnexion() {
     <div className={'bandeau-reconnexion' + (expire ? ' expire' : '')} role="alert">
       {expire
         ? 'Votre connexion Gmail a expiré : l\'agent ne lit plus vos mails.'
-        : `Votre connexion Gmail expire dans ${r.jours_restant} jour(s).`}
+        : `Votre connexion Gmail expire dans ${r.jours_restant} jour${r.jours_restant > 1 ? 's' : ''}.`}
       {' '}
       <Link to="/reglages">Reconnecter ma boîte</Link>
     </div>

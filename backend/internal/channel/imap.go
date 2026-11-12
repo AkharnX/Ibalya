@@ -389,6 +389,7 @@ func (i *IMAP) convertirBrut(brut []byte, recu time.Time) (Message, error) {
 		m.Recipients = []string{}
 	}
 	m.ListUnsubscribe = entete(en, "List-Unsubscribe") != ""
+	m.AutoSubmitted = EstEnvoiAutomatique(func(nom string) string { return entete(en, nom) })
 	m.Outbound = strings.EqualFold(m.Sender, i.cfg.Utilisateur)
 	m.ThreadExternalID = filDe(en, m.ExternalID)
 	m.Body = corpsTexte(lecteur)

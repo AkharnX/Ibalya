@@ -246,6 +246,9 @@ CREATE TABLE IF NOT EXISTS reports (
 ALTER TABLE persons           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
 ALTER TABLE threads           ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
 ALTER TABLE messages          ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
+-- En-têtes d'envoi automatique (Auto-Submitted, Precedence bulk, Feedback-ID) : signal
+-- du pré-filtre, capturé par les trois canaux.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE engagements       ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
 ALTER TABLE engagement_events ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
 ALTER TABLE dependency_links  ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);

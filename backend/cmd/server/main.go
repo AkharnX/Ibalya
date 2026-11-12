@@ -29,6 +29,8 @@ import (
 func main() {
 	creerUtilisateur := flag.String("creer-utilisateur", "", "crée un compte : -creer-utilisateur email")
 	nom := flag.String("nom", "", "nom affiché du compte à créer")
+	reappliquer := flag.Bool("reappliquer-prefiltre", false, "reclasse les messages déjà lus avec les règles actuelles du pré-filtre (bilan seul sans -appliquer)")
+	appliquer := flag.Bool("appliquer", false, "avec -reappliquer-prefiltre : écrit les exclusions et écarte les faux engagements")
 	flag.Parse()
 
 	cfg := config.Load()
@@ -58,6 +60,12 @@ func main() {
 	if *creerUtilisateur != "" {
 		if err := creerCompte(ctx, st, *creerUtilisateur, *nom); err != nil {
 			log.Fatalf("création du compte: %v", err)
+		}
+		return
+	}
+	if *reappliquer {
+		if err := rattraperPrefiltre(ctx, st, *appliquer); err != nil {
+			log.Fatalf("rattrapage du pré-filtre : %v", err)
 		}
 		return
 	}
@@ -328,5 +336,44 @@ func creerCompte(ctx context.Context, st *store.Store, email, nom string) error 
 		return err
 	}
 	fmt.Printf("Compte créé : %s (%s), identifiant %d\n", email, nom, id)
+	return nil
+}
+
+// rattraperPrefiltre passe chaque boîte au crible des règles actuelles du
+// pré-filtre et affiche le bilan. Sans -appliquer, rien n'est écrit : on
+// regarde d'abord ce que ça écarterait.
+func rattraperPrefiltre(ctx context.Context, st *store.Store, appliquer bool) error {
+	users, err := st.ListUsers(ctx)
+	if err != nil {
+		return err
+	}
+	mode := "simulation (rien n'est écrit, ajoutez -appliquer)"
+	if appliquer {
+		mode = "application"
+	}
+	fmt.Printf("Rattrapage du pré-filtre, %s\n", mode)
+	for _, u := range users {
+		err := st.EnTenant(ctx, u.ID, func(ctx context.Context) error {
+			b, err := ingest.Reappliquer(ctx, st, appliquer)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("\n%s : %d messages examinés, %d à écarter", u.Email, b.Examines, b.Exclus)
+			if appliquer {
+				fmt.Printf(", %d engagements écartés", b.EngagementsEcartes)
+			}
+			fmt.Println()
+			for motif, n := range b.ParMotif {
+				fmt.Printf("  %-24s %d\n", motif, n)
+			}
+			for _, e := range b.Echantillon {
+				fmt.Println("  · " + e)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("boîte %s : %w", u.Email, err)
+		}
+	}
 	return nil
 }

@@ -118,6 +118,7 @@ func (s *Server) Handler() http.Handler {
 	// détections
 	mux.HandleFunc("GET /api/detections", s.auth(s.listDetections))
 	mux.HandleFunc("POST /api/detections/{id}/dismiss", s.auth(s.dismissDetection))
+	mux.HandleFunc("POST /api/detections/{id}/clore", s.auth(s.cloreDetection))
 
 	// liens de dépendance
 	mux.HandleFunc("GET /api/links", s.auth(s.listLinks))
@@ -424,10 +425,24 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		// candidats, le détecteur de contradiction (CDC 8.1) les ignore.
 		LiensAConfirmer     int `json:"liens_a_confirmer"`
 		EcheancesAConfirmer int `json:"echeances_a_confirmer"`
+		// Messages écartés par motif (automatique, newsletter, hameçonnage…) :
+		// le miroir dit au dirigeant ce qui n'a pas été lu, et pourquoi.
+		ExclusParMotif map[string]int `json:"messages_exclus_par_motif"`
 	}
+	counts.ExclusParMotif = map[string]int{}
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&counts.Messages)
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='pending'`).Scan(&counts.EnAttente)
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages WHERE status='excluded'`).Scan(&counts.Exclus)
+	if rows, err := s.Store.Q(ctx).Query(ctx, `SELECT coalesce(exclude_reason, ''), count(*) FROM messages WHERE status='excluded' GROUP BY 1`); err == nil {
+		for rows.Next() {
+			var motif string
+			var n int
+			if rows.Scan(&motif, &n) == nil {
+				counts.ExclusParMotif[motif] = n
+			}
+		}
+		rows.Close()
+	}
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM engagements`).Scan(&counts.Engagements)
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM detections WHERE statut IN ('nouvelle','au_digest')`).Scan(&counts.Detections)
 	s.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&counts.Brouillons)
@@ -814,6 +829,48 @@ func (s *Server) dismissDetection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.Store.Audit(r.Context(), acteur(r), "detection_ecartee", map[string]int64{"id": id})
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// POST /api/detections/{id}/clore — réponse à « C'est fait ? ». Oui : l'engagement
+// passe livré (verdict « juste », l'engagement existait bien). Non : un
+// événement « confirme » note qu'il est toujours en cours, ce qui repousse la
+// prochaine question d'autant. Dans les deux cas la détection est écartée.
+func (s *Server) cloreDetection(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	var body struct {
+		Fait bool `json:"fait"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, 400, "requête invalide")
+		return
+	}
+	d, err := s.Store.GetDetection(r.Context(), id)
+	if err != nil || d == nil {
+		httpError(w, 404, "détection introuvable")
+		return
+	}
+	if d.EngagementID != nil {
+		if body.Fait {
+			if err := s.Store.UpdateEngagement(r.Context(), *d.EngagementID,
+				map[string]any{"statut": "livre", "verdict_extraction": "juste"}); err != nil {
+				httpError(w, 500, err.Error())
+				return
+			}
+			_ = s.Store.AddEvent(r.Context(), *d.EngagementID, "livre", nil, map[string]string{"source": "c_est_fait"})
+		} else {
+			_ = s.Store.AddEvent(r.Context(), *d.EngagementID, "confirme", nil, map[string]string{"source": "toujours_en_cours"})
+		}
+	}
+	if err := s.Store.SetDetectionStatus(r.Context(), id, "ecartee"); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	evenement := "cloture_refusee"
+	if body.Fait {
+		evenement = "cloture_confirmee"
+	}
+	s.Store.Audit(r.Context(), acteur(r), evenement, map[string]any{"detection_id": id, "engagement_id": d.EngagementID})
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 

@@ -20,6 +20,7 @@ type Message struct {
 	Body             string
 	Outbound         bool // envoyé par le compte connecté
 	ListUnsubscribe  bool // en-tête de désinscription présent (pré-filtre EF-11)
+	AutoSubmitted    bool // en-têtes d'envoi automatique (Auto-Submitted, Precedence bulk, Feedback-ID)
 	Attachments      []PieceJointe
 }
 

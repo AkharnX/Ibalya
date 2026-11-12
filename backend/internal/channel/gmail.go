@@ -276,7 +276,9 @@ func parseGmailMessage(full *gmail.Message, selfEmail string) Message {
 		SentAt:           time.UnixMilli(full.InternalDate),
 	}
 	var fromRaw string
+	entetes := map[string]string{}
 	for _, h := range full.Payload.Headers {
+		entetes[strings.ToLower(h.Name)] = h.Value
 		switch strings.ToLower(h.Name) {
 		case "from":
 			fromRaw = h.Value
@@ -292,6 +294,7 @@ func parseGmailMessage(full *gmail.Message, selfEmail string) Message {
 			m.ListUnsubscribe = true
 		}
 	}
+	m.AutoSubmitted = EstEnvoiAutomatique(func(nom string) string { return entetes[strings.ToLower(nom)] })
 	if addr, err := mail.ParseAddress(fromRaw); err == nil {
 		m.Sender = strings.ToLower(addr.Address)
 		m.SenderName = addr.Name

@@ -39,7 +39,7 @@ function Liste({ titre, aide, rows, onSource }) {
                     <p className="eng-title">
                       <button className="lien-source" onClick={() => onSource(e.id)}>{e.objet}</button>
                     </p>
-                    <p className="eng-flow">{e.emetteur_email || '?'} → {e.destinataire_email || '?'}</p>
+                    <p className="eng-flow">{e.emetteur_email || 'expéditeur inconnu'} → {e.destinataire_email || 'destinataire inconnu'}</p>
                   </td>
                   <td>{e.echeance ? fmtDate(e.echeance) : <span className="mono">–</span>}</td>
                   <td><Reli value={e.confiance} /></td>
@@ -53,11 +53,31 @@ function Liste({ titre, aide, rows, onSource }) {
   )
 }
 
+// Ce que le pré-filtre a écarté sans le lire, par classe. La mention sur
+// l'hameçonnage est volontairement explicite : c'est un point de confiance.
+const MOTIFS_EXCLUSION = [
+  [['expediteur_automatique', 'domaine_exclu', 'corps_vide'], (n) => `${n} automatique${n > 1 ? 's' : ''}`],
+  [['newsletter'], (n) => `${n} publicitaire${n > 1 ? 's' : ''}`],
+  [['securite_suspect'], (n) => `${n} suspect${n > 1 ? 's' : ''} (hameçonnage possible, ne pas répondre)`],
+  [['fil_exclu', 'regle_apprise'], (n) => `${n} écarté${n > 1 ? 's' : ''} par vos règles`],
+  [['categorie_sensible_sante', 'categorie_sensible_rh', 'categorie_sensible_juridique'], (n) => `${n} confidentiel${n > 1 ? 's' : ''}`],
+]
+function phraseExclusions(s) {
+  const par = s.messages_exclus_par_motif || {}
+  const parts = MOTIFS_EXCLUSION
+    .map(([motifs, lib]) => [motifs.reduce((t, k) => t + (par[k] || 0), 0), lib])
+    .filter(([n]) => n > 0)
+    .map(([n, lib]) => lib(n))
+  const total = s.messages_exclus
+  return `${total} message${total > 1 ? 's' : ''} écarté${total > 1 ? 's' : ''} sans lecture par le modèle${parts.length ? ' : ' + parts.join(', ') : ''}.`
+}
+
 export default function Miroir() {
   const [rep, setRep] = useState(undefined) // undefined = chargement, null = jamais généré
   const [busy, setBusy] = useState(false)
   const [sourceId, setSourceId] = useState(null)
   const [filId, setFilId] = useState(null)
+  const [statut, setStatut] = useState(null) // compteurs d'exclusion du pré-filtre
   const [params, setParams] = useSearchParams()
 
   // Cible d'un résultat de recherche.
@@ -70,6 +90,7 @@ export default function Miroir() {
 
   const load = useCallback(() => {
     api('/miroir').then(setRep).catch(() => setRep(null))
+    api('/status').then(setStatut).catch(() => setStatut(null))
   }, [])
   useEffect(load, [load])
 
@@ -143,6 +164,7 @@ export default function Miroir() {
           <p className="help">
             Période lue : {m.periode_jours} jours · rapport produit le {fmtDT(m.genere_le || rep.created_at)}
           </p>
+          {statut?.compteurs?.messages_exclus > 0 && <p className="help">{phraseExclusions(statut.compteurs)}</p>}
 
           <Liste titre="Engagements en cours" onSource={setSourceId}
             aide="Les promesses détectées dans vos échanges, encore ouvertes à ce jour."

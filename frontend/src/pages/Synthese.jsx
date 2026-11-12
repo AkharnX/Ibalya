@@ -157,7 +157,7 @@ export default function Synthese() {
                   onClick={() => ouvrirBoite(p.boite_id, '/suivi')}>{p.boite}</button>
               ) : (
                 <>
-                  <button className="btn-icon" aria-label="Marquer résolu" title="Marquer résolu" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /></button>
+                  <button className="ghost btn-fait" onClick={() => marquerLivre(p.engagement_id)}><Icone nom="etat-livre" /> C'est fait</button>
                   {p.action && (
                     <button className="btn-icon primary" aria-label={p.action.label} title={p.action.label}
                       onClick={() => d.openForEngagement(p.engagement_id, { ...p.action, hint: p.contexte })}><Icone nom="action-valider-envoyer" /></button>

@@ -204,7 +204,7 @@ export default function Suivi() {
                         onClick={() => setSource({ id: r.id, action: r.action })}>{r.objet}</button>
                       {r.echeance && r.echeance_inferee && !r.echeance_confirmee && <span className="tag-confirm">à confirmer</span>}
                     </p>
-                    <p className="eng-flow">{r.emetteur_email || '?'} → {r.destinataire_email || '?'}</p>
+                    <p className="eng-flow">{r.emetteur_email || 'expéditeur inconnu'} → {r.destinataire_email || 'destinataire inconnu'}</p>
                     {r.blocage && <p className="eng-flow">bloqué par : {r.blocage.amont_objet}</p>}
                   </td>
                   <td>

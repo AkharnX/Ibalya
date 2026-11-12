@@ -3,50 +3,23 @@
 package ingest
 
 import (
-	"regexp"
 	"strings"
 
 	"ibalya/backend/internal/store"
 )
 
-// Le séparateur est optionnel ET peut être un tiret bas : « no_reply@ » est la
-// forme d'Apple, et elle échappait au motif. Quatre reçus sont ainsi passés au
-// modèle et ont produit deux engagements sur des renouvellements d'abonnement,
-// qui remontaient ensuite en alertes. Les variantes françaises sont ajoutées.
-var noReplyPattern = regexp.MustCompile(`(?i)(no[-_.]?reply|do[-_.]?not[-_.]?reply|ne[-_. ]?pas[-_. ]?repondre|nepasrepondre|notification|mailer-daemon|postmaster|newsletter|marketing@|espace[-_.]?client@|info@.*\.(mailchimp|sendgrid|brevo))`)
-
-// domaines de services tiers exclus d'office
-var excludedDomains = []string{
-	"amazonses.com", "sendgrid.net", "mailchimp.com", "mailgun.org", "brevo.com",
-	"notifications.google.com", "docs.google.com", "calendar-notification.google.com",
-	"github.com", "gitlab.com", "atlassian.com", "slack.com", "linkedin.com",
-	"facebookmail.com", "twitter.com", "x.com", "stripe.com", "paypal.com",
-}
-
-// ExclusionReason retourne la raison d'exclusion d'un message, ou "" s'il doit
-// passer à l'extraction. rules = règles apprises actives.
+// ExclusionReason rend le motif pour lequel un message n'est pas analysé, ou
+// une chaîne vide s'il doit l'être. La classe de l'expéditeur (classe.go) passe
+// en premier, puis les choix du dirigeant (fil exclu, règles apprises).
 func ExclusionReason(m store.Message, threadExcluded bool, rules []store.LearnedRule) string {
 	sender := strings.ToLower(m.Sender)
 
-	// 1. Expéditeur automatique / no-reply
-	if noReplyPattern.MatchString(sender) {
-		return "expediteur_automatique"
+	// La classe de l'expéditeur (automate, publicité, hameçonnage) se décide
+	// avant tout le reste : voir classe.go.
+	if classe, motif := ClasserExpediteur(m); classe != ClasseHumain {
+		return motif
 	}
-	// 2. En-tête de désinscription (newsletter)
-	if m.ListUnsubscribe {
-		return "newsletter"
-	}
-	// 3. Domaines de notification tiers
 	at := strings.LastIndex(sender, "@")
-	if at >= 0 {
-		domain := sender[at+1:]
-		for _, d := range excludedDomains {
-			if domain == d || strings.HasSuffix(domain, "."+d) {
-				return "domaine_exclu"
-			}
-		}
-	}
-	// 4. Fil exclu par le dirigeant (règle apprise)
 	if threadExcluded {
 		return "fil_exclu"
 	}

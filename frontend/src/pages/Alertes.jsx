@@ -36,13 +36,21 @@ export default function Alertes() {
     try { await api(`/detections/${id}/dismiss`, { method: 'POST' }); toast('Alerte écartée'); load() }
     catch (e) { toast(e.message, true) }
   }
+  // « C'est fait ? » : oui ferme l'engagement, non le garde en cours ; l'alerte part dans les deux cas.
+  const clore = async (id, fait) => {
+    try {
+      await api(`/detections/${id}/clore`, { method: 'POST', body: JSON.stringify({ fait }) })
+      toast(fait ? 'Engagement marqué comme fait' : 'Engagement gardé en cours')
+      load()
+    } catch (e) { toast(e.message, true) }
+  }
 
   return (
     <section>
       <div className="page-head">
         <div>
           <h1>Alertes</h1>
-          <p>L'agent surveille vos engagements en continu et vous alerte dans 5 situations. Chaque alerte fiable s'accompagne, quand c'est possible, d'un message prêt à envoyer.</p>
+          <p>L'agent surveille vos engagements en continu et vous alerte dans 5 situations. Chaque alerte fiable s'accompagne, quand c'est possible, d'un message prêt à envoyer. Quand un retard traîne ou qu'un fil annonce la fin, il vous demande simplement si c'est fait.</p>
         </div>
       </div>
       <details className="legend">
@@ -87,8 +95,15 @@ export default function Alertes() {
                   </td>
                   <td><Reli value={d.score} /></td>
                   <td className="sub">{fmtDT(d.created_at)}</td>
-                  <td><button className="ghost" onClick={() => dismiss(d.id)}>
-                    <Icone nom="action-rejeter" /> Écarter</button></td>
+                  <td>{d.type === 'a_clore' ? (
+                    <span className="actions-clore">
+                      <button className="primary" onClick={() => clore(d.id, true)}>Oui, c'est fait</button>
+                      <button className="ghost" onClick={() => clore(d.id, false)}>Toujours en cours</button>
+                    </span>
+                  ) : (
+                    <button className="ghost" onClick={() => dismiss(d.id)}>
+                      <Icone nom="action-rejeter" /> Écarter</button>
+                  )}</td>
                 </tr>
               ))}
             </tbody>

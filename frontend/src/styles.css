@@ -1342,3 +1342,6 @@ button, .btn, .btn-icon, .chip, .type-pill, .nav-item, .kpi, .queue-row, .chat-c
 @media (forced-colors: active) {
   :focus-visible { outline-color: Highlight; }
 }
+
+/* « C'est fait ? » : les deux réponses côte à côte dans la colonne des actions. */
+.actions-clore{display:inline-flex;gap:8px;flex-wrap:wrap;}
