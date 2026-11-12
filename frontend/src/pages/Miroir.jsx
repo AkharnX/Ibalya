@@ -164,7 +164,7 @@ export default function Miroir() {
           <p className="help">
             Période lue : {m.periode_jours} jours · rapport produit le {fmtDT(m.genere_le || rep.created_at)}
           </p>
-          {statut?.messages_exclus > 0 && <p className="help">{phraseExclusions(statut)}</p>}
+          {statut?.compteurs?.messages_exclus > 0 && <p className="help">{phraseExclusions(statut.compteurs)}</p>}
 
           <Liste titre="Engagements en cours" onSource={setSourceId}
             aide="Les promesses détectées dans vos échanges, encore ouvertes à ce jour."
