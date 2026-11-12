@@ -1345,3 +1345,7 @@ button, .btn, .btn-icon, .chip, .type-pill, .nav-item, .kpi, .queue-row, .chat-c
 
 /* « C'est fait ? » : les deux réponses côte à côte dans la colonne des actions. */
 .actions-clore{display:inline-flex;gap:8px;flex-wrap:wrap;}
+
+/* Décisions repliées sous les trois du jour. */
+.autres-priorites{margin-top:10px;}
+.autres-priorites summary{cursor:pointer;color:var(--primary);font-size:13px;margin-bottom:8px;}

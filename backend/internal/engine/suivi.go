@@ -41,6 +41,7 @@ type ActionSuggeree struct {
 type EngagementSuivi struct {
 	store.Engagement
 	Categorie string          `json:"categorie"`
+	Sens      string          `json:"sens"`    // je_dois, on_me_doit, pour_info
 	Sortant   bool            `json:"sortant"` // promesse faite PAR le dirigeant
 	Blocage   *Blocage        `json:"blocage,omitempty"`
 	Action    *ActionSuggeree `json:"action,omitempty"`
@@ -86,6 +87,7 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 	}
 	blocages := e.blocages(ctx)
 	account, _ := e.Canal(ctx).AccountEmail(ctx)
+	soi := e.Store.AdressesSoi(ctx, account)
 
 	out := make([]EngagementSuivi, 0, len(engs))
 	for _, eng := range engs {
@@ -93,7 +95,8 @@ func (e *Engine) Suivi(ctx context.Context) ([]EngagementSuivi, error) {
 			continue // règle anti-churn : rien sous le seuil en vue proactive
 		}
 		s := EngagementSuivi{Engagement: eng}
-		s.Sortant = account != "" && strings.EqualFold(eng.EmetteurEmail, account)
+		s.Sens = Sens(eng.EmetteurEmail, eng.DestinataireEmail, soi)
+		s.Sortant = s.Sens == SensJeDois
 		s.Contact = eng.DestinataireEmail
 		if !s.Sortant {
 			s.Contact = eng.EmetteurEmail
@@ -224,6 +227,8 @@ func suggestActionA(s EngagementSuivi, maintenant time.Time) *ActionSuggeree {
 type PrioriteItem struct {
 	EngagementID int64           `json:"engagement_id"`
 	Categorie    string          `json:"categorie"`
+	Sens         string          `json:"sens"`
+	Enjeu        int             `json:"enjeu"`
 	Titre        string          `json:"titre"`
 	Contexte     string          `json:"contexte"`
 	Action       *ActionSuggeree `json:"action,omitempty"`
@@ -242,8 +247,11 @@ type Synthese struct {
 		MessagesAValider  int `json:"messages_a_valider"`
 		MessagesLus       int `json:"messages_lus"`
 	} `json:"kpi"`
-	Priorites  []PrioriteItem           `json:"priorites"`
-	Categories map[string]CategorieBloc `json:"categories"`
+	// Priorites : les trois décisions du jour, classées par enjeu. Le reste
+	// dans AutresPriorites, replié à l'écran.
+	Priorites       []PrioriteItem           `json:"priorites"`
+	AutresPriorites []PrioriteItem           `json:"autres_priorites"`
+	Categories      map[string]CategorieBloc `json:"categories"`
 	// Alertes en cours (les 5 détecteurs), les critiques d'abord. Remontées sur
 	// l'accueil pour que le dirigeant voie ce que l'agent a repéré sans passer
 	// par la page Alertes.
@@ -262,8 +270,14 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM messages`).Scan(&s.KPI.MessagesLus)
 	_ = e.Store.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM drafts WHERE statut='propose'`).Scan(&s.KPI.MessagesAValider)
 
+	// Ce qui ne concerne pas le dirigeant (deux tiers entre eux, lui en copie)
+	// reste visible dans le suivi mais ne compte ni comme retard ni comme
+	// décision à prendre.
 	parCat := map[string][]EngagementSuivi{}
 	for _, x := range suivi {
+		if x.Sens == SensPourInfo {
+			continue
+		}
 		parCat[x.Categorie] = append(parCat[x.Categorie], x)
 	}
 	s.KPI.Retards = len(parCat[CatRetard])
@@ -281,17 +295,33 @@ func (e *Engine) GenerateSynthese(ctx context.Context) (*Synthese, error) {
 		s.Categories[cat] = bloc
 	}
 
-	// priorités : les engagements à risque d'abord, puis les retards
+	// priorités : classées par enjeu (retard réel, blocage, client, priorité
+	// haute, échéance proche), trois en tête, le reste replié
+	typesContacts := map[string]string{}
+	if personnes, err := e.Store.ListPersons(ctx); err == nil {
+		for _, p := range personnes {
+			typesContacts[strings.ToLower(p.Email)] = p.Type
+		}
+	}
+	now := time.Now()
 	for _, cat := range []string{CatRisque, CatRetard} {
 		for _, x := range parCat[cat] {
 			s.Priorites = append(s.Priorites, PrioriteItem{
 				EngagementID: x.ID,
 				Categorie:    x.Categorie,
+				Sens:         x.Sens,
+				Enjeu:        Enjeu(x, typesContacts[strings.ToLower(x.Contact)], now),
 				Titre:        x.Objet,
 				Contexte:     contexteLigne(x),
 				Action:       x.Action,
 			})
 		}
+	}
+
+	triees := trierParEnjeu(s.Priorites)
+	s.Priorites, s.AutresPriorites = triees, []PrioriteItem{}
+	if len(triees) > 3 {
+		s.Priorites, s.AutresPriorites = triees[:3], triees[3:]
 	}
 
 	// alertes en cours : on remonte les détections actives, les critiques

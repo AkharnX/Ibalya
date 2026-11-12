@@ -140,6 +140,20 @@ func (s *Store) ListPersons(ctx context.Context) ([]Person, error) {
 	return out, rows.Err()
 }
 
+// SetPersonTypeIfAutre pose un type déduit sans écraser un choix du dirigeant.
+func (s *Store) SetPersonTypeIfAutre(ctx context.Context, id int64, ptype string) error {
+	_, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2 WHERE id=$1 AND (type='' OR type='autre')`, id, ptype)
+	return err
+}
+
+// UpdatePersonsOfDomain applique un type à tous les interlocuteurs d'un
+// domaine et rend le nombre de lignes touchées. L'appelant vérifie que le
+// domaine n'est pas une messagerie grand public.
+func (s *Store) UpdatePersonsOfDomain(ctx context.Context, domaine, ptype string) (int, error) {
+	tag, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2 WHERE split_part(lower(email), '@', 2) = $1`, strings.ToLower(domaine), ptype)
+	return int(tag.RowsAffected()), err
+}
+
 func (s *Store) UpdatePerson(ctx context.Context, id int64, ptype string, sensitive bool) error {
 	_, err := s.q(ctx).Exec(ctx, `UPDATE persons SET type=$2, sensitive=$3 WHERE id=$1`, id, ptype, sensitive)
 	return err
@@ -568,7 +582,7 @@ func (s *Store) ExemplesDependance(ctx context.Context, maxParClasse int) ([]Dep
 }
 
 func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink, error) {
-	q := `SELECT l.id, l.amont_id, l.aval_id, l.statut, l.raison, l.created_at, ea.objet, ev.objet
+	q := `SELECT l.id, l.amont_id, l.aval_id, l.statut, l.raison, coalesce(l.score, 0), l.created_at, ea.objet, ev.objet
 		FROM dependency_links l
 		JOIN engagements ea ON ea.id = l.amont_id
 		JOIN engagements ev ON ev.id = l.aval_id `
@@ -589,12 +603,18 @@ func (s *Store) ListLinks(ctx context.Context, statut string) ([]DependencyLink,
 	var out []DependencyLink
 	for rows.Next() {
 		var l DependencyLink
-		if err := rows.Scan(&l.ID, &l.AmontID, &l.AvalID, &l.Statut, &l.Raison, &l.CreatedAt, &l.AmontObjet, &l.AvalObjet); err != nil {
+		if err := rows.Scan(&l.ID, &l.AmontID, &l.AvalID, &l.Statut, &l.Raison, &l.Score, &l.CreatedAt, &l.AmontObjet, &l.AvalObjet); err != nil {
 			return nil, err
 		}
 		out = append(out, l)
 	}
 	return out, rows.Err()
+}
+
+// RejectCandidateLinks rejette d'un coup tous les liens encore à confirmer.
+func (s *Store) RejectCandidateLinks(ctx context.Context) (int, error) {
+	tag, err := s.q(ctx).Exec(ctx, `UPDATE dependency_links SET statut='rejete' WHERE statut='candidat'`)
+	return int(tag.RowsAffected()), err
 }
 
 func (s *Store) SetLinkStatus(ctx context.Context, id int64, statut string) error {

@@ -35,6 +35,7 @@ export default function Suivi() {
   const [rows, setRows] = useState(null)
   const [params, setParams] = useSearchParams()
   const [type, setType] = useState('all')
+  const [sens, setSens] = useState('all')
   const [search, setSearch] = useState('')
   const [fiabilite, setFiabilite] = useState('')
   const cat = params.get('cat') || 'all'
@@ -93,6 +94,7 @@ export default function Suivi() {
   }, [rows])
 
   const shown = (rows || []).filter((r) => {
+    if (sens !== 'all' && r.sens !== sens) return false
     const okCat = cat === 'all' || r.categorie === cat
     const okType = type === 'all' || r.type === type
     const q = search.trim().toLowerCase()
@@ -154,6 +156,11 @@ export default function Suivi() {
       </div>
 
       <div className="chip-row">
+        {[['all', 'Tous'], ['je_dois', 'Je dois'], ['on_me_doit', 'On me doit'], ['pour_info', 'Pour information']].map(([k, label]) => (
+          <button type="button" key={k} className={'chip' + (sens === k ? ' active' : '')} onClick={() => setSens(k)}>{label}</button>
+        ))}
+      </div>
+      <div className="chip-row">
         {CATEGORIES.map(([key, label]) => (
           <button type="button" key={key} className={'chip' + (cat === key ? ' active' : '')}
             onClick={() => setParams(key === 'all' ? {} : { cat: key })}>
@@ -203,6 +210,7 @@ export default function Suivi() {
                       <button className="lien-source" title="Voir la conversation d'origine"
                         onClick={() => setSource({ id: r.id, action: r.action })}>{r.objet}</button>
                       {r.echeance && r.echeance_inferee && !r.echeance_confirmee && <span className="tag-confirm">à confirmer</span>}
+                      {r.sens === 'pour_info' && <span className="tag-confirm" title="Deux tiers entre eux, vous êtes en copie : pas d'alerte">pour information</span>}
                     </p>
                     <p className="eng-flow">{r.emetteur_email || 'expéditeur inconnu'} → {r.destinataire_email || 'destinataire inconnu'}</p>
                     {r.blocage && <p className="eng-flow">bloqué par : {r.blocage.amont_objet}</p>}

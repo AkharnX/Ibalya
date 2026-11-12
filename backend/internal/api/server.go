@@ -124,6 +124,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/links", s.auth(s.listLinks))
 	mux.HandleFunc("POST /api/links/{id}/confirm", s.auth(s.linkStatus("confirme")))
 	mux.HandleFunc("POST /api/links/{id}/reject", s.auth(s.linkStatus("rejete")))
+	mux.HandleFunc("POST /api/links/rejeter-candidats", s.auth(s.rejeterCandidats))
 
 	// digest & brouillons
 	mux.HandleFunc("GET /api/drafts", s.auth(s.listDrafts))
@@ -156,6 +157,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/persons", s.auth(s.listPersons))
 	mux.HandleFunc("GET /api/persons/{id}", s.auth(s.fichePersonne))
 	mux.HandleFunc("PATCH /api/persons/{id}", s.auth(s.patchPerson))
+	mux.HandleFunc("POST /api/persons/typer-auto", s.auth(s.typerPersonnesAuto))
 	mux.HandleFunc("GET /api/audit", s.auth(s.listAudit))
 	mux.HandleFunc("GET /api/kpis", s.auth(s.kpis))
 	mux.HandleFunc("GET /api/settings", s.auth(s.getSettings))
@@ -897,6 +899,17 @@ func (s *Server) linkStatus(statut string) http.HandlerFunc {
 	}
 }
 
+// POST /api/links/rejeter-candidats — rejet en masse des liens à confirmer.
+func (s *Server) rejeterCandidats(w http.ResponseWriter, r *http.Request) {
+	n, err := s.Store.RejectCandidateLinks(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	s.Store.Audit(r.Context(), acteur(r), "liens_candidats_rejetes", map[string]int{"rejetes": n})
+	writeJSON(w, map[string]int{"rejetes": n})
+}
+
 // --- digest & brouillons ---
 
 func (s *Server) listDrafts(w http.ResponseWriter, r *http.Request) {
@@ -989,6 +1002,9 @@ func (s *Server) patchPerson(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Type      string `json:"type"`
 		Sensitive bool   `json:"sensitive"`
+		// Appliquer le même type à tout le domaine de l'adresse (jamais pour
+		// une messagerie grand public : gmail.com n'est pas une entreprise).
+		AppliquerDomaine bool `json:"appliquer_domaine"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		httpError(w, 400, err.Error())
@@ -998,7 +1014,30 @@ func (s *Server) patchPerson(w http.ResponseWriter, r *http.Request) {
 		httpError(w, 500, err.Error())
 		return
 	}
-	writeJSON(w, map[string]string{"status": "ok"})
+	modifies := 1
+	if body.AppliquerDomaine {
+		p, err := s.Store.GetPerson(r.Context(), id)
+		if err == nil && p != nil {
+			if d := engine.Domaine(p.Email); d != "" && !engine.MessageriesGrandPublic[d] {
+				if n, err := s.Store.UpdatePersonsOfDomain(r.Context(), d, body.Type); err == nil {
+					modifies = n
+					s.Store.Audit(r.Context(), acteur(r), "interlocuteurs_types_domaine", map[string]any{"domaine": d, "type": body.Type, "modifies": n})
+				}
+			}
+		}
+	}
+	writeJSON(w, map[string]any{"status": "ok", "modifies": modifies})
+}
+
+// POST /api/persons/typer-auto — type les interlocuteurs encore « autre » à
+// partir du domaine de l'entreprise et des listes de la capsule.
+func (s *Server) typerPersonnesAuto(w http.ResponseWriter, r *http.Request) {
+	n, err := s.Engine.TyperAutomatiquement(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, map[string]int{"modifies": n})
 }
 
 func (s *Server) listAudit(w http.ResponseWriter, r *http.Request) {

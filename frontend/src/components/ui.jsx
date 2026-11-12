@@ -1,5 +1,6 @@
 // Libellés et formats partagés entre les pages.
 export const STATUT_LABELS = { ouvert: 'Ouvert', confirme: 'Confirmé', livre: 'Livré', en_retard: 'En retard', abandonne: 'Écarté' }
+export const SENS_LABELS = { je_dois: 'Je dois', on_me_doit: 'On me doit', pour_info: 'Pour information' }
 export const DET_LABELS = { echeance_a_risque: 'Échéance à risque', silence_anormal: 'Silence anormal', contradiction: 'Promesse menacée', orphelin: 'Orphelin', surcharge: 'Surcharge', a_clore: 'C\'est fait ?' }
 export const TYPE_LABELS = {
   devis: 'Devis', livraison: 'Livraison', relance: 'Relance',

@@ -78,7 +78,7 @@ func (e *Engine) capsuleLLM(ctx context.Context) json.RawMessage {
 // frontière entre « incertaine » et « à vérifier », ce qui aligne enfin ce
 // qu'on publie sur ce qu'on affiche.
 func (e *Engine) SeuilPublication(ctx context.Context) float64 {
-	s := e.Store.GetSetting(ctx, "seuil_publication", "0.5")
+	s := e.Store.GetSetting(ctx, "seuil_publication", "0.6")
 	if v, err := parseFloat(s); err == nil {
 		return v
 	}
@@ -212,11 +212,13 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 	if a := retenir(ex.EmetteurEmail); a != "" {
 		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.EmetteurID = &id
+			e.typerSiNouveau(ctx, id, a)
 		}
 	}
 	if a := retenir(ex.DestinataireEmail); a != "" {
 		if id, err := e.Store.UpsertPerson(ctx, a, ""); err == nil {
 			eng.DestinataireID = &id
+			e.typerSiNouveau(ctx, id, a)
 		}
 	}
 	if ex.Echeance != "" {
@@ -256,6 +258,24 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 		if r.Action == "priorite_haute" && r.PorteeType == "interlocuteur" &&
 			(strings.EqualFold(r.PorteeCible, ex.EmetteurEmail) || strings.EqualFold(r.PorteeCible, ex.DestinataireEmail)) {
 			eng.Priorite = "haute"
+		}
+	}
+	// Même promesse déjà ouverte dans ce fil, sous une autre formulation ? On
+	// ne crée rien : le message devient une mention de l'existant, qui hérite
+	// d'une échéance explicite si la sienne était inférée.
+	if ouverts, err := e.Store.OpenEngagementsByThread(ctx, m.ThreadID); err == nil {
+		for _, o := range ouverts {
+			if !typesCompatibles(o.Type, eng.Type) || !ObjetsProches(o.Objet, eng.Objet) {
+				continue
+			}
+			_ = e.Store.AddEvent(ctx, o.ID, "mention", &m.ID, map[string]any{"objet": eng.Objet})
+			if o.EcheanceInferee && eng.Echeance != nil && !eng.EcheanceInferee {
+				_ = e.Store.UpdateEngagement(ctx, o.ID, map[string]any{
+					"echeance": *eng.Echeance, "echeance_inferee": false, "echeance_confirmee": true})
+			}
+			e.Store.Audit(ctx, "agent", "engagement_fusionne", map[string]any{
+				"existant": o.ID, "objet_existant": o.Objet, "objet_nouveau": eng.Objet, "message": m.ID})
+			return false
 		}
 	}
 	id, err := e.Store.CreateEngagement(ctx, eng)
