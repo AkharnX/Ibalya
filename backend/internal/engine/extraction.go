@@ -179,7 +179,7 @@ func (e *Engine) createEngagement(ctx context.Context, m store.Message, ex llm.E
 		}
 	}
 	eng := store.Engagement{
-		Objet:           strings.TrimSpace(ex.Objet),
+		Objet:           NormaliserDatesObjet(strings.TrimSpace(ex.Objet), time.Now()),
 		Type:            normalizeType(ex.Type),
 		Statut:          "ouvert",
 		Priorite:        "normale",

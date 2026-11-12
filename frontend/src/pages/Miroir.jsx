@@ -39,7 +39,7 @@ function Liste({ titre, aide, rows, onSource }) {
                     <p className="eng-title">
                       <button className="lien-source" onClick={() => onSource(e.id)}>{e.objet}</button>
                     </p>
-                    <p className="eng-flow">{e.emetteur_email || '?'} → {e.destinataire_email || '?'}</p>
+                    <p className="eng-flow">{e.emetteur_email || 'expéditeur inconnu'} → {e.destinataire_email || 'destinataire inconnu'}</p>
                   </td>
                   <td>{e.echeance ? fmtDate(e.echeance) : <span className="mono">–</span>}</td>
                   <td><Reli value={e.confiance} /></td>

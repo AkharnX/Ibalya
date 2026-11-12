@@ -140,7 +140,7 @@ export default function Agent() {
           <label>Silence anormal au-delà de (heures)</label>
           <p className="field-hint">
             Valeur de départ, le temps que l'agent apprenne le rythme propre à chaque échange.
-            {heures > 0 && ` Soit environ ${(heures / 24).toFixed(heures % 24 ? 1 : 0)} jour(s).`}
+            {heures > 0 && ` Soit environ ${(heures / 24).toFixed(heures % 24 ? 1 : 0)} jour${heures > 24 ? 's' : ''}.`}
           </p>
           <input type="number" min="1" max="720" value={facts.silence_defaut_heures ?? ''} onChange={setNum('silence_defaut_heures')} />
         </div>
