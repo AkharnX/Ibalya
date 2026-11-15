@@ -71,7 +71,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/me", s.auth(s.me))
 	mux.HandleFunc("POST /api/password", s.auth(s.changerMotDePasse))
 	mux.HandleFunc("GET /api/users", s.auth(s.admin(s.listUsers)))
-	mux.HandleFunc("GET /api/admin/comptes", s.auth(s.admin(s.listUsers)))
+	mux.HandleFunc("GET /api/admin/comptes", s.auth(s.admin(s.listComptesAdmin)))
 	mux.HandleFunc("GET /api/admin/fonctionnalites", s.auth(s.admin(s.catalogueFonctionnalites)))
 
 	// boîtes (espaces) d'un compte : lister, ajouter, basculer, supprimer
@@ -199,6 +199,16 @@ func (s *Server) admin(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	}
+}
+
+// GET /api/admin/comptes — les comptes de connexion et leurs boîtes.
+func (s *Server) listComptesAdmin(w http.ResponseWriter, r *http.Request) {
+	comptes, err := s.Store.ListComptesAdmin(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, comptes)
 }
 
 // GET /api/admin/fonctionnalites — le catalogue du dépôt, tel quel.
