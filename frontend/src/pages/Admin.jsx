@@ -21,9 +21,21 @@ function gras(texte) {
 function Markdown({ texte }) {
   const blocs = []
   let liste = null
+  let table = null
   const fermerListe = () => { if (liste) { blocs.push(liste); liste = null } }
+  const fermerTable = () => { if (table) { blocs.push(table); table = null } }
   ;(texte || '').split('\n').forEach((ligne, i) => {
     const l = ligne.trimEnd()
+    // Tableau : lignes « | a | b | », la deuxième ligne « |---|---| » est le séparateur.
+    if (/^\s*\|.*\|\s*$/.test(l)) {
+      fermerListe()
+      const cellules = l.trim().slice(1, -1).split('|').map((c) => c.trim())
+      if (cellules.every((c) => /^:?-{2,}:?$/.test(c))) return
+      if (!table) table = { entete: cellules, lignes: [] }
+      else table.lignes.push(cellules)
+      return
+    }
+    fermerTable()
     const puce = l.match(/^(\s*)([-*]|\d+\.)\s+(.*)$/)
     if (puce) {
       const ordonnee = /\d+\./.test(puce[2])
@@ -38,9 +50,20 @@ function Markdown({ texte }) {
     blocs.push({ p: l, key: i })
   })
   fermerListe()
+  fermerTable()
   return (
     <div className="catalogue">
       {blocs.map((b, i) => {
+        if (b.entete) {
+          return (
+            <div className="tbl-wrap" key={i}>
+              <table>
+                <thead><tr>{b.entete.map((c, k) => <th key={k}>{c}</th>)}</tr></thead>
+                <tbody>{b.lignes.map((r, k) => <tr key={k}>{r.map((c, m) => <td key={m} className={m === 0 ? 'obj' : 'sub'}>{gras(c)}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+          )
+        }
         if (b.items) {
           const Tag = b.ordonnee ? 'ol' : 'ul'
           return <Tag key={i}>{b.items.map((it, k) => <li key={k}>{gras(it)}</li>)}</Tag>
