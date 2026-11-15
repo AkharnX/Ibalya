@@ -413,3 +413,38 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (*User, error) {
 	}
 	return &u, nil
 }
+
+// CompteAdmin : un compte de connexion et ses boîtes, pour la page Admin. La
+// dernière connexion est celle du COMPTE : c'est elle que la connexion met à
+// jour depuis le passage aux comptes (septembre 2026) ; celle des boîtes
+// (users.derniere_connexion) n'évolue plus et induisait en erreur.
+type CompteAdmin struct {
+	Compte
+	Boites []string `json:"boites"`
+}
+
+// ListComptesAdmin liste tous les comptes avec leurs boîtes, derniers connectés
+// d'abord. Requête ADMIN (bypass RLS), réservée à la page Admin.
+func (s *Store) ListComptesAdmin(ctx context.Context) ([]CompteAdmin, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT c.id, c.email, c.nom, c.actif, c.cree_le, c.derniere_connexion,
+			COALESCE(array_agg(COALESCE(NULLIF(u.libelle,''), u.email, '') ORDER BY u.id)
+			         FILTER (WHERE u.id IS NOT NULL), '{}')
+		FROM comptes c LEFT JOIN users u ON u.compte_id = c.id
+		GROUP BY c.id ORDER BY c.derniere_connexion DESC NULLS LAST, c.email`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []CompteAdmin{}
+	for rows.Next() {
+		var c CompteAdmin
+		if err := rows.Scan(&c.ID, &c.Email, &c.Nom, &c.Actif, &c.CreeLe, &c.DerniereConnexion, &c.Boites); err != nil {
+			return nil, err
+		}
+		if c.Boites == nil {
+			c.Boites = []string{}
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
