@@ -1037,13 +1037,27 @@ func (s *Server) reactivateRule(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"status": "ok"})
 }
 
+// GET /api/persons — les interlocuteurs avec leur activité, et deux
+// drapeaux calculés : automatique (adresse de robot ou de liste) et
+// pertinent (engagement, ou échanges dans les deux sens).
 func (s *Server) listPersons(w http.ResponseWriter, r *http.Request) {
-	persons, err := s.Store.ListPersons(r.Context())
+	persons, err := s.Store.ListPersonsActivite(r.Context())
 	if err != nil {
 		httpError(w, 500, err.Error())
 		return
 	}
-	writeJSON(w, persons)
+	type ligne struct {
+		store.PersonActivite
+		Automatique bool `json:"automatique"`
+		Pertinent   bool `json:"pertinent"`
+	}
+	out := make([]ligne, 0, len(persons))
+	for _, p := range persons {
+		classe, _ := ingest.ClasserExpediteur(store.Message{Sender: p.Email})
+		auto := classe != ingest.ClasseHumain
+		out = append(out, ligne{p, auto, engine.PersonnePertinente(p.Recus, p.Envoyes, p.Engagements, auto)})
+	}
+	writeJSON(w, out)
 }
 
 func (s *Server) patchPerson(w http.ResponseWriter, r *http.Request) {
