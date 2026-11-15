@@ -57,10 +57,24 @@ function Markdown({ texte }) {
 export default function Admin() {
   const [catalogue, setCatalogue] = useState(undefined)
   const [comptes, setComptes] = useState(undefined)
+  const [admin, setAdmin] = useState(undefined) // undefined = inconnu, false = refusé
   useEffect(() => {
-    api('/admin/fonctionnalites').then((r) => setCatalogue(r.markdown || '')).catch((e) => { setCatalogue(''); toast(e.message, true) })
-    api('/admin/comptes').then((r) => setComptes(r || [])).catch((e) => { setComptes([]); toast(e.message, true) })
+    api('/me').then((me) => {
+      setAdmin(!!me.admin)
+      if (!me.admin) return
+      api('/admin/fonctionnalites').then((r) => setCatalogue(r.markdown || '')).catch((e) => { setCatalogue(''); toast(e.message, true) })
+      api('/admin/comptes').then((r) => setComptes(r || [])).catch((e) => { setComptes([]); toast(e.message, true) })
+    }).catch(() => setAdmin(false))
   }, [])
+
+  if (admin === false) {
+    return (
+      <section>
+        <div className="page-head"><div><h1>Admin</h1></div></div>
+        <div className="empty">Cette page est réservée aux administrateurs de l'instance.</div>
+      </section>
+    )
+  }
 
   return (
     <section>
