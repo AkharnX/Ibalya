@@ -197,7 +197,10 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 // GET /api/me
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	if u := utilisateur(r); u != nil {
-		writeJSON(w, u)
+		writeJSON(w, struct {
+			*store.User
+			Admin bool `json:"admin"`
+		}{u, s.estAdmin(r)})
 		return
 	}
 	writeJSON(w, map[string]string{"email": "service", "nom": "Accès service local"})

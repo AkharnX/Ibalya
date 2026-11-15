@@ -8,10 +8,14 @@ import (
 )
 
 type Config struct {
-	DatabaseURL           string
-	AppDatabaseURL        string
-	APIAddr               string
-	AdminToken            string
+	DatabaseURL    string
+	AppDatabaseURL string
+	APIAddr        string
+	AdminToken     string
+	// AdminEmails : comptes qui voient la page Admin (catalogue, liste des comptes).
+	AdminEmails []string
+	// DocsDir : dossier des documents servis tels quels (catalogue des fonctionnalités).
+	DocsDir               string
 	LLMServiceURL         string
 	PublicBaseURL         string
 	GoogleClientID        string
@@ -159,9 +163,22 @@ func Load() Config {
 		FixturePath:      env("FIXTURE_PATH", ""),
 		FrontendDir:      env("FRONTEND_DIR", "frontend/dist"),
 		LandingDir:       env("LANDING_DIR", "landing"),
+		DocsDir:          env("DOCS_DIR", "docs"),
+		AdminEmails:      liste(env("ADMIN_EMAILS", "")),
 		IngestInterval:   envInt("INGEST_INTERVAL_MINUTES", 15),
 		DetectInterval:   envInt("DETECT_INTERVAL_MINUTES", 30),
 		DigestHour:       envInt("DIGEST_HOUR", 7),
 		LectureAuto:      envBool("LECTURE_AUTO", true),
 	}
+}
+
+// liste découpe une variable « a@x.fr, b@y.fr » en adresses normalisées.
+func liste(v string) []string {
+	var out []string
+	for _, e := range strings.Split(v, ",") {
+		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
+			out = append(out, e)
+		}
+	}
+	return out
 }

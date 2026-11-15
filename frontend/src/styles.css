@@ -1349,3 +1349,11 @@ button, .btn, .btn-icon, .chip, .type-pill, .nav-item, .kpi, .queue-row, .chat-c
 /* Décisions repliées sous les trois du jour. */
 .autres-priorites{margin-top:10px;}
 .autres-priorites summary{cursor:pointer;color:var(--primary);font-size:13px;margin-bottom:8px;}
+
+/* Catalogue des fonctionnalités (page Admin). */
+.catalogue h1{font-size:22px;margin:0 0 12px;}
+.catalogue h2{font-size:17px;margin:22px 0 8px;}
+.catalogue h3{font-size:14.5px;margin:16px 0 6px;}
+.catalogue p,.catalogue li{font-size:14px;line-height:1.55;}
+.catalogue ul,.catalogue ol{padding-left:22px;margin:6px 0;}
+.catalogue code{font-family:var(--mono);font-size:12.5px;}

@@ -70,7 +70,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/logout", s.auth(s.logout))
 	mux.HandleFunc("GET /api/me", s.auth(s.me))
 	mux.HandleFunc("POST /api/password", s.auth(s.changerMotDePasse))
-	mux.HandleFunc("GET /api/users", s.auth(s.listUsers))
+	mux.HandleFunc("GET /api/users", s.auth(s.admin(s.listUsers)))
+	mux.HandleFunc("GET /api/admin/comptes", s.auth(s.admin(s.listUsers)))
+	mux.HandleFunc("GET /api/admin/fonctionnalites", s.auth(s.admin(s.catalogueFonctionnalites)))
 
 	// boîtes (espaces) d'un compte : lister, ajouter, basculer, supprimer
 	mux.HandleFunc("GET /api/espaces", s.auth(s.listEspaces))
@@ -172,6 +174,43 @@ func (s *Server) Handler() http.Handler {
 //  1. une session nominative (cookie HttpOnly) — le cas normal du tableau de bord ;
 //  2. le jeton de service, UNIQUEMENT depuis la boucle locale — pour les
 //     scripts (make status, demo.sh) ; jamais joignable depuis Internet.
+//
+// estAdmin : le compte connecté figure dans ADMIN_EMAILS.
+func (s *Server) estAdmin(r *http.Request) bool {
+	c := compteDe(r)
+	if c == nil {
+		return false
+	}
+	email := strings.ToLower(strings.TrimSpace(c.Email))
+	for _, a := range s.Cfg.AdminEmails {
+		if a == email {
+			return true
+		}
+	}
+	return false
+}
+
+// admin réserve une route aux comptes administrateurs. À placer après auth.
+func (s *Server) admin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.estAdmin(r) {
+			httpError(w, 403, "réservé aux administrateurs")
+			return
+		}
+		next(w, r)
+	}
+}
+
+// GET /api/admin/fonctionnalites — le catalogue du dépôt, tel quel.
+func (s *Server) catalogueFonctionnalites(w http.ResponseWriter, r *http.Request) {
+	b, err := os.ReadFile(filepath.Join(s.Cfg.DocsDir, "FONCTIONNALITES.md"))
+	if err != nil {
+		httpError(w, 404, "catalogue introuvable")
+		return
+	}
+	writeJSON(w, map[string]string{"markdown": string(b)})
+}
+
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Chaque requête authentifiée s'exécute dans le tenant de son

@@ -15,6 +15,7 @@ import Agent from './pages/Agent'
 import Chat from './pages/Chat'
 import AssistantConfig from './components/AssistantConfig'
 import Reglages from './pages/Reglages'
+import Admin from './pages/Admin'
 
 function Toaster() {
   const [state, setState] = useState(null)
@@ -124,12 +125,13 @@ const NAV = [
     ['/interlocuteurs', 'Interlocuteurs', null, 'nav-interlocuteurs'],
     ['/reglages', 'Réglages', null, 'nav-reglages'],
     ['/guide/', 'Guide', null, 'action-ouvrir-gmail', true],
+    ['/admin', 'Admin', null, 'nav-reglages', false, 'admin'],
   ]],
 ]
 
 const TITRES = {
   '/': 'Synthèse', '/assistant': 'Assistant', '/miroir': 'Miroir d’activité',
-  '/a-valider': 'À valider', '/suivi': 'Engagements', '/alertes': 'Alertes',
+  '/a-valider': 'À valider', '/suivi': 'Engagements', '/alertes': 'Alertes', '/admin': 'Admin',
   '/liens': 'Dépendances', '/agent': 'Règles métier',
   '/interlocuteurs': 'Interlocuteurs', '/reglages': 'Réglages',
 }
@@ -338,7 +340,7 @@ export default function App() {
       <aside className={'sidebar' + (menuOpen ? ' open' : '')}>
         <div className="sidebar-head"><Logo /></div>
         <nav className="sidebar-nav">
-          {NAV.map(([groupe, items]) => (
+          {NAV.map(([groupe, items]) => [groupe, items.filter((it) => it[5] !== 'admin' || user?.admin)]).map(([groupe, items]) => (
             <div key={groupe}>
               <div className="nav-group">{groupe}</div>
               {items.map(([path, label, countKey, icone, externe]) => (
@@ -403,6 +405,7 @@ export default function App() {
             <Route path="/agent" element={<Agent />} />
             <Route path="/assistant" element={<Chat />} />
             <Route path="/reglages" element={<Reglages />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<Synthese />} />
           </Routes>
         </main>
