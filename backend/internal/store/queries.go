@@ -122,6 +122,41 @@ func (s *Store) UpsertPerson(ctx context.Context, email, name string) (int64, er
 	return id, err
 }
 
+// PersonActivite : un interlocuteur et ce qui s'est passé avec lui, pour que
+// le carnet puisse trier le pertinent du bruit.
+type PersonActivite struct {
+	Person
+	Recus          int        `json:"recus"`
+	Envoyes        int        `json:"envoyes"`
+	Engagements    int        `json:"engagements"`
+	DernierEchange *time.Time `json:"dernier_echange"`
+}
+
+// ListPersonsActivite liste les interlocuteurs avec leurs messages reçus,
+// envoyés, engagements et dernier échange.
+func (s *Store) ListPersonsActivite(ctx context.Context) ([]PersonActivite, error) {
+	rows, err := s.q(ctx).Query(ctx, `SELECT p.id, p.name, p.email, p.type, p.sensitive, p.created_at,
+			(SELECT count(*) FROM messages m WHERE lower(m.sender) = lower(p.email) AND NOT m.outbound),
+			(SELECT count(*) FROM messages m WHERE m.outbound AND lower(p.email) = ANY(SELECT lower(r) FROM unnest(m.recipients) r)),
+			(SELECT count(*) FROM engagements e WHERE e.emetteur_id = p.id OR e.destinataire_id = p.id),
+			(SELECT max(m.sent_at) FROM messages m WHERE lower(m.sender) = lower(p.email) OR lower(p.email) = ANY(SELECT lower(r) FROM unnest(m.recipients) r))
+		FROM persons p ORDER BY p.email`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PersonActivite{}
+	for rows.Next() {
+		var p PersonActivite
+		if err := rows.Scan(&p.ID, &p.Name, &p.Email, &p.Type, &p.Sensitive, &p.CreatedAt,
+			&p.Recus, &p.Envoyes, &p.Engagements, &p.DernierEchange); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) ListPersons(ctx context.Context) ([]Person, error) {
 	rows, err := s.q(ctx).Query(ctx,
 		`SELECT id, name, email, type, sensitive, created_at FROM persons ORDER BY email`)

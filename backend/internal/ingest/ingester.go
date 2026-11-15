@@ -181,13 +181,23 @@ func (ing *Ingester) ScanContexte(ctx context.Context, since time.Time, max int)
 	soi := ing.Store.AdressesSoi(ctx, compteCanal)
 	nom := ing.canal(ctx).Name()
 
+	// Un contact est une personne : on n'ajoute jamais le dirigeant à son
+	// propre carnet, ni les automates (no-reply, notifications, newsletters,
+	// transporteurs), qui noyaient la liste sous des adresses sans intérêt.
+	humain := func(adresse string) bool {
+		a := strings.ToLower(strings.TrimSpace(adresse))
+		if a == "" || soi[a] {
+			return false
+		}
+		classe, _ := ClasserExpediteur(store.Message{Sender: a})
+		return classe == ClasseHumain
+	}
 	for _, cm := range msgs {
-		// On n'ajoute jamais le dirigeant à son propre carnet de contacts.
-		if s := strings.ToLower(strings.TrimSpace(cm.Sender)); s != "" && !soi[s] {
+		if humain(cm.Sender) {
 			ing.Store.UpsertPerson(ctx, cm.Sender, cm.SenderName)
 		}
 		for _, r := range cm.Recipients {
-			if n := strings.ToLower(strings.TrimSpace(r)); n != "" && !soi[n] {
+			if humain(r) {
 				ing.Store.UpsertPerson(ctx, r, "")
 			}
 		}

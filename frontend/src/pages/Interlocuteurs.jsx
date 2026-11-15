@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, toast } from '../api'
+import { fmtDate } from '../components/ui'
 import { SqueletteTable } from '../components/Squelette'
 import FichePersonne from '../components/FichePersonne'
 import SourcePanel from '../components/SourcePanel'
@@ -21,7 +22,7 @@ const TYPES = [
 
 export default function Interlocuteurs() {
   const [rows, setRows] = useState(null)
-  const [filtre, setFiltre] = useState('')
+  const [filtre, setFiltre] = useState('pertinents')
   const [search, setSearch] = useState('')
   const [ficheId, setFicheId] = useState(null)
   const [params, setParams] = useSearchParams()
@@ -37,21 +38,27 @@ export default function Interlocuteurs() {
   const [filId, setFilId] = useState(null)
 
   const load = useCallback(() => {
-    api('/persons').then((r) => setRows(r || [])).catch((e) => { setRows([]); toast(e.message, true) })
+    api('/persons').then((r) => setRows((r || []).slice().sort((a, b) => (b.dernier_echange || '').localeCompare(a.dernier_echange || '')))).catch((e) => { setRows([]); toast(e.message, true) })
   }, [])
   useEffect(load, [load])
 
   const compte = useMemo(() => {
-    const c = { '': (rows || []).length, sensible: 0 }
+    const c = { '': (rows || []).length, sensible: 0, pertinents: 0, automatique: 0 }
     ;(rows || []).forEach((p) => {
       c[p.type] = (c[p.type] || 0) + 1
       if (p.sensitive) c.sensible += 1
+      if (p.pertinent) c.pertinents += 1
+      if (p.automatique) c.automatique += 1
     })
     return c
   }, [rows])
 
   const shown = (rows || []).filter((p) => {
-    const okType = !filtre || (filtre === 'sensible' ? p.sensitive : p.type === filtre)
+    const okType = !filtre
+      || (filtre === 'pertinents' ? p.pertinent
+        : filtre === 'automatique' ? p.automatique
+          : filtre === 'sensible' ? p.sensitive
+            : p.type === filtre && !p.automatique)
     const q = search.trim().toLowerCase()
     const okSearch = !q || [p.name, p.email].filter(Boolean).some((v) => v.toLowerCase().includes(q))
     return okType && okSearch
@@ -63,6 +70,9 @@ export default function Interlocuteurs() {
     email: (p) => (p.email || '').toLowerCase(),
     type: (p) => (p.type || 'autre'),
     sensitive: (p) => (p.sensitive ? 1 : 0),
+    echanges: (p) => (p.recus || 0) + (p.envoyes || 0),
+    engagements: (p) => p.engagements || 0,
+    dernier: (p) => p.dernier_echange || '',
   })
 
   // L'API attend le couple complet : on renvoie toujours type ET sensibilité.
@@ -119,6 +129,10 @@ export default function Interlocuteurs() {
       )}
 
       <div className="chip-row">
+        <button type="button" className={'chip' + (filtre === 'pertinents' ? ' active' : '')} onClick={() => setFiltre('pertinents')}
+          title="Un engagement avec vous, ou des messages dans les deux sens">
+          Pertinents <span className="n">{compte.pertinents || 0}</span>
+        </button>
         <button type="button" className={'chip' + (filtre === '' ? ' active' : '')} onClick={() => setFiltre('')}>
           Tous <span className="n">{compte[''] || 0}</span>
         </button>
@@ -130,7 +144,16 @@ export default function Interlocuteurs() {
         <button type="button" className={'chip' + (filtre === 'sensible' ? ' active' : '')} onClick={() => setFiltre('sensible')}>
           À surveiller <span className="n">{compte.sensible || 0}</span>
         </button>
+        {compte.automatique > 0 && (
+          <button type="button" className={'chip' + (filtre === 'automatique' ? ' active' : '')} onClick={() => setFiltre('automatique')}
+            title="Adresses de robots, notifications, listes : jamais relancées">
+            Automatiques <span className="n">{compte.automatique}</span>
+          </button>
+        )}
       </div>
+      {filtre === 'pertinents' && (
+        <p className="help">Les interlocuteurs avec qui il se passe quelque chose : un engagement, ou des messages dans les deux sens. Les adresses en copie qui n'ont jamais répondu et les automates sont sous « Tous ».</p>
+      )}
 
       <div className="filter-bar">
         <div className="search-wrap">
@@ -139,7 +162,7 @@ export default function Interlocuteurs() {
         </div>
       </div>
 
-      {rows === null ? <SqueletteTable lignes={6} colonnes={4} /> : !shown.length ? (
+      {rows === null ? <SqueletteTable lignes={6} colonnes={7} /> : !shown.length ? (
         <div className="empty">Aucun interlocuteur ne correspond.</div>
       ) : (
         <div className="tbl-wrap">
@@ -147,6 +170,9 @@ export default function Interlocuteurs() {
             <thead><tr>
               <EnteteTri col="nom" tri={tri} trierPar={trierPar}>Nom</EnteteTri>
               <EnteteTri col="email" tri={tri} trierPar={trierPar}>Adresse</EnteteTri>
+              <EnteteTri col="echanges" tri={tri} trierPar={trierPar}>Échanges</EnteteTri>
+              <EnteteTri col="engagements" tri={tri} trierPar={trierPar}>Engagements</EnteteTri>
+              <EnteteTri col="dernier" tri={tri} trierPar={trierPar}>Dernier échange</EnteteTri>
               <EnteteTri col="type" tri={tri} trierPar={trierPar}>Type</EnteteTri>
               <EnteteTri col="sensitive" tri={tri} trierPar={trierPar}>À surveiller</EnteteTri>
             </tr></thead>
@@ -160,6 +186,9 @@ export default function Interlocuteurs() {
                     </button>
                   </td>
                   <td className="sub mono">{p.email}</td>
+                  <td className="sub" title={`${p.recus || 0} reçu${p.recus > 1 ? 's' : ''}, ${p.envoyes || 0} envoyé${p.envoyes > 1 ? 's' : ''}`}>{(p.recus || 0) + (p.envoyes || 0) ? `${p.recus || 0} reçu${p.recus > 1 ? 's' : ''} · ${p.envoyes || 0} envoyé${p.envoyes > 1 ? 's' : ''}` : '–'}</td>
+                  <td className="sub">{p.engagements || '–'}</td>
+                  <td className="sub">{p.dernier_echange ? fmtDate(p.dernier_echange) : '–'}</td>
                   <td>
                     <select value={p.type || 'autre'} onChange={(e) => mettreAJour(p, { type: e.target.value })}
                       aria-label={`Type de ${p.email}`}>
