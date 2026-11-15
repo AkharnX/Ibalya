@@ -1,91 +1,108 @@
 # Ibalya : catalogue des fonctionnalités
 
-État au 15 novembre 2026. Ce fichier est la référence : la page Admin de l'application l'affiche tel quel.
+État au 15 novembre 2026. Ce fichier est la référence : la page Admin de l'application l'affiche tel quel. Colonne « Où » : l'écran ou la commande qui porte la fonctionnalité.
 
-## Ce que fait Ibalya en une phrase
+## Raccordement et lecture
 
-Il lit la boîte mail d'un dirigeant de PME en lecture seule, repère les engagements pris ou reçus, surveille leurs échéances, et prépare les relances. Rien ne part sans un clic du dirigeant.
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Gmail | Raccordement par autorisation Google, sans mot de passe | Réglages, Connexion |
+| Outlook | Raccordement par autorisation Microsoft | Réglages, Connexion |
+| IMAP | Toute boîte avec identifiants, chiffrés au repos, connexion testable avant enregistrement | Réglages, Connexion |
+| Lecture seule | L'agent ne modifie, ne déplace et ne supprime jamais un message | Tous les canaux |
+| Lecture initiale | 30 jours d'historique à l'onboarding, puis lecture toutes les 15 minutes | Onboarding, planificateur |
+| Plusieurs boîtes | Une boîte par espace, cloisonnée en base, bascule de l'une à l'autre, vue combinée pour la synthèse et les brouillons | Réglages, Mes boîtes |
+| Mes autres adresses | Alias et adresses perso du dirigeant, pour ne pas le prendre pour un tiers | Réglages, Votre identité |
 
-## 1. Raccordement et lecture
+## Pré-filtre avant toute analyse
 
-- **Trois canaux** : Gmail (OAuth Google), Outlook (OAuth Microsoft), toute boîte IMAP (identifiants chiffrés au repos). Connexion testable avant enregistrement.
-- **Lecture seule** : l'agent ne modifie, ne déplace et ne supprime jamais un message.
-- **Lecture initiale de 30 jours** à l'onboarding, puis lecture automatique toutes les 15 minutes.
-- **Plusieurs boîtes par compte** : chaque boîte est un espace isolé (cloisonnement en base), on bascule de l'une à l'autre ; vue combinée « toutes les boîtes » pour la synthèse et les brouillons.
-- **Mes autres adresses** : alias et adresses perso du dirigeant, pour ne pas le prendre pour un tiers.
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Classe d'expéditeur | Humain, automatique, publicitaire ou sécurité, décidée avant l'extraction ; seuls les humains partent au modèle | Ingestion |
+| Signaux d'automate | En-têtes d'envoi automatique, adresses de robots, domaines de transporteurs, places de marché, hébergeurs et outils de gestion, phrases « message automatique », en-tête de désinscription | Ingestion |
+| Hameçonnage | Gabarits d'urgence artificielle écartés et jamais proposés à la relance | Ingestion, Miroir |
+| Catégories confidentielles | Santé, ressources humaines, juridique : contenu non conservé, seuls l'expéditeur et la date restent | Réglages, Confidentialité |
+| Règles apprises | Ignorer un interlocuteur ou un domaine, exclure un fil | Règles métier |
+| Rattrapage | Reclasser une boîte déjà lue avec les règles actuelles, en simulation puis en application | Commande `-reappliquer-prefiltre` |
 
-## 2. Pré-filtre avant toute analyse
+## Extraction des engagements
 
-- **Classe d'expéditeur** décidée avant l'extraction : humain, automatique, publicitaire, sécurité. Seuls les humains partent au modèle.
-- Signaux : en-têtes d'envoi automatique (Auto-Submitted, Precedence, Feedback-ID), adresses de robots, domaines de transporteurs, places de marché, hébergeurs et outils de gestion, phrases « message automatique », en-tête de désinscription.
-- **Hameçonnage** : les gabarits d'urgence artificielle (connexion suspecte, compte suspendu, « sous 24 h ») sont écartés et jamais proposés à la relance.
-- **Catégories confidentielles** (santé, ressources humaines, juridique) : le contenu n'est pas conservé, seuls l'expéditeur et la date restent.
-- **Règles apprises** : ignorer un interlocuteur ou un domaine, fil exclu par le dirigeant.
-- **Rattrapage** des boîtes déjà lues avec les règles actuelles (commande `-reappliquer-prefiltre`), en simulation puis en application.
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Extraction | Qui promet quoi, à qui, pour quand ; type (devis, livraison, relance, prise de contact, rendez-vous, facturation, autre) ; échéance explicite ou inférée | Engagements |
+| Pièces jointes | Texte extrait, OCR au besoin, jamais le fichier conservé | Ingestion |
+| Un engagement par promesse | Une reformulation du même engagement dans le fil devient une mention de l'existant, qui hérite d'une échéance explicite | Ingestion |
+| Sens | « Je dois », « on me doit », « pour information » ; le « pour information » ne produit ni retard ni alerte | Engagements, Synthèse |
+| Fiabilité | Score calculé sur des signaux vérifiables, l'avis du modèle pesant un dixième ; trois niveaux : élevée, à vérifier, incertaine ; rien de proactif sous le seuil de publication (0,6 par défaut) | Engagements, Réglages |
+| Signaux de suivi | Avancement, livré, relance, confirmation, abandon, déduits des messages suivants | Ingestion |
+| Échéance inférée | Toujours confirmée par le dirigeant avant une alerte | Engagements |
+| Libellés | Dates au format français dans les objets, libellés relatifs justes (« demain », « en retard de 6 jours ») | Partout |
 
-## 3. Extraction des engagements
+## Détecteurs (toutes les 30 minutes)
 
-- **Qui promet quoi, à qui, pour quand** : émetteur, destinataire, objet, type (devis, livraison, relance, prise de contact, rendez-vous, facturation, autre), échéance explicite ou inférée.
-- **Pièces jointes** : texte extrait, OCR au besoin, jamais le fichier conservé.
-- **Un engagement par promesse dans un fil** : une reformulation du même engagement devient une mention de l'existant, qui hérite d'une échéance explicite.
-- **Sens** : « je dois », « on me doit », « pour information » (deux tiers entre eux, le dirigeant en copie). Le « pour information » ne produit ni retard ni alerte.
-- **Fiabilité** calculée à partir de signaux vérifiables (échéance explicite, formulation engageante, fil conversationnel, interlocuteur connu, historique de corrections), l'avis du modèle ne pesant qu'un dixième. Affichée en trois niveaux : élevée, à vérifier, incertaine. Rien n'est présenté proactivement sous le seuil de publication (0,6 par défaut, réglable).
-- **Signaux sur un engagement ouvert** : avancement, livré, relance, confirmation, abandon, déduits des messages suivants.
-- **Échéance inférée à confirmer** avant toute alerte.
-- **Dates dans les objets** au format français ; libellés relatifs justes (« demain », « en retard de 6 jours »).
+| Détecteur | Déclenchement | Où |
+|---|---|---|
+| Échéance à risque | Échéance dans les 7 jours sans signal de progression | Alertes |
+| Silence anormal | Fil sans réponse au-delà de deux fois son rythme habituel (96 h par défaut), dans les deux sens | Alertes |
+| Promesse menacée | Un retard amont confirmé met en danger une promesse aval dans les 7 jours, sur lien de dépendance confirmé seulement | Alertes |
+| Engagement orphelin | Rien ne s'est passé 5 jours après la promesse | Alertes |
+| Surcharge | 5 échéances ou plus la même semaine | Alertes |
+| C'est fait ? | Retard de 7 jours sans activité, ou fil qui annonce la fin (livré, payé, facture jointe) ; réponse en un clic | Alertes, Synthèse |
+| Une alerte par engagement | Rafraîchie à chaque cycle, jamais ressuscitée si elle a été écartée | Alertes |
 
-## 4. Détecteurs (toutes les 30 minutes)
+## Dépendances
 
-1. **Échéance à risque** : échéance dans les 7 jours sans signal de progression.
-2. **Silence anormal** : fil sans réponse au-delà de deux fois son rythme habituel (96 h par défaut), dans les deux sens (« on attend ma réponse », « je n'ai pas de retour »).
-3. **Promesse menacée** : un retard amont confirmé met en danger une promesse aval dans les 7 jours (uniquement sur un lien de dépendance confirmé).
-4. **Engagement orphelin** : rien ne s'est passé 5 jours après la promesse.
-5. **Surcharge** : 5 échéances ou plus la même semaine.
-6. **C'est fait ?** : retard de 7 jours sans activité, ou fil qui annonce la fin (livré, payé, facture jointe). Réponse en un clic : « Oui, c'est fait » ou « Toujours en cours ».
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Candidats | Même fil ou mêmes interlocuteurs, échéances rapprochées, types qui peuvent se bloquer, jugés par le modèle avec les décisions passées en exemples | Cycle |
+| Rétention | Seuil 0,7, cinq propositions par cycle au plus, confiance affichée | Dépendances |
+| Décision | Confirmer, rejeter, ou rejeter tous les candidats ; seuls les liens confirmés alimentent « promesse menacée » | Dépendances |
 
-Une seule alerte vivante par engagement, rafraîchie à chaque cycle, jamais ressuscitée si elle a été écartée.
+## Livrables
 
-## 5. Dépendances
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Synthèse | Compteurs, « vos 3 décisions du jour » classées par enjeu, le reste replié, alertes en cours, vue par catégorie | Synthèse |
+| Miroir d'activité | Ce que l'agent a compris des 30 derniers jours, messages écartés par classe, corrections d'un geste | Miroir d'activité |
+| Capsule | Activité, rythme, clients récurrents, fournisseurs critiques, interlocuteurs clés, déduits puis corrigés ; intentions du dirigeant | Règles métier |
+| Digest | Quotidien ou hebdomadaire, dans l'application et par email si demandé, avec les brouillons d'action | Réglages, Comportement |
+| Brouillons de relance | Rédigés à partir du fil d'origine, signés avec l'identité du dirigeant, relus par le modèle ; un seul par fil et par destinataire | À valider |
+| Validation | Chaque brouillon se relit, se modifie, s'envoie ou se rejette ; aucun envoi automatique | À valider |
+| Assistant | Questions en langage naturel sur l'activité, réponses sourcées sur les messages, historique effaçable | Assistant |
+| Recherche | Clients, engagements, fils | Barre de recherche |
 
-- **Candidats** par heuristique (même fil ou mêmes interlocuteurs, échéances rapprochées, types qui peuvent se bloquer), jugés par le modèle avec les décisions passées du dirigeant en exemples.
-- **Seuil 0,7**, au plus cinq propositions par cycle, confiance affichée.
-- **Le dirigeant tranche** : confirmer, rejeter, ou rejeter tous les candidats. Seuls les liens confirmés alimentent la détection des promesses menacées.
+## Apprentissage et corrections
 
-## 6. Livrables
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Corrections d'un geste | Pas un engagement, mal résumé, abandonné, priorité haute, ne plus rien extraire de cet interlocuteur ; chaque geste devient une règle lisible et révocable | Engagements, Règles métier |
+| Verdict d'extraction | Juste, faux, imprécis, distinct du statut, pour mesurer la qualité | Engagements |
+| Règles métier | Délai d'alerte, silence par défaut, priorités du moment, modifiables et réversibles | Règles métier |
+| Interlocuteurs | Types interne, client, fournisseur ; typage automatique par domaine et listes de la capsule ; application à tout un domaine ; vigilance accrue ; fiche par interlocuteur | Interlocuteurs |
+| Indicateurs de réussite | Précision estimée, faux positifs, actions validées, corrections par semaine, exclusion pré-filtre, incidents critiques | Réglages |
 
-- **Synthèse** : compteurs (actifs, en retard, retard probable, à valider, messages lus), « Vos 3 décisions du jour » classées par enjeu, le reste replié, alertes en cours, vue par catégorie.
-- **Miroir d'activité** : ce que l'agent a compris des 30 derniers jours (engagements en cours, fils sans réponse, messages écartés par classe), à corriger d'un geste.
-- **Capsule** : activité, rythme habituel, clients récurrents, fournisseurs critiques, interlocuteurs clés, déduits puis corrigés ; intentions du dirigeant (priorités, dossiers à surveiller).
-- **Digest** quotidien ou hebdomadaire, dans l'application et par email si demandé, avec les brouillons d'action.
-- **Brouillons de relance** rédigés à partir du fil d'origine, signés avec l'identité du dirigeant, relus par le modèle avant proposition ; un seul brouillon par fil et par destinataire.
-- **À valider** : chaque brouillon se relit, se modifie, s'envoie ou se rejette. Aucun envoi automatique.
-- **Assistant** : questions en langage naturel sur l'activité (« qui dois-je relancer cette semaine ? »), réponses sourcées sur les messages, historique effaçable.
-- **Recherche** : clients, engagements, fils.
+## Sécurité et confidentialité
 
-## 7. Apprentissage et corrections
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Comptes | Nominatifs, session par cookie HttpOnly, changement de mot de passe qui ferme les autres sessions, tentatives de connexion limitées | Connexion, Réglages |
+| Cloisonnement | Par boîte, en base (sécurité au niveau des lignes), rôle applicatif distinct du rôle d'administration | Base de données |
+| Secrets | Jetons OAuth et mots de passe IMAP chiffrés au repos | Base de données |
+| Journal d'audit | Chaque lecture, détection, brouillon, envoi, correction et connexion, horodaté et attribué | Réglages, Journal |
+| Hébergement | Union européenne, service d'inférence jamais exposé, fournisseur d'IA européen qui n'entraîne pas ses modèles sur les données | Infrastructure |
+| En-têtes de sécurité | Politique de contenu, HSTS, pas d'inclusion dans un cadre | Site et application |
+| Page Admin | Catalogue des fonctionnalités et liste des comptes, réservée aux adresses d'administration | Admin |
 
-- **Corrections d'un geste** sur chaque engagement : pas un engagement, mal résumé, abandonné, priorité haute pour cet interlocuteur, ne plus rien extraire de cet interlocuteur. Chaque geste devient une règle lisible et révocable.
-- **Verdict d'extraction** (juste, faux, imprécis) distinct du statut, pour mesurer la qualité.
-- **Règles métier** : délai d'alerte, silence par défaut, priorités du moment, modifiables et réversibles.
-- **Interlocuteurs** : typage interne, client, fournisseur ; automatique par le domaine de l'entreprise et les listes de la capsule ; application à tout un domaine en un geste ; vigilance accrue par interlocuteur ; fiche par interlocuteur (où en est-on avec lui).
-- **Indicateurs de réussite** : précision estimée, faux positifs, actions validées, corrections par semaine, exclusion pré-filtre, incidents critiques.
+## Exploitation
 
-## 8. Sécurité et confidentialité
-
-- **Comptes nominatifs**, sessions par cookie HttpOnly, changement de mot de passe dans l'application (ferme les autres sessions), limitation des tentatives de connexion.
-- **Cloisonnement par boîte** en base (politiques de sécurité au niveau des lignes), rôle applicatif distinct du rôle d'administration.
-- **Jetons OAuth et mots de passe IMAP chiffrés au repos**.
-- **Journal d'audit** : chaque lecture, détection, brouillon, envoi, correction et connexion est horodaté et attribué.
-- **Hébergement en Union européenne**, service d'inférence jamais exposé, fournisseur d'IA européen qui n'entraîne pas ses modèles sur les données.
-- **En-têtes de sécurité** sur le site et l'application (politique de contenu, HSTS, pas d'inclusion dans un cadre).
-
-## 9. Exploitation
-
-- **Déploiement continu** : chaque merge sur la branche principale reconstruit, redémarre et vérifie la santé du service, avec retour arrière automatique en cas d'échec.
-- **Sauvegardes** de la base chaque nuit, vérification hebdomadaire.
-- **Évaluation** de l'extraction sur un corpus étiqueté (commande `evaluer`), recalibrage de la fiabilité (`recalibrer`), purge des catégories confidentielles sur l'existant (`confidentialite`).
-- **Mode démonstration** sur un scénario fourni (Menuiserie Dupont), sans boîte réelle.
-- **Site vitrine** avec six simulateurs de retour sur investissement, hypothèses modifiables, aucun chiffre inventé.
+| Fonctionnalité | Ce que ça fait | Où |
+|---|---|---|
+| Déploiement continu | Chaque merge reconstruit, redémarre et vérifie la santé, avec retour arrière automatique en cas d'échec | GitHub Actions |
+| Sauvegardes | Base sauvegardée chaque nuit, vérifiée chaque semaine | Serveur |
+| Évaluation | Extraction mesurée sur un corpus étiqueté, recalibrage de la fiabilité | Commandes `evaluer`, `recalibrer` |
+| Purge confidentielle | Application des catégories confidentielles à l'existant | Commande `confidentialite` |
+| Démonstration | Scénario fourni (Menuiserie Dupont), sans boîte réelle | Mode fixture |
+| Site vitrine | Six simulateurs de retour sur investissement, hypothèses modifiables, aucun chiffre inventé | ibalya.com |
 
 ## Architecture
 
@@ -93,4 +110,11 @@ Pas de microservices : un monolithe modulaire en Go (ingestion, extraction, dét
 
 ## Hors périmètre à ce jour
 
-Connecteurs vers les outils de gestion (facturation, paiement, transporteurs), résumé du matin, vue par dossier, travail en équipe, WhatsApp et SMS, application Google en production (validation en cours).
+| Chantier | Pourquoi pas encore |
+|---|---|
+| Connecteurs vers les outils de gestion (facturation, paiement, transporteurs) | Clôture automatique de ce qui est livré ou payé, à concevoir |
+| Résumé du matin en cinq lignes | Non commencé |
+| Vue par dossier ou par interlocuteur | Non commencé |
+| Travail en équipe (partager un engagement) | Non commencé |
+| WhatsApp et SMS | Non commencé |
+| Application Google en production | Dossier de validation côté Google à monter |

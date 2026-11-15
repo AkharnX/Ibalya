@@ -1357,3 +1357,6 @@ button, .btn, .btn-icon, .chip, .type-pill, .nav-item, .kpi, .queue-row, .chat-c
 .catalogue p,.catalogue li{font-size:14px;line-height:1.55;}
 .catalogue ul,.catalogue ol{padding-left:22px;margin:6px 0;}
 .catalogue code{font-family:var(--mono);font-size:12.5px;}
+
+.catalogue .tbl-wrap{margin:8px 0 18px;}
+.catalogue td.sub{white-space:normal;}
