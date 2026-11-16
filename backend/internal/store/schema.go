@@ -423,6 +423,10 @@ CREATE TABLE IF NOT EXISTS comptes (
   cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
   derniere_connexion TIMESTAMPTZ
 );
+-- Dernière requête authentifiée du compte (mise à jour au plus une fois par
+-- minute) : la session durant 30 jours, « dernière connexion » ne dit pas
+-- quand le compte a utilisé l'application pour la dernière fois.
+ALTER TABLE comptes ADD COLUMN IF NOT EXISTS derniere_activite TIMESTAMPTZ;
 
 -- Un espace (ligne users) appartient à un compte et porte un libellé lisible.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS compte_id BIGINT REFERENCES comptes(id);

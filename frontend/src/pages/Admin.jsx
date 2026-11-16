@@ -104,7 +104,7 @@ export default function Admin() {
       <div className="page-head">
         <div>
           <h1>Admin</h1>
-          <p>Les comptes de l'instance avec leurs boîtes (dernière connexion du compte), et le catalogue des fonctionnalités tel qu'il est dans le dépôt.</p>
+          <p>Les comptes de l'instance avec leurs boîtes, et le catalogue des fonctionnalités tel qu'il est dans le dépôt. La connexion est l'ouverture de session (valable 30 jours) ; l'activité, la dernière fois que le compte a utilisé l'application.</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export default function Admin() {
         <div className="tbl-wrap">
           <table>
             <thead>
-              <tr><th>Compte</th><th>Adresse</th><th>Boîtes</th><th>Créé le</th><th>Dernière connexion</th><th>État</th></tr>
+              <tr><th>Compte</th><th>Adresse</th><th>Boîtes</th><th>Créé le</th><th>Dernière connexion</th><th>Dernière activité</th><th>État</th></tr>
             </thead>
             <tbody>
               {comptes.map((u) => (
@@ -124,6 +124,7 @@ export default function Admin() {
                   <td className="sub">{(u.boites || []).length ? u.boites.join(', ') : 'aucune'}</td>
                   <td className="sub">{fmtDT(u.cree_le)}</td>
                   <td className="sub">{u.derniere_connexion ? fmtDT(u.derniere_connexion) : 'jamais'}</td>
+                  <td className="sub">{u.derniere_activite ? fmtDT(u.derniere_activite) : 'jamais'}</td>
                   <td className="sub">{u.actif ? 'actif' : 'désactivé'}</td>
                 </tr>
               ))}
