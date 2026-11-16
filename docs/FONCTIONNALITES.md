@@ -91,7 +91,7 @@
 | Journal d'audit | Chaque lecture, détection, brouillon, envoi, correction et connexion, horodaté et attribué | Réglages, Journal |
 | Hébergement | Union européenne, service d'inférence jamais exposé, fournisseur d'IA européen qui n'entraîne pas ses modèles sur les données | Infrastructure |
 | En-têtes de sécurité | Politique de contenu, HSTS, pas d'inclusion dans un cadre | Site et application |
-| Page Admin | Catalogue des fonctionnalités et liste des comptes, réservée aux adresses d'administration | Admin |
+| Page Admin | Catalogue des fonctionnalités et liste des comptes avec dernière connexion et dernière activité, réservée aux adresses d'administration | Admin |
 
 ## Exploitation
 

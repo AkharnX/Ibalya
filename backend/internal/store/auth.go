@@ -38,6 +38,10 @@ type Compte struct {
 	Actif             bool       `json:"actif"`
 	CreeLe            time.Time  `json:"cree_le"`
 	DerniereConnexion *time.Time `json:"derniere_connexion"`
+	// DerniereActivite : dernière requête authentifiée, à la minute près. Une
+	// session dure 30 jours, donc revenir dans l'application ne crée pas de
+	// connexion ; c'est ce champ qui dit « il a utilisé l'app hier soir ».
+	DerniereActivite *time.Time `json:"derniere_activite"`
 }
 
 // SessionInfo résout une session : quel compte est connecté, et quel espace il
@@ -183,7 +187,7 @@ func (s *Store) CreateSession(ctx context.Context, compteID, espaceActifID int64
 		VALUES ($1,$2,$3,$4)`, hashSession(token), compteID, espaceActifID, expire); err != nil {
 		return "", time.Time{}, err
 	}
-	_, _ = s.Pool.Exec(ctx, `UPDATE comptes SET derniere_connexion=now() WHERE id=$1`, compteID)
+	_, _ = s.Pool.Exec(ctx, `UPDATE comptes SET derniere_connexion=now(), derniere_activite=now() WHERE id=$1`, compteID)
 	// purge opportuniste des sessions expirées
 	_, _ = s.Pool.Exec(ctx, `DELETE FROM sessions WHERE expire_le < now()`)
 	return token, expire, nil
@@ -197,17 +201,38 @@ func (s *Store) UserBySession(ctx context.Context, token string) (*SessionInfo, 
 	var c Compte
 	err := s.Pool.QueryRow(ctx, `SELECT
 			u.id, COALESCE(u.email,''), u.nom, u.libelle, u.actif, u.cree_le, u.derniere_connexion,
-			c.id, c.email, c.nom, c.actif, c.cree_le, c.derniere_connexion
+			c.id, c.email, c.nom, c.actif, c.cree_le, c.derniere_connexion, c.derniere_activite
 		FROM sessions s
 		JOIN comptes c ON c.id = s.compte_id
 		JOIN users   u ON u.id = s.user_id
 		WHERE s.token_hash=$1 AND s.expire_le > now() AND u.actif AND c.actif`, hashSession(token)).
 		Scan(&u.ID, &u.Email, &u.Nom, &u.Libelle, &u.Actif, &u.CreeLe, &u.DerniereConnexion,
-			&c.ID, &c.Email, &c.Nom, &c.Actif, &c.CreeLe, &c.DerniereConnexion)
+			&c.ID, &c.Email, &c.Nom, &c.Actif, &c.CreeLe, &c.DerniereConnexion, &c.DerniereActivite)
 	if err != nil {
 		return nil, err
 	}
+	s.toucherActivite(ctx, &c)
 	return &SessionInfo{Compte: &c, Espace: &u}, nil
+}
+
+// IntervalleActivite : granularité de comptes.derniere_activite. En deçà, une
+// requête authentifiée ne réécrit pas la ligne (une page de l'application en
+// déclenche plusieurs par seconde).
+const IntervalleActivite = time.Minute
+
+// toucherActivite date la dernière requête authentifiée du compte, au plus une
+// fois par IntervalleActivite. Le filtre est côté base pour rester juste quand
+// plusieurs instances ou requêtes parallèles servent le même compte. Un échec
+// n'est pas une erreur : la session reste valide.
+func (s *Store) toucherActivite(ctx context.Context, c *Compte) {
+	if c.DerniereActivite != nil && time.Since(*c.DerniereActivite) < IntervalleActivite {
+		return
+	}
+	maintenant := time.Now()
+	_, _ = s.Pool.Exec(ctx, `UPDATE comptes SET derniere_activite=now()
+		WHERE id=$1 AND (derniere_activite IS NULL OR derniere_activite < now() - $2::interval)`,
+		c.ID, IntervalleActivite)
+	c.DerniereActivite = &maintenant
 }
 
 // SetEspaceActif bascule la session sur un autre espace. La sous-requête garantit
@@ -417,20 +442,24 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (*User, error) {
 // CompteAdmin : un compte de connexion et ses boîtes, pour la page Admin. La
 // dernière connexion est celle du COMPTE : c'est elle que la connexion met à
 // jour depuis le passage aux comptes (septembre 2026) ; celle des boîtes
-// (users.derniere_connexion) n'évolue plus et induisait en erreur.
+// (users.derniere_connexion) n'évolue plus et induisait en erreur. La dernière
+// activité (toute requête authentifiée) dit quand le compte a réellement
+// utilisé l'application, ce que la connexion ne dit pas avec des sessions de
+// 30 jours.
 type CompteAdmin struct {
 	Compte
 	Boites []string `json:"boites"`
 }
 
-// ListComptesAdmin liste tous les comptes avec leurs boîtes, derniers connectés
+// ListComptesAdmin liste tous les comptes avec leurs boîtes, derniers actifs
 // d'abord. Requête ADMIN (bypass RLS), réservée à la page Admin.
 func (s *Store) ListComptesAdmin(ctx context.Context) ([]CompteAdmin, error) {
-	rows, err := s.Pool.Query(ctx, `SELECT c.id, c.email, c.nom, c.actif, c.cree_le, c.derniere_connexion,
+	rows, err := s.Pool.Query(ctx, `SELECT c.id, c.email, c.nom, c.actif, c.cree_le, c.derniere_connexion, c.derniere_activite,
 			COALESCE(array_agg(COALESCE(NULLIF(u.libelle,''), u.email, '') ORDER BY u.id)
 			         FILTER (WHERE u.id IS NOT NULL), '{}')
 		FROM comptes c LEFT JOIN users u ON u.compte_id = c.id
-		GROUP BY c.id ORDER BY c.derniere_connexion DESC NULLS LAST, c.email`)
+		GROUP BY c.id
+		ORDER BY COALESCE(c.derniere_activite, c.derniere_connexion) DESC NULLS LAST, c.email`)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +467,7 @@ func (s *Store) ListComptesAdmin(ctx context.Context) ([]CompteAdmin, error) {
 	out := []CompteAdmin{}
 	for rows.Next() {
 		var c CompteAdmin
-		if err := rows.Scan(&c.ID, &c.Email, &c.Nom, &c.Actif, &c.CreeLe, &c.DerniereConnexion, &c.Boites); err != nil {
+		if err := rows.Scan(&c.ID, &c.Email, &c.Nom, &c.Actif, &c.CreeLe, &c.DerniereConnexion, &c.DerniereActivite, &c.Boites); err != nil {
 			return nil, err
 		}
 		if c.Boites == nil {

@@ -423,6 +423,16 @@ CREATE TABLE IF NOT EXISTS comptes (
   cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
   derniere_connexion TIMESTAMPTZ
 );
+-- Dernière requête authentifiée du compte (mise à jour au plus une fois par
+-- minute) : la session durant 30 jours, « dernière connexion » ne dit pas
+-- quand le compte a utilisé l'application pour la dernière fois.
+ALTER TABLE comptes ADD COLUMN IF NOT EXISTS derniere_activite TIMESTAMPTZ;
+-- Remplissage initial depuis le journal d'audit : la dernière action tracée du
+-- compte (connexion, correction, réglage), faute de mieux avant que la colonne
+-- vive. Idempotent (seulement si encore vide).
+UPDATE comptes c SET derniere_activite = GREATEST(c.derniere_connexion,
+    (SELECT max(a.ts) FROM audit_log a WHERE a.actor = c.email))
+  WHERE c.derniere_activite IS NULL;
 
 -- Un espace (ligne users) appartient à un compte et porte un libellé lisible.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS compte_id BIGINT REFERENCES comptes(id);
