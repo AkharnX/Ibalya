@@ -598,6 +598,7 @@ Attendre que `.deploy-stamp` égale le commit de merge, `systemctl is-active iba
 
 ```bash
 cd /home/akharn/agnet-ia && set -a && . ./.env && set +a
+./backend/bin/ibalya -reappliquer-prefiltre -appliquer            # d'abord : les motifs doivent être ceux des règles actuelles
 ./backend/bin/ibalya -indexer-pieces-jointes -jours 30            # simulation : rien n'est écrit
 ./backend/bin/ibalya -indexer-pieces-jointes -jours 30 -appliquer
 docker exec ibalya-db psql -U ibalya -d ibalya -Atc "select u.email, count(*) from attachments a join messages m on m.id=a.message_id join users u on u.id=m.user_id where m.status='excluded' group by 1"
