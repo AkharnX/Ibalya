@@ -107,20 +107,24 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 				_, _ = ing.Store.UpsertPerson(ctx, r, "")
 			}
 		}
+		// Les pièces jointes suivent le sort du message, mais pas tout ou rien :
+		// les factures et relevés arrivent de robots que le pré-filtre écarte, et
+		// l'utilisateur veut les retrouver. Les messages écartés gardent leurs
+		// documents en texte seul (sans OCR, sans image) ; les confidentiels et
+		// les hameçonnages n'ont rien, la pièce n'est pas ouverte (ModePour).
 		if categorie != "" {
 			raison := "categorie_sensible_" + string(categorie)
 			st.Excluded++
 			st.Sensibles++
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &raison)
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &raison))
 		} else if reason := ExclusionReason(m, thread.Excluded, rules); reason != "" {
 			st.Excluded++
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &reason)
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &reason))
 		} else {
 			st.Kept++
-			// Pièces jointes seulement sur les messages conservés : inutile d'extraire
-			// (et de stocker) le texte d'un devis attaché à une newsletter écartée, et
-			// on respecte la même règle de confidentialité que le corps.
-			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments)
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModeComplete)
 		}
 	}
 
@@ -131,38 +135,50 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 	return st, nil
 }
 
+// maxPiecesParMessage : garde-fou, aligné sur le connecteur Gmail.
+const maxPiecesParMessage = 8
+
 // enregistrerPiecesJointes extrait le texte des pièces jointes d'un message et le
-// stocke (jamais les octets). Les images et PDF scannés sont marqués besoin_ocr
-// pour la phase OCR. Une pièce illisible est simplement ignorée : le corps du mail
-// reste analysé normalement.
-func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int64, pjs []channel.PieceJointe) {
+// stocke (jamais les octets), selon le mode (voir ModePieces). Un document est
+// enregistré même sans texte, pour rester trouvable par son nom ; une image ne
+// l'est que si l'OCR en tire du texte. Une pièce illisible n'empêche rien : le
+// corps du mail reste traité normalement. Retourne le nombre de lignes écrites.
+func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int64, pjs []channel.PieceJointe, mode ModePieces) int {
+	ecrites := 0
 	for _, pj := range pjs {
-		if !piecejointe.Traitable(pj.Nom, pj.Type) {
+		if ecrites >= maxPiecesParMessage {
+			break
+		}
+		traiter, ocr := planPiece(mode, pj.Nom, pj.Type)
+		if !traiter {
 			continue
 		}
+		texte := ""
 		r, err := piecejointe.Extraire(pj.Nom, pj.Type, pj.Donnees)
-		if err != nil {
-			continue
-		}
-		texte := r.Texte
-		// Image ou PDF scanné : pas de couche texte -> OCR (les octets sont encore
-		// là, on ne les persiste jamais). Sans OCR disponible, on laisse tomber.
-		if r.BesoinOCR && ing.OCR != nil {
-			if t, err := ing.OCR(ctx, pj.Nom, pj.Type, pj.Donnees); err == nil {
-				texte = strings.TrimSpace(t)
-			} else {
-				log.Printf("ingest: OCR %q: %v", pj.Nom, err)
+		if err == nil {
+			texte = r.Texte
+			// Image ou PDF scanné : pas de couche texte -> OCR si le mode le permet
+			// (les octets sont encore là, on ne les persiste jamais).
+			if r.BesoinOCR && ocr && ing.OCR != nil {
+				if t, err := ing.OCR(ctx, pj.Nom, pj.Type, pj.Donnees); err == nil {
+					texte = strings.TrimSpace(t)
+				} else {
+					log.Printf("ingest: OCR %q: %v", pj.Nom, err)
+				}
 			}
 		}
-		if texte == "" {
-			continue // rien d'exploitable : on n'encombre pas la base
+		if texte == "" && !garderSansTexte(pj.Nom, pj.Type) {
+			continue
 		}
 		if err := ing.Store.InsertAttachment(ctx, messageID, store.Attachment{
 			Nom: pj.Nom, TypeMime: pj.Type, Texte: texte, BesoinOCR: false,
 		}); err != nil {
 			log.Printf("ingest: pièce jointe %q: %v", pj.Nom, err)
+			continue
 		}
+		ecrites++
 	}
+	return ecrites
 }
 
 // ScanContexte lit l'historique en MÉTADONNÉES seules (expéditeur,
