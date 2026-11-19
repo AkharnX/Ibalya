@@ -60,6 +60,8 @@ le mail d'origine pour aller la télécharger dans sa messagerie.
 - Les pièces jointes des messages automatiques et des newsletters sont
   indexées au fil de l'eau, et les 30 derniers jours des boîtes déjà raccordées
   sont rattrapés une fois au déploiement.
+- Les boîtes **Gmail et IMAP** sont couvertes : le connecteur IMAP apprend à
+  récupérer les pièces jointes, qu'il ignorait jusqu'ici.
 
 ## Non-objectifs
 
@@ -68,6 +70,10 @@ le mail d'origine pour aller la télécharger dans sa messagerie.
   fichier » de la page Données.
 - Reconnaître qu'une pièce est une facture, en extraire montant, fournisseur ou
   numéro, produire un export comptable. Ce sera un autre chantier, s'il a lieu.
+- **Outlook (Microsoft Graph)** : aucune boîte Outlook n'est raccordée en
+  production. Le connecteur reste sans pièces jointes ; le texte public le dit,
+  et la recherche d'une boîte Outlook renvoie une liste vide avec un libellé
+  explicite. Ce sera fait au premier utilisateur Outlook.
 - Remonter au-delà de 30 jours. Ibrahim prévoit des formules avec plus de
   profondeur plus tard ; la profondeur est un paramètre, pas une architecture.
 - Modifier l'extraction d'engagements : les messages écartés restent écartés,
@@ -132,6 +138,10 @@ Par Ibrahim :
   depuis Ibalya.
 - Profondeur : 30 jours pour l'instant.
 
+Par Ibrahim, sur ma recommandation, après relecture : **Gmail et IMAP
+maintenant, Outlook plus tard**. Le testeur le plus actif est en IMAP ;
+personne n'est en Outlook.
+
 Par moi, à corriger si besoin (Ibrahim les a lues sans objection) :
 
 - **Jamais pour `categorie_sensible_*` ni `securite_suspect`** : rien n'est
@@ -152,6 +162,24 @@ Par moi, à corriger si besoin (Ibrahim les a lues sans objection) :
   message. Pas de dépendance nouvelle.
 
 ## Comportement attendu
+
+### Connecteur IMAP : récupération des pièces jointes
+
+Le connecteur IMAP remplit `Message.Attachments` comme Gmail le fait déjà :
+
+- seules les parties qui portent un nom de fichier (disposition `attachment`,
+  ou paramètre `name`/`filename`) sont des pièces jointes ; les parties
+  `inline` sans nom (images de signature, HTML) ne le sont pas ;
+- une pièce plus grande que `channel.TailleMaxPJ` (12 Mo) n'est pas
+  téléchargée ;
+- le téléchargement des pièces ne doit pas faire échouer la lecture du message
+  : une partie illisible est ignorée, le message est ingéré sans elle ;
+- le format rendu à l'ingestion est strictement celui de Gmail (`Nom`, `Type`,
+  `Donnees`), pour que tout le reste du pipeline soit commun.
+
+Conséquence assumée : les messages **conservés** des boîtes IMAP auront
+désormais leurs pièces (et l'OCR des images, comme Gmail), ce qui n'existait pas.
+C'est le comportement attendu depuis le début, pas un effet de bord.
 
 ### À l'ingestion
 
@@ -276,7 +304,9 @@ mémorisé pendant la session. Esquisse :
   `enregistrerPiecesJointes` ou une fonction sœur) et le nom de la colonne
   `tsvector`.
 - La taille des lots et la gestion du quota lors du rattrapage (30 jours de
-  messages complets par boîte, une fois).
+  messages complets par boîte, une fois). En IMAP, préférer récupérer la
+  structure du message (BODYSTRUCTURE) puis les seules parties utiles, plutôt
+  que le message complet, si la bibliothèque le permet.
 - L'ordre des résultats quand une pièce correspond à la fois par le texte et
   par l'expéditeur, et le libellé exact de l'extrait.
 - Le style des chips et des lignes de résultat, dans la charte existante
