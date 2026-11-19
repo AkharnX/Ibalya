@@ -11,7 +11,7 @@
         "services-techniques@mairie-valbonne.fr"
       ],
       "sent_at": "-15d",
-      "body": "Bonjour, je vous confirme la pose des 12 fenêtres de l'école le 20/08/2026. L'équipe sera sur place dès 8h. Cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme la pose des 12 fenêtres de l'école le 23/11/2026. L'équipe sera sur place dès 8h. Cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-102",
@@ -35,7 +35,19 @@
         "dirigeant@menuiserie-dupont.fr"
       ],
       "sent_at": "-13d",
-      "body": "Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le 13/08/2026. Cordialement, le service commandes."
+      "body": "Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le 16/11/2026. Cordialement, le service commandes.",
+      "attachments": [
+        {
+          "nom": "bon-de-commande-12-vitrages.pdf",
+          "type": "application/pdf",
+          "contenu_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2NiA+PgpzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoQm9uIGRlIGNvbW1hbmRlIDEyIHZpdHJhZ2VzIGRvdWJsZXMpIFRqIEVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PCAvVHlwZSAvRm9udCAvU3VidHlwZSAvVHlwZTEgL0Jhc2VGb250IC9IZWx2ZXRpY2EgPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKMDAwMDAwMDI0MSAwMDAwMCBuIAowMDAwMDAwMzU3IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKNDI3CiUlRU9GCg=="
+        },
+        {
+          "nom": "logo.png",
+          "type": "image/png",
+          "contenu_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      ]
     },
     {
       "external_id": "fx-104",
@@ -119,7 +131,7 @@
         "sophie.laurent@hotmail.fr"
       ],
       "sent_at": "-2d",
-      "body": "Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le 22/08/2026 à 10h pour prendre les mesures. Bien cordialement, Marc Dupont"
+      "body": "Bonjour Mme Laurent, avec plaisir. Je vous propose un rendez-vous sur place le 25/11/2026 à 10h pour prendre les mesures. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-109",
@@ -132,7 +144,14 @@
       ],
       "sent_at": "-5d",
       "list_unsubscribe": true,
-      "body": "Découvrez nos promotions sur les charnières et poignées !"
+      "body": "Découvrez nos promotions sur les charnières et poignées !",
+      "attachments": [
+        {
+          "nom": "facture-QP-2026-10.pdf",
+          "type": "application/pdf",
+          "contenu_base64": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA3MCA+PgpzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoRmFjdHVyZSBRUC0yMDI2LTEwIFRvdGFsIFRUQyAxNDgsMDAgRVVSKSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM2MSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQzMQolJUVPRgo="
+        }
+      ]
     },
     {
       "external_id": "fx-200",
@@ -144,7 +163,7 @@
         "client0@exemple.fr"
       ],
       "sent_at": "-4d",
-      "body": "Bonjour, je vous confirme l'intervention : pose des volets roulants le 17/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : pose des volets roulants le 23/11/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-201",
@@ -156,7 +175,7 @@
         "client1@exemple.fr"
       ],
       "sent_at": "-3d",
-      "body": "Bonjour, je vous confirme l'intervention : vernissage de l'escalier le 18/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : vernissage de l'escalier le 24/11/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-202",
@@ -168,7 +187,7 @@
         "client2@exemple.fr"
       ],
       "sent_at": "-2d",
-      "body": "Bonjour, je vous confirme l'intervention : installation des placards le 19/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : installation des placards le 25/11/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-203",
@@ -180,7 +199,7 @@
         "client3@exemple.fr"
       ],
       "sent_at": "-1d",
-      "body": "Bonjour, je vous confirme l'intervention : envoi de la facture définitive le 20/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : envoi de la facture définitive le 26/11/2026. Bien cordialement, Marc Dupont"
     },
     {
       "external_id": "fx-204",
@@ -192,7 +211,7 @@
         "client4@exemple.fr"
       ],
       "sent_at": "-0d",
-      "body": "Bonjour, je vous confirme l'intervention : pose du portail coulissant le 21/08/2026. Bien cordialement, Marc Dupont"
+      "body": "Bonjour, je vous confirme l'intervention : pose du portail coulissant le 27/11/2026. Bien cordialement, Marc Dupont"
     }
   ]
 }

@@ -2,6 +2,7 @@ package channel
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -28,6 +29,13 @@ type fixtureFile struct {
 		SentAt     string   `json:"sent_at"` // RFC3339, ou "-Nd" = il y a N jours
 		Body       string   `json:"body"`
 		Unsub      bool     `json:"list_unsubscribe"`
+		// Pièces jointes de démonstration, octets en base64 (jamais en prod :
+		// les fixtures ne sortent pas du dépôt).
+		Attachments []struct {
+			Nom           string `json:"nom"`
+			Type          string `json:"type"`
+			ContenuBase64 string `json:"contenu_base64"`
+		} `json:"attachments"`
 	} `json:"messages"`
 }
 
@@ -78,7 +86,14 @@ func (f *Fixture) FetchSince(ctx context.Context, since time.Time, max int) ([]M
 		if sentAt.Before(since) {
 			continue
 		}
+		var pjs []PieceJointe
+		for _, a := range m.Attachments {
+			if b, err := base64.StdEncoding.DecodeString(a.ContenuBase64); err == nil {
+				pjs = append(pjs, PieceJointe{Nom: a.Nom, Type: a.Type, Donnees: b})
+			}
+		}
 		out = append(out, Message{
+			Attachments:      pjs,
 			ExternalID:       m.ExternalID,
 			ThreadExternalID: m.ThreadID,
 			Subject:          m.Subject,
@@ -102,6 +117,7 @@ func (f *Fixture) FetchMetaSince(ctx context.Context, since time.Time, max int) 
 	out, err := f.FetchSince(ctx, since, max)
 	for i := range out {
 		out[i].Body = ""
+		out[i].Attachments = nil
 	}
 	return out, err
 }
