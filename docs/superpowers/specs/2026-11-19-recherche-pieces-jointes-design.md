@@ -32,6 +32,14 @@ le mail d'origine pour aller la télécharger dans sa messagerie.
 - La lecture complète couvre 30 jours à l'onboarding, puis 2 jours glissants à
   chaque cycle ; les messages déjà connus sont ignorés (`!inserted`), donc une
   simple relecture ne rattraperait pas les pièces jointes manquantes.
+- **Seul le connecteur Gmail récupère les pièces jointes** (`piecesJointesGmail`).
+  Les connecteurs Outlook (Microsoft Graph) et IMAP renvoient des messages sans
+  pièces, même conservés : aucune pièce n'a jamais été enregistrée pour ces
+  boîtes. En production, la boîte la plus fournie d'un testeur externe est en
+  IMAP (697 messages) ; aucune boîte Outlook n'est raccordée.
+- Les messages purgés par la commande `confidentialite` portent bien un motif
+  `categorie_sensible_*` (`cmd/confidentialite/main.go`) : la règle « rien »
+  par motif les couvre.
 - Les motifs d'exclusion en production : `expediteur_automatique`,
   `newsletter`, `domaine_exclu`, `corps_vide`, `securite_suspect`,
   `categorie_sensible_sante`, `categorie_sensible_rh` ; dans le code aussi
@@ -156,8 +164,10 @@ Pour chaque message nouvellement inséré :
 | Écarté : `categorie_sensible_*`, `securite_suspect` | Rien. La pièce n'est pas ouverte. |
 
 Une fonction pure (`motif` → `aucune | texte_seul | complete`) porte cette
-table et est testée unitairement, y compris pour un motif inconnu (défaut :
-`texte_seul`, jamais `complete`).
+table et est testée unitairement. Tout motif commençant par `categorie_sensible_`
+ou `securite_` donne `aucune` (règle de préfixe, pour qu'un motif ajouté plus
+tard ne fasse pas sauter l'anti-objectif) ; un motif inconnu donne `texte_seul`,
+jamais `complete`.
 
 Une pièce dont le texte extrait est vide n'est pas enregistrée (règle actuelle
 conservée) ; conséquence : une facture scannée sans couche texte, envoyée par
@@ -172,7 +182,11 @@ gabarit que le rattrapage du pré-filtre :
   N derniers jours via le canal de la boîte (`FetchSince`), et pour chaque
   message **déjà connu** (même canal, même identifiant externe) **sans aucune
   pièce enregistrée**, applique la table ci-dessus selon son statut et son
-  motif actuels ;
+  motif actuels, **plafonnée à `texte_seul`** : le rattrapage ne fait jamais
+  d'OCR, même pour un message conservé. Sinon chaque lancement renverrait à
+  Mistral les images de signature des messages conservés dont l'OCR n'avait
+  rien donné, et la commande serait idempotente en écriture mais pas en coût.
+  La matière cherchée (factures de robots) est de toute façon dans le texte ;
 - sans `-appliquer`, affiche seulement ce qui serait indexé (messages
   concernés, pièces, par motif) ; avec, écrit et affiche le bilan ;
 - idempotente : relancée, elle ne réécrit rien (les messages ayant déjà une
@@ -185,7 +199,12 @@ bilan est consigné dans le journal d'audit (`agent`, `indexation_pieces_jointes
 ### Recherche
 
 `GET /api/recherche/pieces-jointes?q=` (au moins trois caractères, sinon
-liste vide), dans le tenant de la session. Correspondance :
+liste vide), dans le tenant de la session. **Sans borne de date** : la
+recherche porte sur tout ce qui est indexé. Les « 30 jours » sont la profondeur
+du rattrapage initial et de la lecture à l'onboarding ; l'index grandit ensuite
+au fil de l'eau et rien ne le purge (aucune rétention sur les messages
+aujourd'hui). Une borne à 30 jours ferait disparaître la facture d'octobre fin
+novembre, au moment précis où l'on fait sa comptabilité du mois. Correspondance :
 
 - plein texte français (`websearch_to_tsquery('french', q)`) sur nom et texte
   de la pièce, via une colonne `tsvector` générée et un index GIN ;
@@ -226,7 +245,7 @@ mémorisé pendant la session. Esquisse :
   résout, sinon la ligne reste informative (expéditeur, objet, date suffisent
   à retrouver le mail à la main).
 - Libellé du type : PDF, Word, Excel, Image, Fichier, déduit du type MIME.
-- Vide : « Aucune pièce jointe pour « … » dans les 30 derniers jours. »
+- Vide : « Aucune pièce jointe pour « … ». »
 - Le placeholder du champ devient « Rechercher un client, un engagement, une
   pièce jointe… ».
 
@@ -247,6 +266,11 @@ mémorisé pendant la session. Esquisse :
   les trouve. C'est le seul critère qui compte.
 
 ## Laissé au constructeur
+
+- La colonne `tsvector` générée est plafonnée par PostgreSQL à 1 Mo : le texte
+  extrait d'un PDF de 12 Mo peut dépasser. L'expression générée tronque le
+  texte (`left(texte, N)`), N à choisir ; l'INSERT et la migration au démarrage
+  ne doivent jamais échouer pour une pièce trop longue.
 
 - Le découpage exact des fonctions dans `ingest` (passer un mode à
   `enregistrerPiecesJointes` ou une fonction sœur) et le nom de la colonne
