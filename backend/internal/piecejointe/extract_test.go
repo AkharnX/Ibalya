@@ -36,7 +36,7 @@ func TestTraitableEtFamille(t *testing.T) {
 		{"scan.png", "image/png", true},
 		{"contrat.docx", "", true},
 		{"prix.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", true},
-		{"note.txt", "text/plain", false},
+		{"note.txt", "text/plain", true}, // document texte depuis la recherche de pièces jointes
 		{"archive.zip", "application/zip", false},
 		{"", "application/pdf", true}, // type MIME seul
 	}
@@ -114,7 +114,44 @@ func TestBornes(t *testing.T) {
 	if _, err := Extraire("x.pdf", "application/pdf", gros); err == nil {
 		t.Error("pièce trop grosse doit échouer")
 	}
-	if _, err := Extraire("x.txt", "text/plain", []byte("coucou")); err == nil {
+	if _, err := Extraire("x.dwg", "application/octet-stream", []byte("coucou")); err == nil {
 		t.Error("type non géré doit échouer")
+	}
+}
+
+func TestDocumentImageEtLibelle(t *testing.T) {
+	cas := []struct {
+		nom, mime string
+		doc, img  bool
+		lib       string
+	}{
+		{"facture.pdf", "application/pdf", true, false, "PDF"},
+		{"devis.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", true, false, "Word"},
+		{"releve.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", true, false, "Excel"},
+		{"pres.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", true, false, "PowerPoint"},
+		{"notes.txt", "text/plain", true, false, "Texte"},
+		{"export.csv", "text/csv", true, false, "Texte"},
+		{"scan.jpg", "image/jpeg", false, true, "Image"},
+		{"plan.dwg", "application/octet-stream", false, false, ""},
+		{"archive.zip", "application/zip", false, false, ""},
+		{"sans-extension", "application/pdf", true, false, "PDF"},
+	}
+	for _, c := range cas {
+		if Document(c.nom, c.mime) != c.doc || Image(c.nom, c.mime) != c.img || Libelle(c.nom, c.mime) != c.lib {
+			t.Errorf("%s : doc=%v img=%v lib=%q", c.nom, Document(c.nom, c.mime), Image(c.nom, c.mime), Libelle(c.nom, c.mime))
+		}
+	}
+}
+
+func TestExtrairePptxEtTexte(t *testing.T) {
+	r, err := Extraire("pres.pptx", "", zipAvec(t, map[string]string{
+		"ppt/slides/slide1.xml": `<p:sld><p:txBody><a:p><a:r><a:t>Budget 2026</a:t></a:r></a:p></p:txBody></p:sld>`,
+	}))
+	if err != nil || !strings.Contains(r.Texte, "Budget 2026") || r.Methode != "pptx" {
+		t.Fatalf("pptx : %+v %v", r, err)
+	}
+	r, err = Extraire("notes.txt", "text/plain", []byte("Rendez-vous lundi\r\n\r\n\r\n\r\nà 9 h"))
+	if err != nil || r.Texte != "Rendez-vous lundi\n\nà 9 h" || r.Methode != "texte" {
+		t.Fatalf("txt : %+v %v", r, err)
 	}
 }
