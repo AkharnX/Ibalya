@@ -1,6 +1,6 @@
 # Ibalya : catalogue des fonctionnalités
 
-État au 15 novembre 2026. Ce fichier est la référence : la page Admin de l'application l'affiche tel quel. Colonne « Où » : l'écran ou la commande qui porte la fonctionnalité.
+État au 20 novembre 2026. Ce fichier est la référence : la page Admin de l'application l'affiche tel quel. Colonne « Où » : l'écran ou la commande qui porte la fonctionnalité.
 
 ## Raccordement et lecture
 
@@ -30,7 +30,7 @@
 | Fonctionnalité | Ce que ça fait | Où |
 |---|---|---|
 | Extraction | Qui promet quoi, à qui, pour quand ; type (devis, livraison, relance, prise de contact, rendez-vous, facturation, autre) ; échéance explicite ou inférée | Engagements |
-| Pièces jointes | Texte extrait, OCR au besoin, jamais le fichier conservé | Ingestion |
+| Pièces jointes | Texte extrait des documents (PDF, Word, Excel, PowerPoint, texte), OCR au besoin pour les messages conservés, jamais le fichier conservé ; les documents des messages écartés sont indexés en texte seul, sans OCR | Ingestion |
 | Un engagement par promesse | Une reformulation du même engagement dans le fil devient une mention de l'existant, qui hérite d'une échéance explicite | Ingestion |
 | Sens | « Je dois », « on me doit », « pour information » ; le « pour information » ne produit ni retard ni alerte | Engagements, Synthèse |
 | Fiabilité | Score calculé sur des signaux vérifiables, l'avis du modèle pesant un dixième ; trois niveaux : élevée, à vérifier, incertaine ; rien de proactif sous le seuil de publication (0,6 par défaut) | Engagements, Réglages |
@@ -70,6 +70,7 @@
 | Validation | Chaque brouillon se relit, se modifie, s'envoie ou se rejette ; aucun envoi automatique | À valider |
 | Assistant | Questions en langage naturel sur l'activité, réponses sourcées sur les messages, historique effaçable | Assistant |
 | Recherche | Clients, engagements, fils | Barre de recherche |
+| Recherche de pièces jointes | Mode « Pièces jointes » de la barre : par nom, contenu, expéditeur ou objet, résultats datés avec extrait et lien vers le mail d'origine (Gmail, IMAP) | Barre de recherche |
 
 ## Apprentissage et corrections
 
@@ -101,6 +102,7 @@
 | Sauvegardes | Base sauvegardée chaque nuit, vérifiée chaque semaine | Serveur |
 | Évaluation | Extraction mesurée sur un corpus étiqueté, recalibrage de la fiabilité | Commandes `evaluer`, `recalibrer` |
 | Purge confidentielle | Application des catégories confidentielles à l'existant | Commande `confidentialite` |
+| Indexation des pièces | Rattrapage des documents joints des N derniers jours d'une boîte, simulation puis application, jamais d'OCR | Commande `-indexer-pieces-jointes` |
 | Démonstration | Scénario fourni (Menuiserie Dupont), sans boîte réelle | Mode fixture |
 | Site vitrine | Six simulateurs de retour sur investissement, hypothèses modifiables, aucun chiffre inventé | ibalya.com |
 
@@ -118,3 +120,4 @@ Pas de microservices : un monolithe modulaire en Go (ingestion, extraction, dét
 | Travail en équipe (partager un engagement) | Non commencé |
 | WhatsApp et SMS | Non commencé |
 | Application Google en production | Dossier de validation côté Google à monter |
+| Pièces jointes des boîtes Outlook | Connecteur Microsoft Graph sans lecture des pièces, au premier utilisateur Outlook |

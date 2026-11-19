@@ -37,7 +37,7 @@
 <main id="main" class="lp-doc">
   <article class="lp-doc-int">
     <h1>Données et sécurité</h1>
-    <p class="lp-doc-chapeau">Ibalya lit vos emails. Voici exactement ce qu'il lit, ce qu'il garde, qui y touche, et comment lui retirer l'accès. Tout ce qui est écrit ici correspond au fonctionnement du logiciel à la date du 15 novembre 2026.</p>
+    <p class="lp-doc-chapeau">Ibalya lit vos emails. Voici exactement ce qu'il lit, ce qu'il garde, qui y touche, et comment lui retirer l'accès. Tout ce qui est écrit ici correspond au fonctionnement du logiciel à la date du 20 novembre 2026.</p>
 
     <h2>Ce qu'Ibalya lit</h2>
     <p>Les messages de la boîte que vous raccordez, et seulement elle. Au raccordement, les 30 derniers jours ; ensuite, les nouveaux messages toutes les 15 minutes. Pour chaque message : expéditeur, destinataires, date, objet, texte du corps, et le texte des pièces jointes.</p>
@@ -45,10 +45,10 @@
 
     <h2>Ce qui n'est jamais analysé</h2>
     <ul>
-      <li><strong>Les emails automatiques</strong> (notifications, suivis de colis, factures d'opérateurs, newsletters) et <strong>les tentatives d'hameçonnage</strong> sont écartés avant toute analyse, et jamais transmis au modèle de langage.</li>
+      <li><strong>Les emails automatiques</strong> (notifications, suivis de colis, factures d'opérateurs, newsletters) et <strong>les tentatives d'hameçonnage</strong> sont écartés avant toute analyse, et jamais transmis au modèle de langage. Leurs documents joints (factures, relevés, bons de commande) sont lus en texte, sans reconnaissance optique et sans passage par le modèle, pour que vous puissiez les retrouver depuis la recherche. Les catégories confidentielles et les hameçonnages en restent exclus, pièces jointes comprises.</li>
       <li><strong>Les catégories confidentielles</strong> que vous cochez (santé, ressources humaines, juridique) : le contenu de ces messages n'est pas conservé du tout. Seuls l'expéditeur et la date restent, pour garder trace de l'échange.</li>
       <li><strong>Les fils et interlocuteurs que vous excluez</strong> d'un geste dans l'application.</li>
-      <li><strong>Les fichiers joints</strong> : Ibalya en extrait le texte et ne conserve jamais le fichier lui-même.</li>
+      <li><strong>Les fichiers joints</strong> : Ibalya en extrait le texte (PDF, Word, Excel, PowerPoint, texte ; une image seulement si elle contient un document lisible) et ne conserve jamais le fichier lui-même. Pour le récupérer, vous retournez dans votre messagerie. Les boîtes Outlook n'ont pas encore cette lecture des pièces jointes.</li>
     </ul>
 
     <h2>Ce qui est conservé, et combien de temps</h2>
