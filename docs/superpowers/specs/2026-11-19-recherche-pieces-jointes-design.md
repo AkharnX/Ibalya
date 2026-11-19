@@ -58,9 +58,10 @@ messagerie.
 - Depuis la barre de recherche, en mode « Pièces jointes », retrouver une pièce
   par un mot de son nom, de son contenu, de l'expéditeur ou de l'objet du
   message, et voir sa date.
-- **Toute pièce jointe est retrouvable au moins par son nom**, quel que soit
-  son type (archive, plan, image, présentation…), même quand aucun texte n'en
-  est extrait.
+- **Tout document est retrouvable au moins par son nom** : PDF, Word, Excel,
+  PowerPoint, texte et CSV, même quand aucun texte n'en est extrait (PDF
+  scanné sans OCR). Les photos ne sont retenues que si elles sont des documents
+  photographiés, c'est-à-dire si l'OCR en tire du texte.
 - Chaque résultat mène au mail d'origine dans la messagerie de l'utilisateur
   (Gmail, Outlook) ; faute de lien (IMAP), il donne de quoi le retrouver à la
   main.
@@ -167,12 +168,14 @@ Par moi, à corriger si besoin (Ibrahim les a lues sans objection) :
 - **Recherche plein texte PostgreSQL** (`tsvector` en français, index GIN) sur
   nom + texte, complétée d'une correspondance sur l'expéditeur et l'objet du
   message. Pas de dépendance nouvelle.
-- **Chaque pièce nommée est enregistrée, texte ou pas.** La règle actuelle
-  « texte vide, pas de ligne » disparaît : nom et type sont toujours stockés,
-  le texte reste vide quand le type n'est pas extractible (zip, dwg, pptx…) ou
-  quand l'OCR n'a rien donné. Une pièce retrouvée par son nom seul vaut mieux
-  qu'une pièce invisible. `TexteAttachments` ignore les lignes sans texte, donc
-  l'extraction d'engagements ne change pas.
+- **Périmètre des pièces (décision d'Ibrahim) : les documents, pas les
+  photos.** Un document (PDF, DOCX, XLSX, PPTX, TXT, CSV) est toujours
+  enregistré avec son nom et son type, texte extrait ou pas : un PDF scanné
+  sans OCR reste trouvable par son nom. Une image n'est enregistrée que si
+  l'OCR en tire du texte (document photographié, reçu scanné) ; une photo sans
+  texte n'est pas une pièce qu'on cherche. Les autres types (archives, plans,
+  exécutables) sont ignorés. `TexteAttachments` ignore les lignes sans texte,
+  donc l'extraction d'engagements ne change pas.
 
 ## Comportement attendu
 
@@ -182,7 +185,8 @@ Le connecteur IMAP remplit `Message.Attachments` comme Gmail le fait déjà :
 
 - seules les parties qui portent un nom de fichier (disposition `attachment`,
   ou paramètre `name`/`filename`) sont des pièces jointes ; les parties
-  `inline` sans nom (images de signature, HTML) ne le sont pas ;
+  `inline` sans nom (images de signature, HTML) ne le sont pas ; les types hors
+  périmètre (archives, exécutables…) ne sont pas téléchargés ;
 - une pièce plus grande que `channel.TailleMaxPJ` (12 Mo) n'est pas
   téléchargée ;
 - le téléchargement des pièces ne doit pas faire échouer la lecture du message
@@ -200,8 +204,8 @@ Pour chaque message nouvellement inséré :
 
 | Issue du pré-filtre | Pièces jointes |
 |---|---|
-| Conservé (analysé) | Mode **complet** : nom et type de toute pièce nommée ; texte des PDF, DOCX, XLSX ; OCR des images et PDF scannés si disponible. |
-| Écarté : `expediteur_automatique`, `newsletter`, `publicitaire`, `domaine_exclu`, `fil_exclu`, `regle_apprise`, `corps_vide` | Mode **texte seul** : nom et type de toute pièce nommée ; texte des PDF, DOCX, XLSX avec couche texte ; pas d'OCR. Les `image/*` de ces messages sont ignorées entièrement (logos et pixels de suivi, pas des documents). |
+| Conservé (analysé) | Mode **complet** : tout document (nom, type, texte s'il y en a) ; OCR des PDF scannés et des images si disponible ; une image n'est gardée que si l'OCR en tire du texte. |
+| Écarté : `expediteur_automatique`, `newsletter`, `publicitaire`, `domaine_exclu`, `fil_exclu`, `regle_apprise`, `corps_vide` | Mode **texte seul** : tout document (nom, type, texte de la couche texte s'il y en a) ; pas d'OCR ; les images sont ignorées entièrement (sans OCR, impossible de distinguer un reçu photographié d'un logo). |
 | Écarté : `categorie_sensible_*`, `securite_suspect` | Rien. La pièce n'est pas ouverte. |
 
 Une fonction pure (`motif` → `aucune | texte_seul | complete`) porte cette
@@ -210,7 +214,7 @@ ou `securite_` donne `aucune` (règle de préfixe, pour qu'un motif ajouté plus
 tard ne fasse pas sauter l'anti-objectif) ; un motif inconnu donne `texte_seul`,
 jamais `complete`.
 
-Une pièce dont le texte est vide est enregistrée quand même, avec son nom et
+Un document dont le texte est vide est enregistré quand même, avec son nom et
 son type, et reste trouvable par son nom. Une facture scannée sans couche
 texte envoyée par un robot n'est donc trouvable que par son nom de fichier,
 l'expéditeur ou l'objet. Accepté.
@@ -223,7 +227,7 @@ gabarit que le rattrapage du pré-filtre :
 - pour chaque boîte active avec canal, dans son tenant, relit les messages des
   N derniers jours via le canal de la boîte (`FetchSince`), et pour chaque
   message **déjà connu** (même canal, même identifiant externe) **sans aucune
-  pièce enregistrée** et dont la lecture rapporte au moins une pièce nommée,
+  pièce enregistrée** et dont la lecture rapporte au moins un document,
   applique la table ci-dessus selon son statut et son
   motif actuels, **plafonnée à `texte_seul`** : le rattrapage ne fait jamais
   d'OCR, même pour un message conservé. Sinon chaque lancement renverrait à
@@ -287,8 +291,8 @@ mémorisé pendant la session. Esquisse :
   (IMAP), il ouvre le fil dans le Miroir (`/miroir?fil=`) si le fil s'y
   résout, sinon la ligne reste informative (expéditeur, objet, date suffisent
   à retrouver le mail à la main).
-- Libellé du type : PDF, Word, Excel, Image, Archive, Fichier, déduit du type
-  MIME puis de l'extension du nom.
+- Libellé du type : PDF, Word, Excel, PowerPoint, Texte, Image, déduit du
+  type MIME puis de l'extension du nom.
 - Vide : « Aucune pièce jointe pour « … ». »
 - Le placeholder du champ devient « Rechercher un client, un engagement, une
   pièce jointe… ».
@@ -328,6 +332,9 @@ mémorisé pendant la session. Esquisse :
 - Le style des chips et des lignes de résultat, dans la charte existante
   (plat, sans badge clignotant).
 - La fixture de test : le canal fixture ne porte pas de pièces jointes
-  aujourd'hui ; en ajouter une ou deux (un PDF avec texte, une image) à un
-  message automatique et à un message humain pour tester les trois lignes de
-  la table.
+  aujourd'hui ; en ajouter (un PDF avec texte, un PDF scanné, une image, un
+  zip) à un message automatique et à un message humain pour tester les lignes
+  de la table et le périmètre des types.
+- Le périmètre « document » dans `piecejointe` : PPTX, TXT et CSV ne sont pas
+  extraits aujourd'hui ; décider s'ils sont extraits (PPTX via le même lecteur
+  zip/XML que DOCX) ou seulement enregistrés par nom dans cette PR.
