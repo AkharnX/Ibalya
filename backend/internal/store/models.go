@@ -49,6 +49,22 @@ type Attachment struct {
 	BesoinOCR bool   `json:"besoin_ocr"`
 }
 
+// PieceTrouvee : un résultat de la recherche de pièces jointes, avec de quoi
+// retrouver le mail d'origine (message, fil, identifiant chez le fournisseur).
+type PieceTrouvee struct {
+	ID         int64     `json:"id"`
+	Nom        string    `json:"nom"`
+	TypeMime   string    `json:"type_mime"`
+	MessageID  int64     `json:"message_id"`
+	ThreadID   int64     `json:"fil_id"`
+	ExternalID string    `json:"external_id"`
+	Channel    string    `json:"channel"`
+	Expediteur string    `json:"expediteur"`
+	Objet      string    `json:"objet"`
+	Date       time.Time `json:"date"`
+	Extrait    string    `json:"extrait"`
+}
+
 type Engagement struct {
 	ID                int64      `json:"id"`
 	EmetteurID        *int64     `json:"emetteur_id"`

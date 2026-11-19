@@ -93,6 +93,12 @@ CREATE TABLE IF NOT EXISTS attachments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
+-- Recherche plein texte des pièces jointes (nom + texte, français). Un tsvector
+-- plafonne à 1 Mo : on tronque le texte, un PDF de 12 Mo peut dépasser et
+-- l'insertion ne doit jamais échouer pour ça.
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS recherche tsvector
+  GENERATED ALWAYS AS (to_tsvector('french', left(nom, 200) || ' ' || left(texte, 200000))) STORED;
+CREATE INDEX IF NOT EXISTS idx_attachments_recherche ON attachments USING GIN (recherche);
 
 CREATE TABLE IF NOT EXISTS engagements (
   id BIGSERIAL PRIMARY KEY,
