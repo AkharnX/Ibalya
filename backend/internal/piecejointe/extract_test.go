@@ -155,3 +155,21 @@ func TestExtrairePptxEtTexte(t *testing.T) {
 		t.Fatalf("txt : %+v %v", r, err)
 	}
 }
+
+// Exports Excel « Texte Unicode » (UTF-16 avec BOM) et CSV Windows-1252 : le
+// texte doit être lisible, sans octet nul et avec ses accents.
+func TestExtraireTexteEncodages(t *testing.T) {
+	utf16 := []byte{0xFF, 0xFE}
+	for _, r := range "Relevé de compte" {
+		utf16 = append(utf16, byte(r), byte(r>>8))
+	}
+	r, err := Extraire("export.txt", "text/plain", utf16)
+	if err != nil || r.Texte != "Relevé de compte" {
+		t.Fatalf("utf-16 : %q %v", r.Texte, err)
+	}
+	cp1252 := []byte("Relev\xe9 de compte;Montant\r\n12;3,50 \x80")
+	r, err = Extraire("export.csv", "text/csv", cp1252)
+	if err != nil || !strings.HasPrefix(r.Texte, "Relevé de compte;Montant") || !strings.HasSuffix(r.Texte, "3,50 €") {
+		t.Fatalf("cp1252 : %q %v", r.Texte, err)
+	}
+}

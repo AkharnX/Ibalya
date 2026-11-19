@@ -238,6 +238,9 @@ func (s *Store) SetThreadRhythm(ctx context.Context, id int64, hours float64) er
 // base : un texte mal encodé — à la source ou coupé en chemin — ferait rejeter
 // l'insertion entière, et le message serait perdu sans que personne le voie.
 func valideUTF8(s string) string {
+	// Un octet nul est de l'UTF-8 valide, mais PostgreSQL le refuse dans un
+	// TEXT : un .txt en UTF-16 mal annoncé ferait échouer l'insertion.
+	s = strings.ReplaceAll(s, "\x00", "")
 	if utf8.ValidString(s) {
 		return s
 	}

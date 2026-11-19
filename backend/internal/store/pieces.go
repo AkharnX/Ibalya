@@ -10,6 +10,9 @@ import (
 // correspondance simple sur le nom, l'expéditeur et l'objet du message porteur
 // (« Qonto » même si le PDF ne reprend pas le nom). Sans borne de date : la
 // facture d'octobre doit se trouver fin novembre. Les plus récentes d'abord.
+// Les messages à motif interdit (confidentiel, hameçonnage) sont écartés même
+// s'ils portent encore des pièces d'avant leur reclassement : filet de
+// sécurité, en plus du nettoyage au démarrage (schema.go).
 func (s *Store) RechercherPieces(ctx context.Context, q string, limite int) ([]PieceTrouvee, error) {
 	q = strings.TrimSpace(q)
 	motif := "%" + strings.ToLower(q) + "%"
@@ -23,7 +26,8 @@ func (s *Store) RechercherPieces(ctx context.Context, q string, limite int) ([]P
 		FROM attachments a
 		JOIN messages m ON m.id = a.message_id
 		LEFT JOIN persons p ON p.email = m.sender, req
-		WHERE a.recherche @@ req.q OR lower(a.nom) LIKE $2 OR lower(m.sender) LIKE $2 OR lower(m.subject) LIKE $2
+		WHERE (a.recherche @@ req.q OR lower(a.nom) LIKE $2 OR lower(m.sender) LIKE $2 OR lower(m.subject) LIKE $2)
+		  AND NOT (m.status = 'excluded' AND (m.exclude_reason LIKE 'categorie_sensible\_%' OR m.exclude_reason LIKE 'securite\_%'))
 		ORDER BY m.sent_at DESC, a.id LIMIT $3`, q, motif, limite)
 	if err != nil {
 		return nil, err
@@ -42,6 +46,14 @@ func (s *Store) RechercherPieces(ctx context.Context, q string, limite int) ([]P
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+// DeleteAttachments retire toutes les pièces d'un message : appelé quand un
+// message bascule après coup vers un motif interdit (catégorie confidentielle,
+// hameçonnage), pour que rien de ce qu'il portait ne reste cherchable.
+func (s *Store) DeleteAttachments(ctx context.Context, messageID int64) error {
+	_, err := s.q(ctx).Exec(ctx, `DELETE FROM attachments WHERE message_id=$1`, messageID)
+	return err
 }
 
 // MessagesConnusSansPiece : parmi des identifiants externes rapportés par le

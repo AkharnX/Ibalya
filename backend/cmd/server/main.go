@@ -401,12 +401,14 @@ func indexerPiecesJointes(ctx context.Context, st *store.Store, ing *ingest.Inge
 	}
 	fmt.Printf("Indexation des pièces jointes des %d derniers jours, %s\n", jours, mode)
 	depuis := time.Now().AddDate(0, 0, -jours)
+	var echecs []string
 	for _, id := range ids {
 		err := st.EnTenant(ctx, id, func(ctx context.Context) error {
-			compte, _ := ing.Channel.AccountEmail(ctx)
+			canal := ing.Channel
 			if ing.CanalPour != nil {
-				compte, _ = ing.CanalPour(ctx).AccountEmail(ctx)
+				canal = ing.CanalPour(ctx)
 			}
+			compte, _ := canal.AccountEmail(ctx)
 			b, err := ing.IndexerPieces(ctx, depuis, 5000, appliquer)
 			if err != nil {
 				return err
@@ -423,9 +425,15 @@ func indexerPiecesJointes(ctx context.Context, st *store.Store, ing *ingest.Inge
 			}
 			return nil
 		})
+		// Un jeton révoqué ou un mot de passe IMAP changé ne doit pas priver
+		// les boîtes suivantes du rattrapage : on note et on continue.
 		if err != nil {
-			return fmt.Errorf("boîte %d : %w", id, err)
+			fmt.Printf("\nboîte %d : ÉCHEC : %v\n", id, err)
+			echecs = append(echecs, fmt.Sprintf("boîte %d : %v", id, err))
 		}
+	}
+	if len(echecs) > 0 {
+		return fmt.Errorf("%d boîte(s) en échec :\n  %s", len(echecs), strings.Join(echecs, "\n  "))
 	}
 	return nil
 }

@@ -65,3 +65,30 @@ func TestPlanPieceDocumentSansTexte(t *testing.T) {
 		t.Fatal("une image sans texte OCR ne doit pas être enregistrée")
 	}
 }
+
+// Une pièce dont le texte relève d'une catégorie confidentielle cochée (fiche
+// de paie envoyée par une plateforme à l'objet neutre) n'est pas enregistrée,
+// même si le message lui-même n'a rien déclenché.
+func TestPieceSensible(t *testing.T) {
+	rh := map[Categorie]bool{CategorieRH: true}
+	if !pieceSensible("document.pdf", "Votre bulletin de paie du mois d'octobre", rh) {
+		t.Fatal("un bulletin de paie doit être reconnu sensible")
+	}
+	if pieceSensible("facture.pdf", "Facture n° 12 Total TTC 148,00 EUR", rh) {
+		t.Fatal("une facture n'est pas sensible")
+	}
+	if pieceSensible("document.pdf", "Votre bulletin de paie", map[Categorie]bool{}) {
+		t.Fatal("catégorie non cochée : rien à détecter")
+	}
+}
+
+// Les motifs interdits (préfixes) : la recherche les ignore et les rattrapages
+// retirent les pièces déjà stockées de ces messages.
+func TestMotifInterdit(t *testing.T) {
+	for m, veut := range map[string]bool{"categorie_sensible_sante": true, "securite_suspect": true, "securite_autre": true,
+		"expediteur_automatique": false, "newsletter": false, "": false} {
+		if MotifInterdit(m) != veut {
+			t.Errorf("%q : %v", m, !veut)
+		}
+	}
+}

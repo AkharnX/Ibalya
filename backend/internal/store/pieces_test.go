@@ -162,3 +162,52 @@ func TestMessagesConnusSansPiece(t *testing.T) {
 		return nil
 	})
 }
+
+// Un message reclassé après coup en confidentiel ou hameçonnage (commande
+// confidentialite, rattrapage du pré-filtre) peut encore porter des pièces de
+// l'époque où il était conservé : la recherche ne doit jamais les montrer, et
+// DeleteAttachments doit permettre de les retirer.
+func TestRechercherPiecesIgnoreMotifsInterdits(t *testing.T) {
+	st, ctx, uid := baseDeTest(t)
+	_ = st.EnTenant(ctx, uid, func(ctx context.Context) error {
+		for i, motif := range []string{"categorie_sensible_rh", "securite_suspect"} {
+			id, _ := messageAvec(t, st, ctx, fmt.Sprintf("m-i%d", i), "x@ex.fr", "")
+			if err := st.MarkMessage(ctx, id, "excluded", ptr(motif)); err != nil {
+				t.Fatal(err)
+			}
+			if err := st.InsertAttachment(ctx, id, Attachment{Nom: "bulletin-de-paie-cache.pdf", TypeMime: "application/pdf", Texte: "bulletin de paie confidentiel"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		res, err := st.RechercherPieces(ctx, "bulletin", 12)
+		if err != nil || len(res) != 0 {
+			t.Fatalf("les pièces de motifs interdits ne doivent jamais sortir : %v %+v", err, res)
+		}
+		var n int
+		_ = st.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM attachments`).Scan(&n)
+		if n != 2 {
+			t.Fatalf("2 lignes attendues avant nettoyage, %d", n)
+		}
+		id, _ := messageAvec(t, st, ctx, "m-i9", "y@ex.fr", "Nettoyage")
+		_ = st.InsertAttachment(ctx, id, Attachment{Nom: "a.pdf", TypeMime: "application/pdf"})
+		if err := st.DeleteAttachments(ctx, id); err != nil {
+			t.Fatal(err)
+		}
+		_ = st.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM attachments WHERE message_id=$1`, id).Scan(&n)
+		if n != 0 {
+			t.Fatalf("DeleteAttachments doit vider le message, %d restantes", n)
+		}
+		return nil
+	})
+}
+
+// Un octet nul est de l'UTF-8 valide mais PostgreSQL le refuse : il doit
+// disparaître avant l'insertion, sinon la pièce est perdue, nom compris.
+func TestValideUTF8SupprimeNul(t *testing.T) {
+	if got := valideUTF8("Rel\x00ev\xe9 \x00de compte"); strings.ContainsRune(got, 0) {
+		t.Fatalf("octet nul conservé : %q", got)
+	}
+	if got := valideUTF8("sain"); got != "sain" {
+		t.Fatalf("%q", got)
+	}
+}

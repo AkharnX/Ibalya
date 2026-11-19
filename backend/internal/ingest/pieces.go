@@ -38,10 +38,25 @@ func ModePour(statut string, motif *string) ModePieces {
 	if motif == nil {
 		return ModeTexteSeul
 	}
-	if strings.HasPrefix(*motif, "categorie_sensible_") || strings.HasPrefix(*motif, "securite_") {
+	if MotifInterdit(*motif) {
 		return ModeAucune
 	}
 	return ModeTexteSeul
+}
+
+// MotifInterdit : les motifs dont un message ne doit garder aucune pièce,
+// par préfixe (catégories confidentielles, hameçonnage et tout motif de
+// sécurité à venir).
+func MotifInterdit(motif string) bool {
+	return strings.HasPrefix(motif, "categorie_sensible_") || strings.HasPrefix(motif, "securite_")
+}
+
+// pieceSensible : le texte extrait d'une pièce relève d'une catégorie
+// confidentielle cochée. Le détecteur de catégories ne voit que l'objet et le
+// corps du message ; une fiche de paie envoyée par une plateforme sous un objet
+// neutre passerait sans ça, et resterait stockée.
+func pieceSensible(nom, texte string, sensibles map[Categorie]bool) bool {
+	return DetecterCategorie(nom, texte, sensibles) != ""
 }
 
 // planPiece dit si une pièce est traitée dans ce mode, et si l'OCR est permis.

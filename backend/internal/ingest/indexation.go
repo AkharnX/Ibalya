@@ -32,6 +32,7 @@ func (ing *Ingester) IndexerPieces(ctx context.Context, since time.Time, max int
 		return b, err
 	}
 	b.Lus = len(msgs)
+	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
 
 	parID := map[string]channel.Message{}
 	var ids []string
@@ -68,7 +69,7 @@ func (ing *Ingester) IndexerPieces(ctx context.Context, since time.Time, max int
 		b.Concernes++
 		b.ParMotif[motif]++
 		if appliquer {
-			n = ing.enregistrerPiecesJointes(ctx, m.ID, pjs, mode)
+			n = ing.enregistrerPiecesJointes(ctx, m.ID, pjs, mode, sensibles)
 		}
 		b.Pieces += n
 		if len(b.Echantillon) < 10 {

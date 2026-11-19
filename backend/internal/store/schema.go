@@ -99,6 +99,12 @@ CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS recherche tsvector
   GENERATED ALWAYS AS (to_tsvector('french', left(nom, 200) || ' ' || left(texte, 200000))) STORED;
 CREATE INDEX IF NOT EXISTS idx_attachments_recherche ON attachments USING GIN (recherche);
+-- Un message reclassé après coup en catégorie confidentielle ou en hameçonnage
+-- (commande confidentialite, rattrapage du pré-filtre d'avant cette règle) ne
+-- doit rien garder de ses pièces : nettoyage idempotent à chaque démarrage.
+DELETE FROM attachments a USING messages m
+  WHERE m.id = a.message_id AND m.status = 'excluded'
+    AND (m.exclude_reason LIKE 'categorie_sensible\_%' OR m.exclude_reason LIKE 'securite\_%');
 
 CREATE TABLE IF NOT EXISTS engagements (
   id BIGSERIAL PRIMARY KEY,

@@ -15,8 +15,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ledongthuc/pdf"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/unicode"
 )
 
 // TailleMax borne la taille d'une pièce jointe traitée. Au-delà, on ignore :
@@ -128,7 +132,7 @@ func Extraire(nom, mime string, data []byte) (Resultat, error) {
 		t, err := extraireOOXML(data, reBaliseAT)
 		return Resultat{Texte: nettoyer(t), Methode: "pptx"}, err
 	case "texte":
-		return Resultat{Texte: nettoyer(string(data)), Methode: "texte"}, nil
+		return Resultat{Texte: nettoyer(decoderTexte(data)), Methode: "texte"}, nil
 	case "image":
 		return Resultat{BesoinOCR: true, Methode: "image"}, nil
 	}
@@ -201,6 +205,28 @@ func extraireOOXML(data []byte, re *regexp.Regexp) (string, error) {
 		}
 	}
 	return strings.Join(morceaux, " "), nil
+}
+
+// decoderTexte rend lisible un fichier texte quel que soit son encodage
+// courant : UTF-16 avec marque d'ordre (export Excel « Texte Unicode »),
+// UTF-8, sinon Windows-1252 (CSV d'un Excel français). Sans ça, l'UTF-16
+// laisse des octets nuls que la base refuse, et le 1252 perd ses accents.
+func decoderTexte(data []byte) string {
+	var enc encoding.Encoding
+	switch {
+	case len(data) >= 2 && data[0] == 0xFF && data[1] == 0xFE:
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM)
+	case len(data) >= 2 && data[0] == 0xFE && data[1] == 0xFF:
+		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
+	case utf8.Valid(data):
+		return string(data)
+	default:
+		enc = charmap.Windows1252
+	}
+	if out, err := enc.NewDecoder().Bytes(data); err == nil {
+		return string(out)
+	}
+	return string(data)
 }
 
 // nettoyer normalise les blancs : OCR, PDF et XML produisent des espacements

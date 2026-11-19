@@ -78,6 +78,13 @@ func Reappliquer(ctx context.Context, st *store.Store, appliquer bool) (Bilan, e
 		if err := st.MarkMessage(ctx, c.id, "excluded", &motif); err != nil {
 			return b, err
 		}
+		// Un message qui bascule vers un motif interdit ne garde rien de ses
+		// pièces : elles datent d'avant, quand il était conservé.
+		if MotifInterdit(motif) {
+			if err := st.DeleteAttachments(ctx, c.id); err != nil {
+				return b, err
+			}
+		}
 		n, err := ecarterEngagementsIssusDe(ctx, st, c.id, motif)
 		if err != nil {
 			return b, err

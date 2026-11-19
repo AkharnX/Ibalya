@@ -18,6 +18,9 @@ type Ingester struct {
 	// OCR (optionnel) : texte d'une image ou d'un PDF scanné, via le service LLM
 	// (Mistral OCR, UE). Nil = pas d'OCR, on ignore simplement ces pièces.
 	OCR func(ctx context.Context, nom, typeMime string, data []byte) (string, error)
+	// sensibles : catégories confidentielles cochées, lues au début de chaque
+	// cycle ; les pièces jointes y sont soumises comme le corps des messages.
+	sensibles map[Categorie]bool
 }
 
 // canal résout le canal du tenant courant (voir Engine.Canal).
@@ -54,6 +57,7 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 		return st, err
 	}
 	sensibles := LireCategories(ing.Store.GetSetting(ctx, CleReglageCategories, ""))
+	ing.sensibles = sensibles
 
 	// Ensemble des adresses « moi » (boîte connectée + login + alias) : un
 	// message dont l'expéditeur est le dirigeant est SORTANT, même s'il arrive
@@ -117,14 +121,14 @@ func (ing *Ingester) Run(ctx context.Context, since time.Time, max int) (Stats, 
 			st.Excluded++
 			st.Sensibles++
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &raison)
-			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &raison))
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &raison), sensibles)
 		} else if reason := ExclusionReason(m, thread.Excluded, rules); reason != "" {
 			st.Excluded++
 			_ = ing.Store.MarkMessage(ctx, id, "excluded", &reason)
-			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &reason))
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModePour("excluded", &reason), sensibles)
 		} else {
 			st.Kept++
-			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModeComplete)
+			ing.enregistrerPiecesJointes(ctx, id, cm.Attachments, ModeComplete, sensibles)
 		}
 	}
 
@@ -142,8 +146,10 @@ const maxPiecesParMessage = 8
 // stocke (jamais les octets), selon le mode (voir ModePieces). Un document est
 // enregistré même sans texte, pour rester trouvable par son nom ; une image ne
 // l'est que si l'OCR en tire du texte. Une pièce illisible n'empêche rien : le
-// corps du mail reste traité normalement. Retourne le nombre de lignes écrites.
-func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int64, pjs []channel.PieceJointe, mode ModePieces) int {
+// corps du mail reste traité normalement. Une pièce dont le texte relève d'une
+// catégorie confidentielle cochée n'est pas gardée. Retourne le nombre de
+// lignes écrites.
+func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int64, pjs []channel.PieceJointe, mode ModePieces, sensibles map[Categorie]bool) int {
 	ecrites := 0
 	for _, pj := range pjs {
 		if ecrites >= maxPiecesParMessage {
@@ -170,11 +176,20 @@ func (ing *Ingester) enregistrerPiecesJointes(ctx context.Context, messageID int
 		if texte == "" && !garderSansTexte(pj.Nom, pj.Type) {
 			continue
 		}
-		if err := ing.Store.InsertAttachment(ctx, messageID, store.Attachment{
-			Nom: pj.Nom, TypeMime: pj.Type, Texte: texte, BesoinOCR: false,
-		}); err != nil {
-			log.Printf("ingest: pièce jointe %q: %v", pj.Nom, err)
+		if pieceSensible(pj.Nom, texte, sensibles) {
 			continue
+		}
+		a := store.Attachment{Nom: pj.Nom, TypeMime: pj.Type, Texte: texte, BesoinOCR: false}
+		if err := ing.Store.InsertAttachment(ctx, messageID, a); err != nil {
+			// Un texte que la base refuse (index plein texte au-delà d'un Mo,
+			// encodage exotique) ne doit pas faire perdre le document : on le
+			// garde au moins par son nom.
+			log.Printf("ingest: pièce jointe %q: %v (gardée sans texte)", pj.Nom, err)
+			a.Texte = ""
+			if err := ing.Store.InsertAttachment(ctx, messageID, a); err != nil {
+				log.Printf("ingest: pièce jointe %q: %v", pj.Nom, err)
+				continue
+			}
 		}
 		ecrites++
 	}
