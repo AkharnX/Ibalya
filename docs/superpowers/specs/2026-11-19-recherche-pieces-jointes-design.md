@@ -1,4 +1,4 @@
-# Recherche de pièces jointes : retrouver ses factures dans ses mails
+# Recherche de pièces jointes : retrouver un fichier reçu par mail
 
 Design, 19 novembre 2026. Rédigé avec Ibrahim à partir d'un retour de testeur.
 
@@ -6,10 +6,14 @@ Design, 19 novembre 2026. Rédigé avec Ibrahim à partir d'un retour de testeur
 
 Un testeur essaie de retrouver ses factures, reçues en pièces jointes dans sa
 boîte mail, pour faire sa comptabilité. Il les cherche une par une et il galère.
-Ibalya lit déjà sa boîte, extrait le texte des pièces jointes et sait relier un
-message à son fil : il doit pouvoir taper « Qonto octobre » ou « facture
-Dupont » dans la barre de recherche et tomber sur la pièce, avec un lien vers
-le mail d'origine pour aller la télécharger dans sa messagerie.
+Les factures sont l'exemple déclencheur ; le besoin est général : **retrouver
+n'importe quelle pièce jointe reçue** (devis, plan, photo de chantier,
+contrat, relevé) par un mot de son nom, de son contenu, de l'expéditeur ou de
+l'objet. Ibalya lit déjà la boîte, extrait le texte des pièces et sait relier
+un message à son fil : l'utilisateur doit pouvoir taper « Qonto octobre »,
+« plan terrasse » ou « devis Dupont » dans la barre de recherche et tomber sur
+la pièce, avec un lien vers le mail d'origine pour la télécharger dans sa
+messagerie.
 
 ## Ce qu'on a constaté dans le code et en production
 
@@ -54,6 +58,9 @@ le mail d'origine pour aller la télécharger dans sa messagerie.
 - Depuis la barre de recherche, en mode « Pièces jointes », retrouver une pièce
   par un mot de son nom, de son contenu, de l'expéditeur ou de l'objet du
   message, et voir sa date.
+- **Toute pièce jointe est retrouvable au moins par son nom**, quel que soit
+  son type (archive, plan, image, présentation…), même quand aucun texte n'en
+  est extrait.
 - Chaque résultat mène au mail d'origine dans la messagerie de l'utilisateur
   (Gmail, Outlook) ; faute de lien (IMAP), il donne de quoi le retrouver à la
   main.
@@ -160,6 +167,12 @@ Par moi, à corriger si besoin (Ibrahim les a lues sans objection) :
 - **Recherche plein texte PostgreSQL** (`tsvector` en français, index GIN) sur
   nom + texte, complétée d'une correspondance sur l'expéditeur et l'objet du
   message. Pas de dépendance nouvelle.
+- **Chaque pièce nommée est enregistrée, texte ou pas.** La règle actuelle
+  « texte vide, pas de ligne » disparaît : nom et type sont toujours stockés,
+  le texte reste vide quand le type n'est pas extractible (zip, dwg, pptx…) ou
+  quand l'OCR n'a rien donné. Une pièce retrouvée par son nom seul vaut mieux
+  qu'une pièce invisible. `TexteAttachments` ignore les lignes sans texte, donc
+  l'extraction d'engagements ne change pas.
 
 ## Comportement attendu
 
@@ -187,8 +200,8 @@ Pour chaque message nouvellement inséré :
 
 | Issue du pré-filtre | Pièces jointes |
 |---|---|
-| Conservé (analysé) | Comme aujourd'hui : PDF, DOCX, XLSX, images ; OCR si disponible. |
-| Écarté : `expediteur_automatique`, `newsletter`, `publicitaire`, `domaine_exclu`, `fil_exclu`, `regle_apprise`, `corps_vide` | Mode **texte seul** : PDF, DOCX, XLSX avec couche texte ; pas d'image, pas d'OCR, pièce scannée ignorée. |
+| Conservé (analysé) | Mode **complet** : nom et type de toute pièce nommée ; texte des PDF, DOCX, XLSX ; OCR des images et PDF scannés si disponible. |
+| Écarté : `expediteur_automatique`, `newsletter`, `publicitaire`, `domaine_exclu`, `fil_exclu`, `regle_apprise`, `corps_vide` | Mode **texte seul** : nom et type de toute pièce nommée ; texte des PDF, DOCX, XLSX avec couche texte ; pas d'OCR. Les `image/*` de ces messages sont ignorées entièrement (logos et pixels de suivi, pas des documents). |
 | Écarté : `categorie_sensible_*`, `securite_suspect` | Rien. La pièce n'est pas ouverte. |
 
 Une fonction pure (`motif` → `aucune | texte_seul | complete`) porte cette
@@ -197,9 +210,10 @@ ou `securite_` donne `aucune` (règle de préfixe, pour qu'un motif ajouté plus
 tard ne fasse pas sauter l'anti-objectif) ; un motif inconnu donne `texte_seul`,
 jamais `complete`.
 
-Une pièce dont le texte extrait est vide n'est pas enregistrée (règle actuelle
-conservée) ; conséquence : une facture scannée sans couche texte, envoyée par
-un robot, ne sera pas trouvable. Accepté, cas rare pour des factures générées.
+Une pièce dont le texte est vide est enregistrée quand même, avec son nom et
+son type, et reste trouvable par son nom. Une facture scannée sans couche
+texte envoyée par un robot n'est donc trouvable que par son nom de fichier,
+l'expéditeur ou l'objet. Accepté.
 
 ### Rattrapage des boîtes déjà raccordées
 
@@ -209,7 +223,8 @@ gabarit que le rattrapage du pré-filtre :
 - pour chaque boîte active avec canal, dans son tenant, relit les messages des
   N derniers jours via le canal de la boîte (`FetchSince`), et pour chaque
   message **déjà connu** (même canal, même identifiant externe) **sans aucune
-  pièce enregistrée**, applique la table ci-dessus selon son statut et son
+  pièce enregistrée** et dont la lecture rapporte au moins une pièce nommée,
+  applique la table ci-dessus selon son statut et son
   motif actuels, **plafonnée à `texte_seul`** : le rattrapage ne fait jamais
   d'OCR, même pour un message conservé. Sinon chaque lancement renverrait à
   Mistral les images de signature des messages conservés dont l'OCR n'avait
@@ -272,7 +287,8 @@ mémorisé pendant la session. Esquisse :
   (IMAP), il ouvre le fil dans le Miroir (`/miroir?fil=`) si le fil s'y
   résout, sinon la ligne reste informative (expéditeur, objet, date suffisent
   à retrouver le mail à la main).
-- Libellé du type : PDF, Word, Excel, Image, Fichier, déduit du type MIME.
+- Libellé du type : PDF, Word, Excel, Image, Archive, Fichier, déduit du type
+  MIME puis de l'extension du nom.
 - Vide : « Aucune pièce jointe pour « … ». »
 - Le placeholder du champ devient « Rechercher un client, un engagement, une
   pièce jointe… ».
