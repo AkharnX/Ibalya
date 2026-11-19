@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 	"time"
@@ -164,5 +165,65 @@ func TestCommutateurDelegue(t *testing.T) {
 	}
 	if c.LienWeb("a@b.fr", "42") != "" {
 		t.Fatal("IMAP n'a pas de lien web : le commutateur doit refléter ce fait")
+	}
+}
+
+// Une pièce jointe nommée est rapportée comme en Gmail (nom, type, octets) ;
+// une image inline sans nom (signature) n'en est pas une.
+func TestPieceJointeIMAP(t *testing.T) {
+	i := connecteur()
+	pdf := base64.StdEncoding.EncodeToString([]byte("%PDF-1.4 faux contenu"))
+	msg := "From: noreply@qonto.com\r\nTo: dirigeant@pme.fr\r\nSubject: Facture\r\nMessage-ID: <pj@ex.fr>\r\nMIME-Version: 1.0\r\n" +
+		"Content-Type: multipart/mixed; boundary=\"mx\"\r\n\r\n" +
+		"--mx\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nVotre facture est jointe.\r\n" +
+		"--mx\r\nContent-Type: image/png\r\nContent-Disposition: inline\r\nContent-Transfer-Encoding: base64\r\n\r\naGVsbG8=\r\n" +
+		"--mx\r\nContent-Type: application/pdf; name=\"Facture-2026-10.pdf\"\r\nContent-Disposition: attachment; filename=\"Facture-2026-10.pdf\"\r\nContent-Transfer-Encoding: base64\r\n\r\n" + pdf + "\r\n--mx--\r\n"
+	m, err := i.convertirBrut([]byte(msg), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(m.Body, "Votre facture est jointe") {
+		t.Fatalf("corps : %q", m.Body)
+	}
+	if len(m.Attachments) != 1 {
+		t.Fatalf("1 pièce attendue (l'image inline sans nom n'en est pas une), %d", len(m.Attachments))
+	}
+	pj := m.Attachments[0]
+	if pj.Nom != "Facture-2026-10.pdf" || !strings.HasPrefix(pj.Type, "application/pdf") || string(pj.Donnees) != "%PDF-1.4 faux contenu" {
+		t.Fatalf("%+v", pj)
+	}
+}
+
+// Une partie inline qui porte un nom de fichier est une pièce, comme en Gmail
+// (Filename non vide).
+func TestPieceJointeIMAPInlineNommee(t *testing.T) {
+	i := connecteur()
+	msg := "From: a@ex.fr\r\nTo: dirigeant@pme.fr\r\nSubject: Devis\r\nMessage-ID: <in@ex.fr>\r\nMIME-Version: 1.0\r\n" +
+		"Content-Type: multipart/mixed; boundary=\"mx\"\r\n\r\n" +
+		"--mx\r\nContent-Type: text/plain\r\n\r\nCi-joint.\r\n" +
+		"--mx\r\nContent-Type: application/pdf; name=\"devis.pdf\"\r\nContent-Disposition: inline; filename=\"devis.pdf\"\r\n\r\n%PDF-1.4 devis\r\n--mx--\r\n"
+	m, err := i.convertirBrut([]byte(msg), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Attachments) != 1 || m.Attachments[0].Nom != "devis.pdf" || string(m.Attachments[0].Donnees) != "%PDF-1.4 devis" {
+		t.Fatalf("%+v", m.Attachments)
+	}
+}
+
+// Au-delà de TailleMaxPJ, la pièce est ignorée mais le message est converti.
+func TestPieceJointeIMAPTropGrosse(t *testing.T) {
+	i := connecteur()
+	gros := strings.Repeat("x", TailleMaxPJ+1)
+	msg := "From: a@ex.fr\r\nTo: dirigeant@pme.fr\r\nSubject: Gros\r\nMessage-ID: <g@ex.fr>\r\nMIME-Version: 1.0\r\n" +
+		"Content-Type: multipart/mixed; boundary=\"mx\"\r\n\r\n" +
+		"--mx\r\nContent-Type: text/plain\r\n\r\nCorps intact.\r\n" +
+		"--mx\r\nContent-Type: application/pdf; name=\"gros.pdf\"\r\nContent-Disposition: attachment; filename=\"gros.pdf\"\r\nContent-Transfer-Encoding: binary\r\n\r\n" + gros + "\r\n--mx--\r\n"
+	m, err := i.convertirBrut([]byte(msg), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Attachments) != 0 || !strings.Contains(m.Body, "Corps intact") {
+		t.Fatalf("pièces=%d corps=%q", len(m.Attachments), m.Body)
 	}
 }

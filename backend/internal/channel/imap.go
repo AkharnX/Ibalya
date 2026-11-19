@@ -392,7 +392,7 @@ func (i *IMAP) convertirBrut(brut []byte, recu time.Time) (Message, error) {
 	m.AutoSubmitted = EstEnvoiAutomatique(func(nom string) string { return entete(en, nom) })
 	m.Outbound = strings.EqualFold(m.Sender, i.cfg.Utilisateur)
 	m.ThreadExternalID = filDe(en, m.ExternalID)
-	m.Body = corpsTexte(lecteur)
+	m.Body, m.Attachments = corpsTexte(lecteur)
 	if m.ExternalID == "" {
 		return Message{}, fmt.Errorf("message sans identifiant")
 	}
@@ -412,10 +412,19 @@ func filDe(en gomail.Header, propreID string) string {
 	return propreID
 }
 
+// maxPiecesIMAP : garde-fou, aligné sur le connecteur Gmail.
+const maxPiecesIMAP = 8
+
 // corpsTexte privilégie text/plain ; à défaut on dégrade le HTML, un corps
-// vide empêcherait toute extraction.
-func corpsTexte(lecteur *gomail.Reader) string {
+// vide empêcherait toute extraction. Il rapporte aussi les pièces jointes
+// nommées, au même format que Gmail : le message brut est déjà téléchargé en
+// entier, rien de plus n'est demandé au serveur. Une partie inline sans nom
+// (image de signature) n'est pas une pièce ; une partie inline nommée l'est,
+// comme en Gmail (Filename non vide). Au-delà de TailleMaxPJ, la pièce est
+// ignorée, le message reste converti.
+func corpsTexte(lecteur *gomail.Reader) (string, []PieceJointe) {
 	var texte, html string
+	var pieces []PieceJointe
 	for {
 		partie, err := lecteur.NextPart()
 		if err == io.EOF {
@@ -426,19 +435,48 @@ func corpsTexte(lecteur *gomail.Reader) string {
 		}
 		switch h := partie.Header.(type) {
 		case *gomail.InlineHeader:
-			ct, _, _ := h.ContentType()
+			ct, params, _ := h.ContentType()
+			nom := params["name"]
+			if _, dp, err := h.ContentDisposition(); err == nil && dp["filename"] != "" {
+				nom = dp["filename"]
+			}
+			if nom != "" {
+				if pj, ok := lirePiece(nom, ct, partie.Body); ok && len(pieces) < maxPiecesIMAP {
+					pieces = append(pieces, pj)
+				}
+				continue
+			}
 			b, _ := io.ReadAll(partie.Body)
 			if strings.HasPrefix(ct, "text/plain") && texte == "" {
 				texte = string(b)
 			} else if strings.HasPrefix(ct, "text/html") && html == "" {
 				html = string(b)
 			}
+		case *gomail.AttachmentHeader:
+			nom, _ := h.Filename()
+			ct, _, _ := h.ContentType()
+			if nom == "" {
+				continue
+			}
+			if pj, ok := lirePiece(nom, ct, partie.Body); ok && len(pieces) < maxPiecesIMAP {
+				pieces = append(pieces, pj)
+			}
 		}
 	}
 	if strings.TrimSpace(texte) != "" {
-		return texte
+		return texte, pieces
 	}
-	return stripHTML(html)
+	return stripHTML(html), pieces
+}
+
+// lirePiece lit les octets d'une partie, décodés par go-message selon son
+// Content-Transfer-Encoding. Faux si la pièce dépasse TailleMaxPJ ou est vide.
+func lirePiece(nom, ct string, corps io.Reader) (PieceJointe, bool) {
+	b, err := io.ReadAll(io.LimitReader(corps, int64(TailleMaxPJ)+1))
+	if err != nil || len(b) == 0 || len(b) > TailleMaxPJ {
+		return PieceJointe{}, false
+	}
+	return PieceJointe{Nom: decoder(nom), Type: ct, Donnees: b}, true
 }
 
 func (i *IMAP) Send(ctx context.Context, to, subject, body string) error {

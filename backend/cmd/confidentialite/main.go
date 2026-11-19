@@ -139,6 +139,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "mise à jour :", err)
 			os.Exit(1)
 		}
+		// Les pièces jointes datent d'avant : rien ne doit en rester cherchable.
+		if _, err := pool.Exec(ctx, `DELETE FROM attachments WHERE message_id=$1`, t.id); err != nil {
+			fmt.Fprintln(os.Stderr, "pièces jointes :", err)
+			os.Exit(1)
+		}
 		n++
 	}
 	fmt.Printf("\n  %d messages exclus et purgés de leur contenu.\n", n)

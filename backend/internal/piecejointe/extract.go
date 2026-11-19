@@ -15,8 +15,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ledongthuc/pdf"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/unicode"
 )
 
 // TailleMax borne la taille d'une pièce jointe traitée. Au-delà, on ignore :
@@ -32,7 +36,7 @@ const seuilTextePDF = 24
 type Resultat struct {
 	Texte     string // texte extrait (vide si BesoinOCR)
 	BesoinOCR bool   // true : image ou PDF scanné, à envoyer à l'OCR
-	Methode   string // "pdf-texte", "docx", "xlsx", "image", "pdf-scanne"
+	Methode   string // "pdf-texte", "docx", "xlsx", "pptx", "texte", "image", "pdf-scanne"
 }
 
 var (
@@ -40,17 +44,48 @@ var (
 	reLignes  = regexp.MustCompile(`\n{3,}`)
 	// Texte des éléments Word (<w:t>…</w:t>) et des chaînes partagées xlsx (<t>…</t>).
 	reBaliseT = regexp.MustCompile(`(?s)<(?:w:)?t(?:\s[^>]*)?>(.*?)</(?:w:)?t>`)
-	reBalises = regexp.MustCompile(`<[^>]+>`)
+	// Texte des diapositives PowerPoint (<a:t>…</a:t>).
+	reBaliseAT = regexp.MustCompile(`(?s)<a:t(?:\s[^>]*)?>(.*?)</a:t>`)
+	reBalises  = regexp.MustCompile(`<[^>]+>`)
 )
 
-// Traitable indique si on sait (ou saura via OCR) extraire ce type.
-// On se fie à l'extension ET au type MIME : les deux sont parfois trompeurs.
+// Traitable indique si on sait (ou saura via OCR) extraire ce type :
+// un document, ou une image (OCR).
 func Traitable(nom, mime string) bool {
+	return Document(nom, mime) || Image(nom, mime)
+}
+
+// Document : les pièces qu'on cherche (PDF, Word, Excel, PowerPoint, texte,
+// CSV). Un document est toujours enregistré, même sans texte extractible : on
+// le retrouve au moins par son nom. Les photos n'en sont pas (voir Image).
+func Document(nom, mime string) bool {
 	switch famille(nom, mime) {
-	case "pdf", "docx", "xlsx", "image":
+	case "pdf", "docx", "xlsx", "pptx", "texte":
 		return true
 	}
 	return false
+}
+
+// Image : retenue seulement si l'OCR en tire du texte (document photographié).
+func Image(nom, mime string) bool { return famille(nom, mime) == "image" }
+
+// Libelle : le type tel qu'on l'affiche à côté d'un résultat de recherche.
+func Libelle(nom, mime string) string {
+	switch famille(nom, mime) {
+	case "pdf":
+		return "PDF"
+	case "docx":
+		return "Word"
+	case "xlsx":
+		return "Excel"
+	case "pptx":
+		return "PowerPoint"
+	case "texte":
+		return "Texte"
+	case "image":
+		return "Image"
+	}
+	return ""
 }
 
 func famille(nom, mime string) string {
@@ -63,6 +98,10 @@ func famille(nom, mime string) string {
 		return "docx"
 	case ext == "xlsx" || strings.Contains(mime, "spreadsheetml"):
 		return "xlsx"
+	case ext == "pptx" || strings.Contains(mime, "presentationml"):
+		return "pptx"
+	case ext == "txt" || ext == "csv" || mime == "text/plain" || mime == "text/csv":
+		return "texte"
 	case ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "webp" ||
 		ext == "gif" || ext == "tiff" || ext == "tif" ||
 		strings.HasPrefix(mime, "image/"):
@@ -89,6 +128,11 @@ func Extraire(nom, mime string, data []byte) (Resultat, error) {
 	case "xlsx":
 		t, err := extraireOOXML(data, reBaliseT)
 		return Resultat{Texte: nettoyer(t), Methode: "xlsx"}, err
+	case "pptx":
+		t, err := extraireOOXML(data, reBaliseAT)
+		return Resultat{Texte: nettoyer(t), Methode: "pptx"}, err
+	case "texte":
+		return Resultat{Texte: nettoyer(decoderTexte(data)), Methode: "texte"}, nil
 	case "image":
 		return Resultat{BesoinOCR: true, Methode: "image"}, nil
 	}
@@ -127,6 +171,7 @@ func extraireOOXML(data []byte, re *regexp.Regexp) (string, error) {
 		nom := f.Name
 		pertinent := nom == "word/document.xml" ||
 			nom == "xl/sharedStrings.xml" ||
+			(strings.HasPrefix(nom, "ppt/slides/") && strings.HasSuffix(nom, ".xml")) ||
 			(strings.HasPrefix(nom, "xl/worksheets/") && strings.HasSuffix(nom, ".xml")) ||
 			(strings.HasPrefix(nom, "word/") && strings.HasSuffix(nom, ".xml") && strings.Contains(nom, "header"))
 		if !pertinent {
@@ -160,6 +205,28 @@ func extraireOOXML(data []byte, re *regexp.Regexp) (string, error) {
 		}
 	}
 	return strings.Join(morceaux, " "), nil
+}
+
+// decoderTexte rend lisible un fichier texte quel que soit son encodage
+// courant : UTF-16 avec marque d'ordre (export Excel « Texte Unicode »),
+// UTF-8, sinon Windows-1252 (CSV d'un Excel français). Sans ça, l'UTF-16
+// laisse des octets nuls que la base refuse, et le 1252 perd ses accents.
+func decoderTexte(data []byte) string {
+	var enc encoding.Encoding
+	switch {
+	case len(data) >= 2 && data[0] == 0xFF && data[1] == 0xFE:
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM)
+	case len(data) >= 2 && data[0] == 0xFE && data[1] == 0xFF:
+		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM)
+	case utf8.Valid(data):
+		return string(data)
+	default:
+		enc = charmap.Windows1252
+	}
+	if out, err := enc.NewDecoder().Bytes(data); err == nil {
+		return string(out)
+	}
+	return string(data)
 }
 
 // nettoyer normalise les blancs : OCR, PDF et XML produisent des espacements

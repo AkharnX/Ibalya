@@ -8,6 +8,7 @@ Scénario « Menuiserie Dupont » conçu pour déclencher les 5 détecteurs :
   4. Orphelin            : devis pergola promis il y a 12 jours, aucune suite
   5. Surcharge           : 5 échéances la même semaine pour le dirigeant
 """
+import base64
 import json
 import sys
 from datetime import date, timedelta
@@ -23,6 +24,34 @@ def days(n: int) -> str:
 
 def fr(d: date) -> str:
     return d.strftime(FR)
+
+
+def pdf_minimal(texte: str) -> str:
+    """Un PDF d'une page, Helvetica, avec une couche texte lisible par le
+    lecteur Go (ledongthuc/pdf). Écrit à la main : pas de dépendance."""
+    contenu = f"BT /F1 12 Tf 72 720 Td ({texte}) Tj ET".encode("latin-1")
+    objets = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length " + str(len(contenu)).encode() + b" >>\nstream\n" + contenu + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for i, o in enumerate(objets, start=1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + o + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objets) + 1}\n".encode() + b"0000000000 65535 f \n"
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objets) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    return base64.b64encode(bytes(out)).decode("ascii")
+
+
+# PNG 1×1 transparent : une image sans texte, qui ne doit jamais être indexée.
+PNG_1X1 = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
 
 
 # prochaine semaine complète (lundi → vendredi) pour la surcharge
@@ -58,6 +87,11 @@ messages = [
         "recipients": [DIRIGEANT],
         "sent_at": days(13),
         "body": f"Bonjour, nous vous confirmons la commande. Nous livrerons l'atelier au plus tard le {fr(vitrage_due)}. Cordialement, le service commandes.",
+        "attachments": [
+            {"nom": "bon-de-commande-12-vitrages.pdf", "type": "application/pdf",
+             "contenu_base64": pdf_minimal("Bon de commande 12 vitrages doubles")},
+            {"nom": "logo.png", "type": "image/png", "contenu_base64": PNG_1X1},
+        ],
     },
     {
         "external_id": "fx-104", "thread_id": "th-vitrage",
@@ -126,6 +160,10 @@ messages = [
         "recipients": [DIRIGEANT],
         "sent_at": days(5), "list_unsubscribe": True,
         "body": "Découvrez nos promotions sur les charnières et poignées !",
+        "attachments": [
+            {"nom": "facture-QP-2026-10.pdf", "type": "application/pdf",
+             "contenu_base64": pdf_minimal("Facture QP-2026-10 Total TTC 148,00 EUR")},
+        ],
     },
 ]
 

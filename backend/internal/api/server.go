@@ -153,6 +153,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/canal/tester", s.auth(s.testerCanal))
 	mux.HandleFunc("PUT /api/canal", s.auth(s.putCanal))
 	mux.HandleFunc("GET /api/recherche", s.auth(s.recherche))
+	mux.HandleFunc("GET /api/recherche/pieces-jointes", s.auth(s.recherchePieces))
 	mux.HandleFunc("POST /api/chat", s.auth(s.chat))
 	mux.HandleFunc("GET /api/chat/historique", s.auth(s.chatHistorique))
 	mux.HandleFunc("DELETE /api/chat/historique", s.auth(s.chatEffacer))

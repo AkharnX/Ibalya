@@ -30,7 +30,9 @@ func main() {
 	creerUtilisateur := flag.String("creer-utilisateur", "", "crée un compte : -creer-utilisateur email")
 	nom := flag.String("nom", "", "nom affiché du compte à créer")
 	reappliquer := flag.Bool("reappliquer-prefiltre", false, "reclasse les messages déjà lus avec les règles actuelles du pré-filtre (bilan seul sans -appliquer)")
-	appliquer := flag.Bool("appliquer", false, "avec -reappliquer-prefiltre : écrit les exclusions et écarte les faux engagements")
+	appliquer := flag.Bool("appliquer", false, "avec -reappliquer-prefiltre ou -indexer-pieces-jointes : écrit en base (sinon bilan seul)")
+	indexerPJ := flag.Bool("indexer-pieces-jointes", false, "relit les N derniers jours de chaque boîte et enregistre les documents joints des messages déjà connus qui n'en ont aucun (bilan seul sans -appliquer)")
+	jours := flag.Int("jours", 30, "avec -indexer-pieces-jointes : profondeur de relecture en jours")
 	flag.Parse()
 
 	cfg := config.Load()
@@ -169,6 +171,13 @@ func main() {
 
 	if cfg.AdminToken == "" {
 		log.Fatal("ADMIN_TOKEN obligatoire (protection du tableau de bord)")
+	}
+
+	if *indexerPJ {
+		if err := indexerPiecesJointes(ctx, st, ing, *jours, *appliquer); err != nil {
+			log.Fatalf("indexation des pièces jointes : %v", err)
+		}
+		return
 	}
 
 	// planificateur : cycle complet + digest quotidien
@@ -374,6 +383,57 @@ func rattraperPrefiltre(ctx context.Context, st *store.Store, appliquer bool) er
 		if err != nil {
 			return fmt.Errorf("boîte %s : %w", u.Email, err)
 		}
+	}
+	return nil
+}
+
+// indexerPiecesJointes rattrape, boîte par boîte, les documents joints des
+// messages déjà lus sans leurs pièces (voir ingest.IndexerPieces). Simulation
+// par défaut ; -appliquer écrit et consigne le bilan dans le journal d'audit.
+func indexerPiecesJointes(ctx context.Context, st *store.Store, ing *ingest.Ingester, jours int, appliquer bool) error {
+	ids, err := st.UtilisateursActifsAvecCanal(ctx)
+	if err != nil {
+		return err
+	}
+	mode := "simulation (rien n'est écrit, ajoutez -appliquer)"
+	if appliquer {
+		mode = "application"
+	}
+	fmt.Printf("Indexation des pièces jointes des %d derniers jours, %s\n", jours, mode)
+	depuis := time.Now().AddDate(0, 0, -jours)
+	var echecs []string
+	for _, id := range ids {
+		err := st.EnTenant(ctx, id, func(ctx context.Context) error {
+			canal := ing.Channel
+			if ing.CanalPour != nil {
+				canal = ing.CanalPour(ctx)
+			}
+			compte, _ := canal.AccountEmail(ctx)
+			b, err := ing.IndexerPieces(ctx, depuis, 5000, appliquer)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("\n%s : %d messages lus, %d concernés, %d pièces\n", compte, b.Lus, b.Concernes, b.Pieces)
+			for motif, n := range b.ParMotif {
+				fmt.Printf("  %-24s %d\n", motif, n)
+			}
+			for _, e := range b.Echantillon {
+				fmt.Println("  · " + e)
+			}
+			if appliquer {
+				st.Audit(ctx, "agent", "indexation_pieces_jointes", b)
+			}
+			return nil
+		})
+		// Un jeton révoqué ou un mot de passe IMAP changé ne doit pas priver
+		// les boîtes suivantes du rattrapage : on note et on continue.
+		if err != nil {
+			fmt.Printf("\nboîte %d : ÉCHEC : %v\n", id, err)
+			echecs = append(echecs, fmt.Sprintf("boîte %d : %v", id, err))
+		}
+	}
+	if len(echecs) > 0 {
+		return fmt.Errorf("%d boîte(s) en échec :\n  %s", len(echecs), strings.Join(echecs, "\n  "))
 	}
 	return nil
 }
